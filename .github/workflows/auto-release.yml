@@ -125,9 +125,7 @@ jobs:
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "Bumped to: $NEW_VERSION"
 
-      - name: Publish to npm
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish to npm (OIDC provenance)
         run: |
           VERSION=${{ steps.bump.outputs.new_version }}
           if npm view featuredrop@$VERSION version 2>/dev/null; then
