@@ -1,0 +1,189 @@
+name: Auto Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  detect-release:
+    name: Detect Release
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.check.outputs.should_release }}
+      release_type: ${{ steps.check.outputs.release_type }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check for release
+        id: check
+        run: |
+          # Manual dispatch
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "release_type=${{ github.event.inputs.release_type }}" >> $GITHUB_OUTPUT
+            echo "Manual release: ${{ github.event.inputs.release_type }}"
+            exit 0
+          fi
+
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Commit: $COMMIT_MSG"
+
+          # Skip maintenance commits
+          if [[ "$COMMIT_MSG" =~ \[skip\ ci\] ]] || \
+             [[ "$COMMIT_MSG" =~ ^chore:\ bump\ version ]] || \
+             [[ "$COMMIT_MSG" =~ ^chore\(deps ]] || \
+             [[ "$COMMIT_MSG" =~ ^Merge\ pull\ request.*dependabot ]]; then
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            echo "Skipping: maintenance commit"
+            exit 0
+          fi
+
+          # Detect release type from conventional commit
+          if [[ "$COMMIT_MSG" =~ ^feat! ]] || [[ "$COMMIT_MSG" =~ BREAKING\ CHANGE ]]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "release_type=major" >> $GITHUB_OUTPUT
+          elif [[ "$COMMIT_MSG" =~ ^feat ]]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "release_type=minor" >> $GITHUB_OUTPUT
+          elif [[ "$COMMIT_MSG" =~ ^fix ]] || [[ "$COMMIT_MSG" =~ ^perf ]] || [[ "$COMMIT_MSG" =~ ^refactor ]]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "release_type=patch" >> $GITHUB_OUTPUT
+          else
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            echo "No release pattern"
+          fi
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: detect-release
+    if: needs.detect-release.outputs.should_release == 'true'
+    environment: npm-publish
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Upgrade npm for OIDC
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Bump version
+        id: bump
+        run: |
+          RELEASE_TYPE="${{ needs.detect-release.outputs.release_type }}"
+          NEW_VERSION=$(npm version "$RELEASE_TYPE" --no-git-tag-version | sed 's/^v//')
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Bumped to: $NEW_VERSION"
+
+      - name: Publish to npm
+        run: |
+          VERSION=${{ steps.bump.outputs.new_version }}
+          if npm view featuredrop@$VERSION version 2>/dev/null; then
+            echo "Version $VERSION already exists, skipping"
+          else
+            npm publish --provenance --access public
+          fi
+
+      - name: Commit version bump
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add package.json
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }} [skip ci]"
+            git push
+          fi
+
+      - name: Create git tag
+        run: |
+          TAG_NAME="v${{ steps.bump.outputs.new_version }}"
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists"
+          else
+            git tag "$TAG_NAME"
+            git push origin "$TAG_NAME"
+          fi
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          VERSION="${{ steps.bump.outputs.new_version }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            CHANGELOG=$(git log --pretty=format:"- %s" ${PREV_TAG}..HEAD | grep -E "^- (feat|fix|perf|refactor|revert)" | head -15 || echo "- Version bump")
+          else
+            CHANGELOG="- Initial release"
+          fi
+
+          cat > release_notes.md << EOF
+          ## v${VERSION}
+
+          ### Installation
+          \`\`\`bash
+          npm install featuredrop@${VERSION}
+          \`\`\`
+
+          ### Changes
+          ${CHANGELOG}
+
+          ---
+          *Auto-released from conventional commit*
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.bump.outputs.new_version }}
+          name: v${{ steps.bump.outputs.new_version }}
+          body_path: release_notes.md
+          draft: false

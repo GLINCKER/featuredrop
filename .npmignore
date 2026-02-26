@@ -1,0 +1,39 @@
+# Source files
+src/
+coverage/
+examples/
+docs/
+
+# Configuration
+tsconfig.json
+tsup.config.ts
+vitest.config.ts
+commitlint.config.js
+
+# Development files
+.eslintrc.*
+.prettierrc*
+.gitignore
+.npmrc
+
+# Docs (except README)
+*.md
+!README.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Dependencies
+node_modules/
+
+# Turbo
+.turbo/
+
+# Git
+.github/
+.husky/

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>featuredrop — Vanilla JS Example</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; }
+    .layout { display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background: #1e293b; padding: 20px 0; border-right: 1px solid #334155; }
+    .sidebar h2 { padding: 0 20px 16px; font-size: 14px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .nav-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; color: #cbd5e1; cursor: pointer; transition: background 0.15s; }
+    .nav-item:hover { background: #334155; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 9999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #b45309; background: rgba(245, 158, 11, 0.15); }
+    .main { flex: 1; padding: 40px; }
+    .main h1 { font-size: 24px; margin-bottom: 8px; }
+    .main p { color: #94a3b8; margin-bottom: 24px; }
+    .feature-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+    .feature-card h3 { font-size: 16px; margin-bottom: 4px; }
+    .feature-card p { font-size: 14px; color: #94a3b8; }
+    button { background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 16px; }
+    button:hover { background: #2563eb; }
+    #count-badge { background: #f59e0b; color: white; font-size: 11px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; padding: 0 4px; margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav class="sidebar">
+      <h2>Navigation</h2>
+      <div id="nav-items"></div>
+    </nav>
+    <main class="main">
+      <h1>What's New <span id="count-badge" style="display:none"></span></h1>
+      <p>Features that are currently showing as "New" for you.</p>
+      <div id="features"></div>
+      <button id="dismiss-all" style="display:none">Mark all as seen</button>
+    </main>
+  </div>
+
+  <script type="module">
+    // In a real app: import from 'featuredrop'
+    // For this example, we inline the core logic to avoid a build step
+
+    // ── Manifest ──
+    const FEATURES = [
+      {
+        id: 'ai-journal',
+        label: 'AI Decision Journal',
+        description: 'Track decisions with AI-powered insights and retrospectives.',
+        releasedAt: '2026-02-20T00:00:00Z',
+        showNewUntil: '2026-04-20T00:00:00Z',
+        sidebarKey: '/journal',
+        category: 'ai',
+      },
+      {
+        id: 'analytics-v2',
+        label: 'Analytics Dashboard v2',
+        description: 'Redesigned analytics with real-time charts and export.',
+        releasedAt: '2026-02-25T00:00:00Z',
+        showNewUntil: '2026-04-25T00:00:00Z',
+        sidebarKey: '/analytics',
+        category: 'core',
+      },
+      {
+        id: 'team-billing',
+        label: 'Team Billing',
+        description: 'Manage billing for your entire team from one place.',
+        releasedAt: '2026-02-28T00:00:00Z',
+        showNewUntil: '2026-04-28T00:00:00Z',
+        sidebarKey: '/billing',
+        category: 'billing',
+      },
+    ];
+
+    const NAV_ITEMS = [
+      { key: '/dashboard', label: 'Dashboard' },
+      { key: '/journal', label: 'Decision Journal' },
+      { key: '/analytics', label: 'Analytics' },
+      { key: '/billing', label: 'Billing' },
+      { key: '/settings', label: 'Settings' },
+    ];
+
+    // ── Inline core logic (in real app, import from 'featuredrop') ──
+    function isNew(feature, watermark, dismissedIds, now = new Date()) {
+      if (dismissedIds.has(feature.id)) return false;
+      if (now.getTime() >= new Date(feature.showNewUntil).getTime()) return false;
+      if (watermark) {
+        if (new Date(feature.releasedAt).getTime() <= new Date(watermark).getTime()) return false;
+      }
+      return true;
+    }
+
+    // ── Simple memory storage ──
+    let watermark = null;
+    let dismissed = new Set();
+
+    function getNewFeatures() {
+      return FEATURES.filter(f => isNew(f, watermark, dismissed));
+    }
+
+    function hasNewFeature(sidebarKey) {
+      return FEATURES.some(f => f.sidebarKey === sidebarKey && isNew(f, watermark, dismissed));
+    }
+
+    // ── Render ──
+    function render() {
+      const newFeatures = getNewFeatures();
+
+      // Sidebar
+      const navEl = document.getElementById('nav-items');
+      navEl.innerHTML = NAV_ITEMS.map(item => `
+        <div class="nav-item" data-key="${item.key}">
+          <span>${item.label}</span>
+          ${hasNewFeature(item.key) ? '<span class="badge">New</span>' : ''}
+        </div>
+      `).join('');
+
+      // Features list
+      const featuresEl = document.getElementById('features');
+      featuresEl.innerHTML = newFeatures.map(f => `
+        <div class="feature-card">
+          <h3>${f.label}</h3>
+          <p>${f.description}</p>
+        </div>
+      `).join('') || '<p>No new features right now.</p>';
+
+      // Count badge
+      const countEl = document.getElementById('count-badge');
+      if (newFeatures.length > 0) {
+        countEl.style.display = 'inline-flex';
+        countEl.textContent = newFeatures.length;
+      } else {
+        countEl.style.display = 'none';
+      }
+
+      // Dismiss all button
+      const dismissBtn = document.getElementById('dismiss-all');
+      dismissBtn.style.display = newFeatures.length > 0 ? 'block' : 'none';
+    }
+
+    // ── Events ──
+    document.getElementById('dismiss-all').addEventListener('click', () => {
+      watermark = new Date().toISOString();
+      dismissed.clear();
+      render();
+    });
+
+    document.getElementById('nav-items').addEventListener('click', (e) => {
+      const navItem = e.target.closest('.nav-item');
+      if (!navItem) return;
+      const key = navItem.dataset.key;
+      const feature = FEATURES.find(f => f.sidebarKey === key);
+      if (feature && isNew(feature, watermark, dismissed)) {
+        dismissed.add(feature.id);
+        render();
+      }
+    });
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
