@@ -1,6 +1,7 @@
-import { useState, useCallback, useMemo, type ReactNode } from "react";
-import type { FeatureManifest, StorageAdapter } from "../types";
+import { useState, useCallback, useMemo, useRef, type ReactNode } from "react";
+import type { FeatureManifest, StorageAdapter, AnalyticsCallbacks } from "../types";
 import { getNewFeatures, hasNewFeature } from "../core";
+import { getFeatureById } from "../helpers";
 import { FeatureDropContext } from "./context";
 
 export interface FeatureDropProviderProps {
@@ -8,6 +9,8 @@ export interface FeatureDropProviderProps {
   manifest: FeatureManifest;
   /** Storage adapter instance (e.g. LocalStorageAdapter, MemoryAdapter) */
   storage: StorageAdapter;
+  /** Optional analytics callbacks — pipe to your analytics provider */
+  analytics?: AnalyticsCallbacks;
   children: ReactNode;
 }
 
@@ -15,13 +18,17 @@ export interface FeatureDropProviderProps {
  * Provides feature discovery state to the component tree.
  *
  * Wrap your app (or a subtree) with this provider to enable
- * `useFeatureDrop`, `useNewFeature`, and `useNewCount` hooks.
+ * `useFeatureDrop`, `useNewFeature`, `useNewCount`, and other hooks.
  */
 export function FeatureDropProvider({
   manifest,
   storage,
+  analytics,
   children,
 }: FeatureDropProviderProps) {
+  const analyticsRef = useRef(analytics);
+  analyticsRef.current = analytics;
+
   const [newFeatures, setNewFeatures] = useState(() =>
     getNewFeatures(manifest, storage),
   );
@@ -32,15 +39,20 @@ export function FeatureDropProvider({
 
   const dismiss = useCallback(
     (id: string) => {
+      const feature = getFeatureById(manifest, id);
       storage.dismiss(id);
+      if (feature) {
+        analyticsRef.current?.onFeatureDismissed?.(feature);
+      }
       recompute();
     },
-    [storage, recompute],
+    [manifest, storage, recompute],
   );
 
   const dismissAll = useCallback(async () => {
     await storage.dismissAll(new Date());
     setNewFeatures([]);
+    analyticsRef.current?.onAllDismissed?.();
   }, [storage]);
 
   const isNewFn = useCallback(
@@ -54,16 +66,27 @@ export function FeatureDropProvider({
     [newFeatures],
   );
 
+  const newFeaturesSorted = useMemo(() => {
+    const priorityOrder = { critical: 0, normal: 1, low: 2 };
+    return [...newFeatures].sort((a, b) => {
+      const pa = priorityOrder[a.priority ?? "normal"];
+      const pb = priorityOrder[b.priority ?? "normal"];
+      if (pa !== pb) return pa - pb;
+      return new Date(b.releasedAt).getTime() - new Date(a.releasedAt).getTime();
+    });
+  }, [newFeatures]);
+
   const value = useMemo(
     () => ({
       newFeatures,
       newCount: newFeatures.length,
+      newFeaturesSorted,
       isNew: isNewFn,
       dismiss,
       dismissAll,
       getFeature,
     }),
-    [newFeatures, isNewFn, dismiss, dismissAll, getFeature],
+    [newFeatures, newFeaturesSorted, isNewFn, dismiss, dismissAll, getFeature],
   );
 
   return (

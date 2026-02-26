@@ -24,6 +24,9 @@ Thumbs.db
 # Turbo
 .turbo/
 
+# Internal docs (not published)
+docs-local/
+
 # Debug
 *.log
 npm-debug.log*

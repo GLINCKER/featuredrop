@@ -16,6 +16,7 @@
 
 <p align="center">
   <a href="#quick-start">Quick Start</a> &bull;
+  <a href="#components">Components</a> &bull;
   <a href="#react">React</a> &bull;
   <a href="https://github.com/GLINCKER/featuredrop/blob/main/docs/API.md">API Docs</a> &bull;
   <a href="https://github.com/GLINCKER/featuredrop/blob/main/docs/ARCHITECTURE.md">Architecture</a>
@@ -28,25 +29,44 @@
 Every SaaS ships features. Users miss them. You need "New" badges on sidebar items, but:
 
 - **LaunchDarkly / PostHog** — Feature flags, not discovery badges. Overkill.
-- **Beamer / Headway** — External widget, vendor lock-in, monthly fee.
+- **Beamer / Headway** — External widget, vendor lock-in, $59-299/mo.
 - **Joyride / Shepherd.js** — Product tours, not persistent badges.
 - **DIY** — You build it, forget expiry, badges stay forever. Users stop noticing.
 
 ## The Solution
 
-**featuredrop** is a tiny library that answers one question: *"Should this feature show a 'New' badge right now?"*
+**featuredrop** is a free, self-hosted alternative to Beamer, Headway, and AnnounceKit. Zero deps, < 10 kB, headless-first.
 
 ```
-npm install featuredrop          # 0 dependencies, < 2 kB
+npm install featuredrop          # 0 dependencies, < 2 kB core
 ```
 
-Three rules. That's it:
+```
+┌─────────────────────────────────────────┐
+│  ☰  My SaaS App                    🔔  │
+├──────────┬──────────────────────────────┤
+│          │                              │
+│ Dashboard│   Welcome back, Sarah!       │
+│          │                              │
+│ Journal ●│   ┌─────────────────────┐    │
+│          │   │  What's New (2)     │    │
+│ Analytics│   │                     │    │
+│     NEW  │   │  ★ AI Journal       │    │
+│          │   │  Track decisions    │    │
+│ Billing  │   │  with AI insights.  │    │
+│          │   │       [Try it →]    │    │
+│ Settings │   │                     │    │
+│          │   │  ★ Analytics v2     │    │
+│          │   │  Real-time charts   │    │
+│          │   │  and CSV export.    │    │
+│          │   │                     │    │
+│          │   │  [Mark all as read] │    │
+│          │   └─────────────────────┘    │
+│          │                              │
+└──────────┴──────────────────────────────┘
 
-| Check | Source | Purpose |
-|-------|--------|---------|
-| Not expired? | `showNewUntil` date | Badges auto-disappear |
-| After watermark? | Server timestamp | Cross-device "mark all seen" |
-| Not dismissed? | localStorage | Instant per-feature dismiss |
+  ● = dot badge    NEW = pill badge    (2) = count badge
+```
 
 ## Quick Start
 
@@ -59,9 +79,13 @@ export const FEATURES = createManifest([
   {
     id: 'ai-journal',
     label: 'AI Decision Journal',
+    description: 'Track decisions with AI-powered insights.',
     releasedAt: '2026-02-20T00:00:00Z',
-    showNewUntil: '2026-03-20T00:00:00Z', // auto-expires in 30 days
+    showNewUntil: '2026-03-20T00:00:00Z',
     sidebarKey: '/journal',
+    type: 'feature',
+    priority: 'critical',
+    cta: { label: 'Try it', url: '/journal' },
   },
 ])
 ```
@@ -82,11 +106,99 @@ const storage = new LocalStorageAdapter({
 ```ts
 import { getNewFeatures, hasNewFeature } from 'featuredrop'
 
-const newFeatures = getNewFeatures(FEATURES, storage) // all new features
-hasNewFeature(FEATURES, '/journal', storage)           // true/false for a nav item
+const newFeatures = getNewFeatures(FEATURES, storage)
+hasNewFeature(FEATURES, '/journal', storage) // true/false
 ```
 
 Works with **any framework**. Zero React dependency for vanilla use.
+
+## Components
+
+Everything you'd expect from Beamer or Headway — but free, self-hosted, and headless-first.
+
+### Changelog Widget
+
+The #1 feature people install these tools for. Trigger button with unread count badge, slide-out panel with rich changelog feed.
+
+```tsx
+import { ChangelogWidget } from 'featuredrop/react'
+
+// Default: slide-out panel with all features
+<ChangelogWidget />
+
+// Or modal / popover variant
+<ChangelogWidget variant="modal" title="Release Notes" />
+
+// Fully headless
+<ChangelogWidget>
+  {({ isOpen, toggle, features, count, dismissAll }) => (
+    <YourCustomUI />
+  )}
+</ChangelogWidget>
+```
+
+### Spotlight Beacon
+
+Pulsing beacon that attaches to any DOM element. Click to see feature tooltip.
+
+```tsx
+import { Spotlight } from 'featuredrop/react'
+
+const ref = useRef<HTMLButtonElement>(null)
+<button ref={ref}>Analytics</button>
+<Spotlight featureId="analytics-v2" targetRef={ref} />
+
+// Or with CSS selector
+<Spotlight featureId="analytics-v2" targetSelector="#analytics-btn" />
+```
+
+### Announcement Banner
+
+Top-of-page or inline banner for major announcements. Auto-expires like badges.
+
+```tsx
+import { Banner } from 'featuredrop/react'
+
+<Banner featureId="v2-launch" variant="announcement" />
+<Banner featureId="breaking-change" variant="warning" />
+<Banner featureId="security-fix" variant="info" position="fixed" />
+```
+
+### Toast Notifications
+
+Brief popup notifications for new features. Auto-dismiss, stackable, configurable position.
+
+```tsx
+import { Toast } from 'featuredrop/react'
+
+<Toast position="bottom-right" maxVisible={3} />
+
+// Specific features only
+<Toast featureIds={["ai-journal"]} autoDismissMs={5000} />
+```
+
+### NewBadge
+
+Headless badge component with variants. Zero CSS framework dependency.
+
+```tsx
+import { NewBadge } from 'featuredrop/react'
+
+<NewBadge />                          // "New" pill
+<NewBadge variant="dot" />            // Pulsing dot
+<NewBadge variant="count" count={3} /> // Count badge
+```
+
+### Tab Title Notification
+
+Updates the browser tab title with unread count. Restores when all read.
+
+```tsx
+import { useTabNotification } from 'featuredrop/react'
+
+useTabNotification() // "(3) My App"
+useTabNotification({ template: "[{count} new] {title}", flash: true })
+```
 
 ## React
 
@@ -120,38 +232,44 @@ function SidebarItem({ path, label }: { path: string; label: string }) {
 }
 ```
 
-**Build a "What's New" panel:**
+**Or drop in the full changelog widget:**
 
 ```tsx
-import { useFeatureDrop } from 'featuredrop/react'
+import { ChangelogWidget } from 'featuredrop/react'
 
-function WhatsNew() {
-  const { newFeatures, newCount, dismissAll } = useFeatureDrop()
-  return (
-    <div>
-      <h2>What's New ({newCount})</h2>
-      {newFeatures.map(f => (
-        <div key={f.id}>
-          <h3>{f.label}</h3>
-          <p>{f.description}</p>
-        </div>
-      ))}
-      <button onClick={dismissAll}>Mark all as seen</button>
-    </div>
-  )
-}
+<ChangelogWidget variant="panel" />
 ```
 
-**Three hooks, one component:**
+**Hooks & Components:**
 
 | Export | What it does |
 |--------|-------------|
 | `useFeatureDrop()` | Full context: features, count, dismiss, dismissAll |
 | `useNewFeature(key)` | Single nav item: `{ isNew, feature, dismiss }` |
 | `useNewCount()` | Just the badge count |
+| `useTabNotification()` | Updates browser tab title with count |
 | `<NewBadge />` | Headless badge: `pill`, `dot`, or `count` variant |
+| `<ChangelogWidget />` | Full changelog feed with trigger button |
+| `<Spotlight />` | Pulsing beacon attached to DOM elements |
+| `<Banner />` | Announcement banner with variants |
+| `<Toast />` | Stackable toast notifications |
 
-`NewBadge` uses CSS custom properties — works with Tailwind, CSS modules, or plain CSS. See [styling docs](docs/API.md#newbadge-styling).
+**Analytics integration:**
+
+```tsx
+<FeatureDropProvider
+  manifest={FEATURES}
+  storage={storage}
+  analytics={{
+    onFeatureSeen: (f) => posthog.capture('feature_seen', { id: f.id }),
+    onFeatureDismissed: (f) => posthog.capture('feature_dismissed', { id: f.id }),
+    onFeatureClicked: (f) => posthog.capture('feature_clicked', { id: f.id }),
+    onWidgetOpened: () => posthog.capture('changelog_opened'),
+  }}
+>
+```
+
+All components accept an optional `analytics` prop for component-level tracking too.
 
 ## How It Works
 
@@ -170,6 +288,7 @@ function WhatsNew() {
               │ !dismissed    │
               │ !expired      │
               │ afterWatermark│
+              │ afterPublishAt│
               └───────┬───────┘
                       │
                  true / false
@@ -177,21 +296,37 @@ function WhatsNew() {
 
 New users see everything (no watermark). Returning users only see features shipped since their last visit. Individual dismissals are instant (localStorage). "Mark all seen" syncs across devices (one server write).
 
+**Scheduled publishing**: Set `publishAt` to hide entries until a specific date — ship code now, reveal later.
+
+**Priority sorting**: Critical features surface first in widgets and toasts. Priority levels: `critical`, `normal`, `low`.
+
+**Entry types**: `feature`, `improvement`, `fix`, `breaking` — each with default icon/color in built-in components.
+
 Read the full [Architecture doc](docs/ARCHITECTURE.md) for cross-device sync flow and custom adapter patterns.
 
 ## Comparison
 
-| | featuredrop | LaunchDarkly | Beamer | Joyride |
-|---|:---:|:---:|:---:|:---:|
-| Auto-expiring badges | Yes | - | - | - |
-| Zero dependencies | Yes | - | - | - |
-| Framework agnostic | Yes | Yes | - | - |
-| React bindings | Yes | Yes | - | Yes |
-| Cross-device sync | Yes | N/A | Yes | - |
-| Per-feature dismiss | Yes | N/A | - | - |
-| < 2 kB minzipped | Yes | - | - | - |
-| TypeScript | Yes | Yes | - | Partial |
-| Free & open source | Yes | - | Freemium | Yes |
+| | featuredrop | Beamer | Headway | AnnounceKit | Canny |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **Price** | **Free** | $59-399/mo | $49-249/mo | $79-299/mo | $79+ |
+| Auto-expiring badges | Yes | - | - | - | - |
+| Changelog widget | Yes | Yes | Yes | Yes | Yes |
+| Spotlight/beacon | Yes | - | - | - | - |
+| Toast notifications | Yes | - | - | - | - |
+| Announcement banner | Yes | - | - | - | - |
+| Tab title notification | Yes | - | - | - | - |
+| Zero dependencies | Yes | - | - | - | - |
+| Framework agnostic | Yes | - | - | - | - |
+| React bindings | Yes | - | - | - | - |
+| Headless mode | Yes | - | - | - | - |
+| Cross-device sync | Yes | Yes | Yes | Yes | Yes |
+| Per-feature dismiss | Yes | - | - | - | - |
+| Scheduled publishing | Yes | Yes | Yes | Yes | - |
+| Priority levels | Yes | - | - | - | - |
+| Analytics callbacks | Yes | Built-in | Built-in | Built-in | Built-in |
+| < 10 kB minzipped | Yes | - | - | - | - |
+| Self-hosted | Yes | - | - | - | - |
+| Open source | Yes | - | - | - | - |
 
 ## Framework Support
 

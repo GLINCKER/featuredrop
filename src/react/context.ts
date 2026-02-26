@@ -6,6 +6,8 @@ export interface FeatureDropContextValue {
   newFeatures: FeatureEntry[];
   /** Count of new features */
   newCount: number;
+  /** All new features sorted by priority then release date */
+  newFeaturesSorted: FeatureEntry[];
   /** Check if a sidebar key has any new features */
   isNew: (sidebarKey: string) => boolean;
   /** Dismiss a single feature by ID */
