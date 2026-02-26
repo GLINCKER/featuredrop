@@ -37,12 +37,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
-      - name: Check for release
+      - name: Detect release from commits
         id: check
         run: |
-          # Manual dispatch
+          # Manual dispatch — always release
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "should_release=true" >> $GITHUB_OUTPUT
             echo "release_type=${{ github.event.inputs.release_type }}" >> $GITHUB_OUTPUT
@@ -50,32 +50,44 @@ jobs:
             exit 0
           fi
 
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          echo "Commit: $COMMIT_MSG"
+          # Get all commits since last tag (handles PR merges with multiple commits)
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"%s" ${LAST_TAG}..HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"%s")
+          fi
 
-          # Skip maintenance commits
-          if [[ "$COMMIT_MSG" =~ \[skip\ ci\] ]] || \
-             [[ "$COMMIT_MSG" =~ ^chore:\ bump\ version ]] || \
-             [[ "$COMMIT_MSG" =~ ^chore\(deps ]] || \
-             [[ "$COMMIT_MSG" =~ ^Merge\ pull\ request.*dependabot ]]; then
+          echo "Commits since last tag:"
+          echo "$COMMITS"
+
+          # Skip if only maintenance commits
+          NON_MAINTENANCE=$(echo "$COMMITS" | grep -v -E '^\[skip ci\]|^chore: bump version|^chore\(deps|^Merge pull request.*dependabot' || true)
+          if [ -z "$NON_MAINTENANCE" ]; then
             echo "should_release=false" >> $GITHUB_OUTPUT
-            echo "Skipping: maintenance commit"
+            echo "Skipping: only maintenance commits"
             exit 0
           fi
 
-          # Detect release type from conventional commit
-          if [[ "$COMMIT_MSG" =~ ^feat! ]] || [[ "$COMMIT_MSG" =~ BREAKING\ CHANGE ]]; then
+          # Scan ALL commits for highest priority: major > minor > patch
+          # This correctly handles PR merges with multiple conventional commits
+          RELEASE_TYPE=""
+
+          if echo "$COMMITS" | grep -qE '^feat!|^fix!|^refactor!|BREAKING CHANGE'; then
+            RELEASE_TYPE="major"
+          elif echo "$COMMITS" | grep -qE '^feat(\(|:)'; then
+            RELEASE_TYPE="minor"
+          elif echo "$COMMITS" | grep -qE '^fix(\(|:)|^perf(\(|:)|^refactor(\(|:)'; then
+            RELEASE_TYPE="patch"
+          fi
+
+          if [ -n "$RELEASE_TYPE" ]; then
             echo "should_release=true" >> $GITHUB_OUTPUT
-            echo "release_type=major" >> $GITHUB_OUTPUT
-          elif [[ "$COMMIT_MSG" =~ ^feat ]]; then
-            echo "should_release=true" >> $GITHUB_OUTPUT
-            echo "release_type=minor" >> $GITHUB_OUTPUT
-          elif [[ "$COMMIT_MSG" =~ ^fix ]] || [[ "$COMMIT_MSG" =~ ^perf ]] || [[ "$COMMIT_MSG" =~ ^refactor ]]; then
-            echo "should_release=true" >> $GITHUB_OUTPUT
-            echo "release_type=patch" >> $GITHUB_OUTPUT
+            echo "release_type=$RELEASE_TYPE" >> $GITHUB_OUTPUT
+            echo "Detected: $RELEASE_TYPE release"
           else
             echo "should_release=false" >> $GITHUB_OUTPUT
-            echo "No release pattern"
+            echo "No releasable commits found"
           fi
 
   release:
@@ -155,30 +167,51 @@ jobs:
           fi
 
       - name: Generate release notes
-        id: notes
         run: |
           VERSION="${{ steps.bump.outputs.new_version }}"
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
           if [ -n "$PREV_TAG" ]; then
-            CHANGELOG=$(git log --pretty=format:"- %s" ${PREV_TAG}..HEAD | grep -E "^- (feat|fix|perf|refactor|revert)" | head -15 || echo "- Version bump")
+            FEAT=$(git log --pretty=format:"- %s" ${PREV_TAG}..HEAD | grep -E "^- feat" | head -10 || true)
+            FIXES=$(git log --pretty=format:"- %s" ${PREV_TAG}..HEAD | grep -E "^- fix" | head -10 || true)
+            PERF=$(git log --pretty=format:"- %s" ${PREV_TAG}..HEAD | grep -E "^- (perf|refactor)" | head -5 || true)
           else
-            CHANGELOG="- Initial release"
+            FEAT="- Initial release"
+            FIXES=""
+            PERF=""
           fi
 
-          cat > release_notes.md << EOF
-          ## v${VERSION}
+          cat > release_notes.md << 'NOTES_EOF'
+          ## What's Changed
+          NOTES_EOF
 
-          ### Installation
+          if [ -n "$FEAT" ]; then
+            echo "" >> release_notes.md
+            echo "### Features" >> release_notes.md
+            echo "$FEAT" >> release_notes.md
+          fi
+
+          if [ -n "$FIXES" ]; then
+            echo "" >> release_notes.md
+            echo "### Bug Fixes" >> release_notes.md
+            echo "$FIXES" >> release_notes.md
+          fi
+
+          if [ -n "$PERF" ]; then
+            echo "" >> release_notes.md
+            echo "### Improvements" >> release_notes.md
+            echo "$PERF" >> release_notes.md
+          fi
+
+          cat >> release_notes.md << INSTALL_EOF
+
+          ### Install
           \`\`\`bash
           npm install featuredrop@${VERSION}
           \`\`\`
 
-          ### Changes
-          ${CHANGELOG}
-
-          ---
-          *Auto-released from conventional commit*
-          EOF
+          **Full Changelog**: https://github.com/GLINCKER/featuredrop/compare/${PREV_TAG:-v1.0.0}...v${VERSION}
+          INSTALL_EOF
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
