@@ -13,7 +13,7 @@ cd featuredrop
 pnpm install
 
 # Run the full check suite
-pnpm test        # 72 tests
+pnpm test        # 121 tests
 pnpm typecheck   # TypeScript strict mode
 pnpm build       # Dual ESM/CJS output
 ```
@@ -22,22 +22,32 @@ pnpm build       # Dual ESM/CJS output
 
 ```
 src/
-├── core.ts              # isNew, getNewFeatures, etc.
-├── types.ts             # FeatureEntry, StorageAdapter, etc.
+├── core.ts              # isNew, getNewFeatures, getNewFeaturesSorted
+├── types.ts             # FeatureEntry, StorageAdapter, AnalyticsCallbacks
 ├── helpers.ts           # createManifest, getFeatureById, etc.
 ├── adapters/
 │   ├── local-storage.ts # Browser localStorage + watermark
 │   └── memory.ts        # In-memory (testing/SSR)
 ├── react/
-│   ├── provider.tsx     # FeatureDropProvider (React context)
-│   ├── hooks/           # useFeatureDrop, useNewFeature, useNewCount
-│   └── components/      # NewBadge (headless)
-└── __tests__/           # Vitest test files
+│   ├── provider.tsx     # FeatureDropProvider (React context + analytics)
+│   ├── context.ts       # Context type with sorted features
+│   ├── hooks/
+│   │   ├── use-feature-drop.ts      # Full context hook
+│   │   ├── use-new-feature.ts       # Single nav item hook
+│   │   ├── use-new-count.ts         # Badge count hook
+│   │   └── use-tab-notification.ts  # Browser tab title hook
+│   └── components/
+│       ├── new-badge.tsx            # Headless badge (pill/dot/count)
+│       ├── changelog-widget.tsx     # Changelog feed (panel/modal/popover)
+│       ├── spotlight.tsx            # Pulsing beacon + tooltip
+│       ├── banner.tsx               # Announcement banner
+│       └── toast.tsx                # Stackable toast notifications
+└── __tests__/           # Vitest test files (6 files, 121 tests)
 ```
 
 **Two entry points:**
 - `src/index.ts` → `featuredrop` (core, zero deps)
-- `src/react/index.ts` → `featuredrop/react` (React bindings)
+- `src/react/index.ts` → `featuredrop/react` (React bindings, hooks, components)
 
 ## Making Changes
 
