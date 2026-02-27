@@ -1,0 +1,48 @@
+---
+title: Headless Renderer
+---
+
+import { Callout } from 'nextra/components'
+
+# Headless Renderer
+
+`createChangelogRenderer` gives a UI-agnostic state/action protocol for custom design systems.
+
+Use it when you want FeatureDrop logic without built-in React components.
+
+## Usage
+
+```ts
+import { LocalStorageAdapter } from 'featuredrop'
+import { createChangelogRenderer } from 'featuredrop/renderer'
+
+const renderer = createChangelogRenderer({
+  manifest,
+  storage: new LocalStorageAdapter({ prefix: 'app' }),
+  appVersion: '2.4.0',
+  userContext: { plan: 'pro', role: 'admin' }
+})
+
+const unsubscribe = renderer.subscribe((state) => {
+  console.log(state.newCount, state.newFeatures)
+})
+
+renderer.actions.dismiss('new-dashboard')
+renderer.actions.markFeatureSeen('new-dashboard')
+renderer.actions.trackUsageEvent('opened-settings')
+await renderer.actions.dismissAll()
+renderer.actions.refresh()
+
+unsubscribe()
+renderer.destroy()
+```
+
+## What you get
+
+- `state`: `manifest`, `newFeatures`, `newFeaturesSorted`, `newCount`, `watermark`, `dismissedIds`
+- `actions`: `refresh`, `dismiss`, `dismissAll`, `setManifest`, `setUserContext`, `setAppVersion`, `setAudienceMatcher`, `setDependencyState`, `markFeatureSeen`, `markFeatureClicked`, `setTriggerContext`, `setTriggerPath`, `trackUsageEvent`, `trackTriggerEvent`, `trackMilestone`, `setTriggerElapsedMs`, `setTriggerScrollPercent`, `setTriggerMetadata`, `setFlagBridge`, `setProduct`
+- `computed`: `isNew(sidebarKey)`, `getFeature(sidebarKey)`, `getFeatureById(id)`, `getFeaturesByCategory(category)`
+
+<Callout type="info">
+  This is the cleanest path for non-React UIs, custom render pipelines, and design-system-first products.
+</Callout>

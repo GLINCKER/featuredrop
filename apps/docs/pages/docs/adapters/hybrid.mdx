@@ -6,28 +6,40 @@ import { Callout } from 'nextra/components'
 
 # Hybrid Adapter
 
-The `HybridAdapter` is the ultimate "best of both worlds" architecture. It combines optimistic, local-first interaction speeds with strict, authoritative remote reconciliation.
+`HybridAdapter` combines local immediacy with remote durability.
 
-## Optimistic Updates & Debouncing
+It reads from local + remote state and batches remote dismiss writes.
 
-When a user closes an Announcement Modal or clicks "Next" on a Tour, the Hybrid Adapter writes the state change into `localStorage` instantly. This allows the React UI to unmount the FeatureDrop component in `< 1ms`, ensuring your app never halts or feels sluggish waiting for an HTTP API to respond.
-
-Behind the scenes, the Hybrid Adapter places the interaction into a queue. It then intentionally waits for a debounced window (`dismissBatchWindowMs`). If the user clicks rapidly through 4 steps of a Tour in 2 seconds, the adapter merges all 4 database operations into a single, highly-efficient HTTP payload instead of spamming your servers.
-
-## Typical Integration
+## Typical integration
 
 ```ts filename="featuredrop.config.ts"
-import { HybridAdapter } from 'featuredrop'
+import { HybridAdapter, IndexedDBAdapter, RemoteAdapter } from 'featuredrop/adapters'
 
-// Initialize the hybrid adapter
+const local = new IndexedDBAdapter({ dbName: 'featuredrop-v1' })
+
+const remote = new RemoteAdapter({
+  url: '/api/featuredrop',
+  userId: 'current-user-id'
+})
+
 export const storage = new HybridAdapter({
-  dismissBatchWindowMs: 250,    // Debounce writes by 250ms
-  syncIntervalMs: 30000,        // Background sync with server every 30s
-  retryFailedDismisses: true    // Queue writes if the user goes through a tunnel
+  local,
+  remote,
+  syncBeforeWrite: false,
+  dismissBatchWindowMs: 250,
+  syncIntervalMs: 30_000,
+  syncOnVisibilityChange: true,
+  syncOnOnline: true
 })
 ```
 
-<Callout type="tip">
-  **When to use this architecture:**
-  Use the Hybrid Adapter when you have strict latency constraints (e.g. Next.js Core Web Vitals) where UI unmounts *must* be instant, but you still require the data to eventually replicate back to your PostgreSQL instance for Analytics dashboards.
+## Why use it
+
+- Instant local UI updates on dismiss
+- Periodic and event-driven remote sync
+- Batched remote writes during rapid interaction bursts
+- `sync()` now drains queued dismisses after remote reconciliation (useful for online recovery)
+
+<Callout type="info">
+  Call `await storage.sync()` after auth/session restore or reconnect to reconcile and flush pending queue.
 </Callout>

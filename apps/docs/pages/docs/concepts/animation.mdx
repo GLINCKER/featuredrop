@@ -1,0 +1,50 @@
+---
+title: Animation System
+---
+
+import { Callout } from 'nextra/components'
+
+# Animation System
+
+FeatureDrop exposes motion presets for all built-in component transitions.
+
+## Provider setup
+
+```tsx
+import { FeatureDropProvider } from 'featuredrop/react'
+
+<FeatureDropProvider
+  manifest={manifest}
+  storage={storage}
+  animation="subtle"
+>
+  {children}
+</FeatureDropProvider>
+```
+
+Preset options: `none`, `subtle`, `normal`, `playful`.
+
+Reduced-motion users are respected automatically (`prefers-reduced-motion`).
+
+## Utility APIs
+
+```ts
+import {
+  FEATUREDROP_ANIMATION_PRESETS,
+  resolveAnimationPreset,
+  getEnterAnimation,
+  getExitAnimation,
+  getPulseAnimation,
+  getAnimationDurationMs
+} from 'featuredrop'
+
+const preset = resolveAnimationPreset('normal', { reducedMotion: false })
+const enter = getEnterAnimation(preset, 'toast')
+const exit = getExitAnimation(preset, 'toast')
+const pulse = getPulseAnimation(preset, 'dot')
+const exitMs = getAnimationDurationMs(preset, 'toast', 'exit')
+```
+
+<Callout type="warning">
+  Use `playful` sparingly for enterprise apps; `subtle` is usually the safest default.
+</Callout>

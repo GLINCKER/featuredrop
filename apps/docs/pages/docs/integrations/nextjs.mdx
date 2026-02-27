@@ -70,6 +70,8 @@ Mount long-lived UI once (for example in your root layout shell):
 If you persist dismissals remotely, use `RemoteAdapter` with an API route:
 
 ```ts
+import { RemoteAdapter } from 'featuredrop/adapters'
+
 new RemoteAdapter({ url: '/api/featuredrop' })
 ```
 

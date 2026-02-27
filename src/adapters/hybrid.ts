@@ -31,6 +31,8 @@ export class HybridAdapter implements ServerStorageAdapter {
   private pendingDismissIds = new Set<string>();
   private dismissTimer: ReturnType<typeof setTimeout> | null = null;
   private syncTimer: ReturnType<typeof setInterval> | null = null;
+  private flushInFlight: Promise<void> | null = null;
+  private syncInFlight: Promise<void> | null = null;
   private readonly boundVisibilityHandler: (() => void) | null;
   private readonly boundOnlineHandler: (() => void) | null;
 
@@ -98,7 +100,17 @@ export class HybridAdapter implements ServerStorageAdapter {
   }
 
   async sync(): Promise<void> {
-    await this.remote.sync();
+    if (this.syncInFlight) return this.syncInFlight;
+    const syncTask = (async () => {
+      await this.remote.sync();
+      // Drain any queued dismisses after connectivity/state reconciliation.
+      await this.flushPendingDismissesInternal(true);
+    })();
+    const inFlight = syncTask.finally(() => {
+      if (this.syncInFlight === inFlight) this.syncInFlight = null;
+    });
+    this.syncInFlight = inFlight;
+    return inFlight;
   }
 
   async dismissBatch(ids: string[]): Promise<void> {
@@ -147,17 +159,30 @@ export class HybridAdapter implements ServerStorageAdapter {
 
   /** Manually flush queued dismiss operations to the remote adapter. */
   async flushPendingDismisses(): Promise<void> {
-    if (this.pendingDismissIds.size === 0) return;
-    const ids = Array.from(this.pendingDismissIds);
-    this.pendingDismissIds.clear();
-    try {
-      if (this.syncBeforeWrite) {
-        await this.remote.sync();
+    if (this.flushInFlight) return this.flushInFlight;
+    const flushTask = this.flushPendingDismissesInternal(false);
+    const inFlight = flushTask.finally(() => {
+      if (this.flushInFlight === inFlight) this.flushInFlight = null;
+    });
+    this.flushInFlight = inFlight;
+    return inFlight;
+  }
+
+  private async flushPendingDismissesInternal(skipSyncBeforeWrite: boolean): Promise<void> {
+    // Keep draining until no queued ids remain. This handles new dismisses added while flushing.
+    while (this.pendingDismissIds.size > 0) {
+      const ids = Array.from(this.pendingDismissIds);
+      this.pendingDismissIds.clear();
+      try {
+        if (this.syncBeforeWrite && !skipSyncBeforeWrite) {
+          await this.remote.sync();
+        }
+        await this.remote.dismissBatch(ids);
+      } catch {
+        // Put failed ids back into queue for retry.
+        for (const id of ids) this.pendingDismissIds.add(id);
+        return;
       }
-      await this.remote.dismissBatch(ids);
-    } catch {
-      // Put failed ids back into queue for retry.
-      for (const id of ids) this.pendingDismissIds.add(id);
     }
   }
 

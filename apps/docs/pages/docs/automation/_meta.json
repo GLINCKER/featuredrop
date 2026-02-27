@@ -1,5 +1,7 @@
 {
   "cli": "CLI",
   "ci": "CI Utilities",
-  "security": "Security Checks"
+  "security": "Security Checks",
+  "docs-analytics": "Docs Analytics",
+  "deployment": "Deployment"
 }

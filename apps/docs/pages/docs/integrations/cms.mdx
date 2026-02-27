@@ -1,0 +1,49 @@
+---
+title: CMS Adapters
+---
+
+import { Callout } from 'nextra/components'
+
+# CMS Adapters
+
+FeatureDrop can load manifest entries from CMS/content sources.
+
+Adapters map records into `FeatureEntry[]` and validate output.
+
+## Available adapters
+
+- `ContentfulAdapter`
+- `SanityAdapter`
+- `StrapiAdapter`
+- `NotionAdapter`
+- `MarkdownAdapter`
+
+## Usage
+
+```ts
+import { type FeatureEntry } from 'featuredrop'
+import { ContentfulAdapter } from 'featuredrop/cms'
+
+const cms = new ContentfulAdapter({
+  spaceId: process.env.CONTENTFUL_SPACE!,
+  accessToken: process.env.CONTENTFUL_TOKEN!,
+  contentType: 'featureRelease',
+  strictValidation: true,
+  fieldMapping: {
+    label: 'fields.title',
+    releasedAt: 'fields.publishedAt',
+    showNewUntil: 'fields.visibleUntil'
+  }
+})
+
+const entries: FeatureEntry[] = await cms.load()
+```
+
+## Validation behavior
+
+- Default: invalid mapped entries are skipped.
+- `strictValidation: true`: throws on invalid mapped entries.
+
+<Callout type="warning">
+  Ensure mapped records include `id`, `label`, `releasedAt`, and `showNewUntil`.
+</Callout>

@@ -6,68 +6,59 @@ import { Callout, Steps } from 'nextra/components'
 
 # The Manifest Model
 
-In FeatureDrop, product adoption doesn't happen ad-hoc via independent widget configurations on some SaaS dashboard. Instead, **everything runs from a single, deterministic source of truth: your Manifest.**
+FeatureDrop runs from one source of truth: `FeatureManifest`.
 
-The Manifest is a static JSON definition (or typed TypeScript object) containing every feature, announcement, checklist, and tour you've ever released. By bundling this configuration directly into your React application tree, you guarantee that your rollout logic is correctly versioned alongside your application code.
+A manifest is a typed array of entries checked at build/CI time and evaluated at runtime by `FeatureDropProvider`.
 
-## Real-world Example
+## Example
 
-Instead of scattering product logic across random components, you declare it centrally and pass it to your `<FeatureDropProvider>`. 
-
-```ts filename="featuredrop.config.ts"
+```ts filename="featuredrop.manifest.ts"
 import type { FeatureManifest } from 'featuredrop'
 
-export const manifest: FeatureManifest = {
-  version: "1.0.0",
-  features: [
-    {
-      id: 'redesigned-dashboard',
-      version: '2.4.0',
-      title: 'Our new Analytics Dashboard is live!',
-      description: 'We completely rebuilt the dashboard with real-time streaming charts and CSV exports.',
-      releaseDate: '2026-03-01T00:00:00Z',
-      category: 'announcement',
-      // Optional rules:
-      hideAfter: '2026-04-01T00:00:00Z',
-      audience: ['pro-tier', 'admin']
-    },
-    {
-      id: 'dashboard-tour-intro',
-      version: '2.4.0',
-      title: 'Dashboard Welcome Tour',
-      description: 'A 3-step guide to the new navigation.',
-      category: 'tour',
-      // Only show this tour IF they already saw the announcement:
-      dependsOn: ['redesigned-dashboard']
-    }
-  ]
-}
+export const manifest: FeatureManifest = [
+  {
+    id: 'dashboard-v2-announcement',
+    label: 'Dashboard v2 is live',
+    description: 'Live charts, exports, and faster filters.',
+    category: 'dashboard',
+    sidebarKey: '/dashboard',
+    releasedAt: '2026-03-01T00:00:00Z',
+    showNewUntil: '2026-04-01T00:00:00Z',
+    version: { introduced: '2.4.0', showNewUntil: '2.6.0' },
+    audience: { plan: ['pro', 'enterprise'], role: ['admin'] },
+    cta: { label: 'Read guide', url: '/docs/migration' }
+  },
+  {
+    id: 'dashboard-v2-tour',
+    label: 'Dashboard v2 guided tour',
+    releasedAt: '2026-03-01T00:00:00Z',
+    showNewUntil: '2026-04-15T00:00:00Z',
+    dependsOn: { seen: ['dashboard-v2-announcement'] },
+    trigger: { type: 'page', match: '/dashboard' }
+  }
+]
 ```
 
 <Callout type="info">
-  **Immutability Rule**: Never reuse an `id` across different releases. If you launch a V2 of the Analytics Dashboard, create a brand new ID so the database `StorageAdapter` doesn't wrongly assume users have already seen the new version.
+  Keep `id` immutable. New release = new `id`.
 </Callout>
 
-## The Rule Engine
-
-When your React app mounts, the `FeatureDropProvider` reads this manifest and begins evaluating which features should be actively visible to the current user.
-
-It runs through a deterministic waterfall of checks:
+## Runtime Evaluation
 
 <Steps>
-### Expiration Checking
-Does the object have a `hideAfter` ISO date? If so, and the user's current local clock is past that timestamp, it is immediately discarded.
+### 1) Storage state
+Provider reads `watermark` and dismissed IDs from your adapter.
 
-### Targeting Validation
-If the object has an `audience` array (e.g., `["internal-beta"]`), the Provider checks if you passed that matching string into the `FeatureDropProvider`'s `audience` prop. If the incoming arrays don't intersect, it's discarded.
+### 2) Visibility gates
+Entry is checked against audience, version, feature flags, product scope, trigger rules, `publishAt`, `releasedAt`, and `showNewUntil`.
 
-### Dependency Trees
-If the object has a `dependsOn` array, the Engine queries your `StorageAdapter` to verify that the user has historically marked all nested dependencies as **"seen"** or **"acted"**. If they haven't seen the prerequisite, this object remains hidden.
+### 3) Dependency gates
+If `dependsOn` is set, prerequisite seen/clicked/dismissed state must be satisfied.
 
-### Read Status Diffs
-Finally, it checks the `StorageAdapter` to see if the user has explicitly dismissed or completed the *current* feature.
+### 4) Context broadcast
+Eligible entries become `newFeatures`/`newCount` in React context.
 </Steps>
 
 ## Type Safety
 
-The FeatureDrop manifest is completely type-safe. By importing the `FeatureManifest` type into your configuration file, your IDE will block deploying features with missing `releaseDate` fields, mis-typed ISO strings, or invalid categories matching your active UI components.
+By typing the file as `FeatureManifest`, your editor/CI catches invalid shapes and missing required fields early.

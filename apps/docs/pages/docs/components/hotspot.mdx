@@ -7,22 +7,38 @@ import { HotspotDemo } from '../../../components/demos/hotspot-demo'
 
 # The Hotspot Component
 
-A `<Hotspot>` is a subtle, localized indicator—usually rendered as a pulsing beacon or colored dot—that sits continuously over a specific UI element in your application to draw the user's eye.
+`<Hotspot>` is a lightweight beacon anchored to a target selector. It expands into a small tooltip on interaction.
 
-## Usage & Strategy
+## Usage
 
-Hotspots are the masters of **Progressive Disclosure**. Unlike an Announcement Modal that traps the user's focus immediately upon login, a Hotspot waits patiently. It simply indicates that something new exists behind a button, allowing the user to discover it naturally when they are ready to explore.
+```tsx filename="export-hotspot.tsx"
+import { Hotspot, TooltipGroup } from 'featuredrop/react'
 
-- **Lightweight Guidance**: Because they don't block the screen, you can safely deploy multiple Hotspots at once to highlight several small iterative improvements across a dense dashboard.
-- **Tooltip Integration**: When hovered or clicked, a Hotspot expands into a localized Tooltip containing a title, description, and action button.
-- **Composite Flows**: Hotspots are easily composable. You can configure a Changelog widget to trigger a Hotspot, or have a Checklist task direct the user to click a Hotspot.
+<TooltipGroup maxVisible={2}>
+  <Hotspot id="editor-tip" target="#editor" type="new" frequency="once">
+    Try the markdown parser for release notes.
+  </Hotspot>
+
+  <Hotspot id="analytics-tip" target="#analytics" type="info" frequency="every-session">
+    Track changelog engagement after launch.
+  </Hotspot>
+</TooltipGroup>
+```
+
+## Key props
+
+| Prop | Type | Notes |
+| --- | --- | --- |
+| `id` | `string` | Required hotspot id |
+| `target` | `string` | Required CSS selector |
+| `type` | `'info' \| 'new' \| 'help'` | Beacon style |
+| `frequency` | `'once' \| 'every-session' \| 'always'` | Re-display policy |
+| `children` | `ReactNode` | Tooltip content |
 
 <Callout type="info">
-  **Targeting Mechanics**: Like Tours and Spotlights, Hotspots use CSS selector targeting. You simply provide the ID or class of the element you want to highlight (e.g., `target="#new-export-btn"`), and the FeatureDrop positioning engine will automatically calculate the optimal placement so it doesn't obscure the button itself.
+  Wrap multiple hotspots in `<TooltipGroup>` to cap simultaneous tooltips.
 </Callout>
 
 ## Interactive Demo
-
-Look closely at the targeted elements in the demo below to see the pulsing Hotspot in action. Hovering over it reveals the underlying educational context.
 
 <HotspotDemo />

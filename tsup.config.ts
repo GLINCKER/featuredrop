@@ -26,6 +26,36 @@ export default defineConfig([
     splitting: false,
     sourcemap: true,
   },
+  // Adapter entry (db + browser adapters)
+  {
+    entry: { adapters: "src/adapters/index.ts" },
+    format: ["cjs", "esm"],
+    dts: true,
+    clean: false,
+    treeshake: true,
+    splitting: false,
+    sourcemap: true,
+  },
+  // Markdown parser entry
+  {
+    entry: { markdown: "src/markdown.ts" },
+    format: ["cjs", "esm"],
+    dts: true,
+    clean: false,
+    treeshake: true,
+    splitting: false,
+    sourcemap: true,
+  },
+  // RSS generator entry
+  {
+    entry: { rss: "src/rss.ts" },
+    format: ["cjs", "esm"],
+    dts: true,
+    clean: false,
+    treeshake: true,
+    splitting: false,
+    sourcemap: true,
+  },
   // Schema/validation entry
   {
     entry: { schema: "src/schema.ts" },
@@ -46,9 +76,29 @@ export default defineConfig([
     splitting: false,
     sourcemap: true,
   },
+  // CMS adapters entry
+  {
+    entry: { cms: "src/cms.ts" },
+    format: ["cjs", "esm"],
+    dts: true,
+    clean: false,
+    treeshake: true,
+    splitting: false,
+    sourcemap: true,
+  },
   // CI utilities entry
   {
     entry: { ci: "src/ci.ts" },
+    format: ["cjs", "esm"],
+    dts: true,
+    clean: false,
+    treeshake: true,
+    splitting: false,
+    sourcemap: true,
+  },
+  // Headless renderer protocol entry
+  {
+    entry: { renderer: "src/renderer.ts" },
     format: ["cjs", "esm"],
     dts: true,
     clean: false,

@@ -105,6 +105,57 @@ export function generateChangelogDiff(
   return parts.length > 0 ? parts.join(". ") : "No manifest changes.";
 }
 
+export interface ChangelogMarkdownOptions extends ChangelogDiffOptions {
+  maxItemsPerSection?: number;
+}
+
+function renderMarkdownSection(
+  title: string,
+  items: string[],
+  maxItemsPerSection: number,
+): string[] {
+  if (items.length === 0) return [`### ${title} (0)`, "- None"];
+
+  const visible = items.slice(0, maxItemsPerSection);
+  const hiddenCount = items.length - visible.length;
+
+  const lines = [`### ${title} (${items.length})`, ...visible.map((item) => `- ${item}`)];
+  if (hiddenCount > 0) {
+    lines.push(`- ...and ${hiddenCount} more`);
+  }
+  return lines;
+}
+
+export function generateChangelogDiffMarkdown(
+  diff: ManifestDiff,
+  options: ChangelogMarkdownOptions = {},
+): string {
+  if (diff.added.length === 0 && diff.changed.length === 0 && diff.removed.length === 0) {
+    return "No manifest changes.";
+  }
+
+  const maxItemsPerSection = Math.max(1, options.maxItemsPerSection ?? 20);
+  const addedItems = diff.added.map((feature) => `**${feature.label}** (\`${feature.id}\`)`);
+  const changedItems = diff.changed.map((item) => {
+    if (!options.includeFieldChanges) {
+      return `**${item.after.label}** (\`${item.id}\`)`;
+    }
+    const fields = item.changedFields.join(", ");
+    return `**${item.after.label}** (\`${item.id}\`) — ${fields}`;
+  });
+  const removedItems = diff.removed.map((feature) => `**${feature.label}** (\`${feature.id}\`)`);
+
+  const sections = [
+    ...renderMarkdownSection("Added", addedItems, maxItemsPerSection),
+    "",
+    ...renderMarkdownSection("Changed", changedItems, maxItemsPerSection),
+    "",
+    ...renderMarkdownSection("Removed", removedItems, maxItemsPerSection),
+  ];
+
+  return sections.join("\n");
+}
+
 export function validateManifestForCI(manifest: FeatureManifest) {
   return validateManifest(manifest);
 }

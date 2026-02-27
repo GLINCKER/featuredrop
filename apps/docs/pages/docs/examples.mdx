@@ -2,34 +2,45 @@
 title: Examples
 ---
 
-import { Cards, Card } from 'nextra/components'
+import { Cards, Card, Callout } from 'nextra/components'
 
 # Examples
 
-Use these examples as starting templates based on the outcome you need.
+Use these examples as starting templates based on the outcome you need to achieve. Each entry links to dedicated documentation that includes live interactive demos, copy-paste code, and integration notes.
 
 <Cards>
-  <Card title="First launch in 10 minutes" href="/docs/quickstart">
-    Provider, manifest, badge, and changelog widget baseline.
+  <Card title="First Launch in 10 Minutes" href="/docs/quickstart">
+    Set up your first Provider, manifest, badge, and changelog widget. The fastest path from zero to a working adoption surface in your React app.
   </Card>
-  <Card title="Component demos" href="/docs/components/gallery">
-    Explore live in-repo demos for each exported component.
+  <Card title="Component Gallery" href="/docs/components/gallery">
+    Explore live, interactive in-repo demos for every exported component. See Announcement Modals, Hotspots, Surveys, and Tours render in real time.
   </Card>
-  <Card title="Launch flow orchestration" href="/docs/components/launch-flow">
-    End-to-end Banner + Tour + Checklist sequence.
+  <Card title="Launch Flow Orchestration" href="/docs/components/launch-flow">
+    Learn how to compose a multi-step adoption campaign: Banner announcement, followed by a Tour walkthrough, capped with a completion Checklist.
   </Card>
-  <Card title="Adapter strategy" href="/docs/adapters/overview">
-    Compare memory, remote, indexedDB, hybrid, and database options.
+  <Card title="Adapter Selection Guide" href="/docs/adapters/overview">
+    Compare `MemoryAdapter`, `LocalStorageAdapter`, `RemoteAdapter`, `IndexedDBAdapter`, and `HybridAdapter` to determine the right persistence strategy for your product.
   </Card>
-  <Card title="Release gates checklist" href="/docs/launch-checklist">
-    Pre-ship validation for build health, funnel links, SEO, and deployment QA.
+  <Card title="CI & Validation Setup" href="/docs/automation/ci">
+    Wire FeatureDrop manifest validation and quality checks into your GitHub Actions pipeline to catch schema errors before they reach production.
+  </Card>
+  <Card title="Release Gates Checklist" href="/docs/launch-checklist">
+    The pre-ship quality checklist for build health, funnel link validation, SEO verification, and deployment QA.
   </Card>
 </Cards>
 
-## Suggested learning order
+## Suggested Learning Order
 
-1. Quickstart baseline
-2. One component demo matching your launch goal
-3. Adapter decision for production reliability
-4. CI and security checks before rollout
-5. Final release pass with the launch checklist
+If you are new to FeatureDrop, follow this sequence to build a solid understanding before customizing:
+
+1. **[Quickstart](/docs/quickstart)** — Install, configure a manifest, and render your first `<NewBadge>`.
+2. **[Core Architecture](/docs/concepts/architecture)** — Understand the Manifest, Engine, and UI pillars so you know why each decision exists.
+3. **[Component Gallery](/docs/components/gallery)** — Pick the component that matches your launch goal and explore its interactive demo.
+4. **[Adapter Overview](/docs/adapters/overview)** — Choose a storage strategy appropriate for your production environment.
+5. **[CI Utilities](/docs/automation/ci)** — Add validation gates to your pipeline before shipping to real users.
+6. **[Launch Checklist](/docs/launch-checklist)** — Final pre-flight pass before going live.
+
+<Callout type="info">
+  The [Recipes](/docs/recipes) page contains copy-paste starter implementations for the most common launch patterns, optimized for shipping speed.
+</Callout>
+

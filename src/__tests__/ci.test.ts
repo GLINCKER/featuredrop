@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { diffManifest, generateChangelogDiff, validateManifestForCI } from "../ci";
+import {
+  diffManifest,
+  generateChangelogDiff,
+  generateChangelogDiffMarkdown,
+  validateManifestForCI,
+} from "../ci";
 import type { FeatureManifest } from "../types";
 
 const BEFORE: FeatureManifest = [
@@ -58,10 +63,51 @@ describe("ci utilities", () => {
   it("returns no-change summary for equal manifests", () => {
     const diff = diffManifest(BEFORE, BEFORE);
     expect(generateChangelogDiff(diff)).toBe("No manifest changes.");
+    expect(generateChangelogDiffMarkdown(diff)).toBe("No manifest changes.");
   });
 
   it("reuses manifest validation helper for CI", () => {
     const result = validateManifestForCI(AFTER);
     expect(result.valid).toBe(true);
+  });
+
+  it("generates markdown-ready diff output", () => {
+    const diff = diffManifest(BEFORE, AFTER);
+    const markdown = generateChangelogDiffMarkdown(diff, {
+      includeFieldChanges: true,
+    });
+
+    expect(markdown).toContain("### Added (1)");
+    expect(markdown).toContain("**Onboarding Tour** (`onboarding-tour`)");
+    expect(markdown).toContain("### Changed (1)");
+    expect(markdown).toContain("showNewUntil, description");
+    expect(markdown).toContain("### Removed (1)");
+    expect(markdown).toContain("**Export CSV** (`exports`)");
+  });
+
+  it("truncates markdown sections when maxItemsPerSection is reached", () => {
+    const markdown = generateChangelogDiffMarkdown(
+      {
+        added: [
+          {
+            id: "a",
+            label: "A",
+            releasedAt: "2026-01-01T00:00:00Z",
+            showNewUntil: "2026-02-01T00:00:00Z",
+          },
+          {
+            id: "b",
+            label: "B",
+            releasedAt: "2026-01-01T00:00:00Z",
+            showNewUntil: "2026-02-01T00:00:00Z",
+          },
+        ],
+        changed: [],
+        removed: [],
+      },
+      { maxItemsPerSection: 1 },
+    );
+
+    expect(markdown).toContain("- ...and 1 more");
   });
 });

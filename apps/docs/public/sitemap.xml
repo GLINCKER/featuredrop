@@ -2,27 +2,57 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://featuredrop-docs.vercel.app/</loc></url>
   <url><loc>https://featuredrop-docs.vercel.app/docs/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/quickstart/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/examples/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/api/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/components/gallery/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/components/changelog/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/components/tours/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/components/checklist/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/components/announcement/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/components/spotlight/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/components/hotspot/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/components/survey/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/components/feedback/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/components/feature-requests/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/components/launch-flow/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/adapters/overview/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/adapters/indexeddb/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/adapters/remote/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/adapters/databases/</loc></url>
   <url><loc>https://featuredrop-docs.vercel.app/docs/adapters/hybrid/</loc></url>
-  <url><loc>https://featuredrop-docs.vercel.app/docs/automation/cli/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/adapters/indexeddb/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/adapters/local-storage/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/adapters/overview/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/adapters/remote/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/api/</loc></url>
   <url><loc>https://featuredrop-docs.vercel.app/docs/automation/ci/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/automation/cli/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/automation/deployment/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/automation/docs-analytics/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/automation/security/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/components/announcement/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/components/banner-toast/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/components/changelog/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/components/checklist/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/components/feature-requests/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/components/feedback/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/components/gallery/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/components/hotspot/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/components/launch-flow/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/components/spotlight-chain/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/components/spotlight/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/components/survey/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/components/tours/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/concepts/animation/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/concepts/architecture/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/concepts/headless-renderer/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/concepts/localization/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/concepts/manifest-model/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/concepts/release-lifecycle/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/concepts/theming/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/concepts/version-pinning/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/examples/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/frameworks/angular/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/frameworks/preact/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/frameworks/solid/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/frameworks/svelte/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/frameworks/vue/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/frameworks/web-components/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/integrations/admin/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/integrations/analytics/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/integrations/bridges/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/integrations/cms/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/integrations/feature-flags/</loc></url>
   <url><loc>https://featuredrop-docs.vercel.app/docs/integrations/nextjs/</loc></url>
   <url><loc>https://featuredrop-docs.vercel.app/docs/integrations/react-router/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/launch-checklist/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/migration/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/quickstart/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/recipes/</loc></url>
+  <url><loc>https://featuredrop-docs.vercel.app/docs/troubleshooting/</loc></url>
   <url><loc>https://featuredrop-docs.vercel.app/playground/</loc></url>
 </urlset>

@@ -1,0 +1,53 @@
+---
+title: Docs Analytics
+---
+
+# Docs Analytics
+
+Docs site events are already emitted from the UI via `trackDocsEvent(...)`.
+
+This page shows how to wire actual providers so those events land in telemetry.
+
+## Supported providers
+
+- Plausible (`window.plausible`)
+- Google Analytics / gtag (`window.gtag`)
+- Generic GTM-style `dataLayer` pushes
+
+## Environment variables
+
+Set one or both:
+
+```bash
+NEXT_PUBLIC_PLAUSIBLE_DOMAIN=docs.glincker.com
+NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+```
+
+When set, scripts are auto-injected from `apps/docs/theme.config.tsx`.
+
+## Events currently emitted
+
+- `landing_quickstart_clicked`
+- `landing_playground_clicked`
+- `landing_docs_clicked`
+- `launch_path_clicked`
+- `quickstart_completed`
+- `quickstart_playground_clicked`
+- `playground_template_opened`
+- `outbound_github_clicked`
+- `outbound_npm_clicked`
+
+## Payload shape
+
+Every event includes:
+
+- `path` (current pathname)
+- source/context fields where relevant (`source`, `destination`, `title`, `target`)
+
+## Verify locally
+
+1. Start docs with env vars set.
+2. Open browser devtools network tab.
+3. Click landing and quickstart CTAs.
+4. Scroll Quickstart until “Next Steps” is visible (emits `quickstart_completed` once per session).
+5. Confirm requests to Plausible or GA endpoints.

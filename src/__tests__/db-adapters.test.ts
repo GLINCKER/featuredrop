@@ -255,6 +255,94 @@ describe("HybridAdapter", () => {
     expect(remote.getDismissedIds().has("retry-me")).toBe(true);
     await adapter.destroy();
   });
+
+  it("flushes queued dismisses during sync and coalesces concurrent sync calls", async () => {
+    const local = new MemoryAdapter();
+    const remote = makeRemoteMock();
+    const syncStart: Array<() => void> = [];
+    remote.sync = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          syncStart.push(resolve);
+        }),
+    );
+    const adapter = new HybridAdapter({
+      local,
+      remote,
+      dismissBatchWindowMs: 60_000,
+      syncOnOnline: false,
+      syncOnVisibilityChange: false,
+    });
+
+    adapter.dismiss("queued");
+    const first = adapter.sync();
+    const second = adapter.sync();
+    expect(remote.sync).toHaveBeenCalledTimes(1);
+
+    for (const resolve of syncStart) resolve();
+    await Promise.all([first, second]);
+
+    expect(remote.dismissBatch).toHaveBeenCalledTimes(1);
+    expect(remote.getDismissedIds().has("queued")).toBe(true);
+    await adapter.destroy();
+  });
+
+  it("coalesces concurrent flushPendingDismisses calls", async () => {
+    const local = new MemoryAdapter();
+    const remote = makeRemoteMock();
+    const batchResolves: Array<() => void> = [];
+    remote.dismissBatch = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          batchResolves.push(resolve);
+        }),
+    );
+    const adapter = new HybridAdapter({
+      local,
+      remote,
+      dismissBatchWindowMs: 60_000,
+      syncOnOnline: false,
+      syncOnVisibilityChange: false,
+    });
+
+    adapter.dismiss("a");
+    const first = adapter.flushPendingDismisses();
+    const second = adapter.flushPendingDismisses();
+    expect(remote.dismissBatch).toHaveBeenCalledTimes(1);
+
+    for (const resolve of batchResolves) resolve();
+    await Promise.all([first, second]);
+    await adapter.destroy();
+  });
+
+  it("sync flushes retry queue after a failed flush", async () => {
+    const local = new MemoryAdapter();
+    const remote = makeRemoteMock();
+    const dismissed = remote.getDismissedIds() as Set<string>;
+    let failedOnce = false;
+    remote.dismissBatch = vi.fn(async (ids: string[]) => {
+      if (!failedOnce) {
+        failedOnce = true;
+        throw new Error("network down");
+      }
+      for (const id of ids) dismissed.add(id);
+    });
+    const adapter = new HybridAdapter({
+      local,
+      remote,
+      dismissBatchWindowMs: 60_000,
+      syncOnOnline: false,
+      syncOnVisibilityChange: false,
+    });
+
+    adapter.dismiss("recover-me");
+    await adapter.flushPendingDismisses();
+    expect(remote.getDismissedIds().has("recover-me")).toBe(false);
+
+    await adapter.sync();
+    expect(remote.getDismissedIds().has("recover-me")).toBe(true);
+    await adapter.destroy();
+  });
 });
 
 describe("MySQLAdapter", () => {

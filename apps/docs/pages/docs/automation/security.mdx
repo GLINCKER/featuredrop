@@ -2,15 +2,13 @@
 title: Security Checks
 ---
 
-import { Callout, Steps } from 'nextra/components'
+import { Callout } from 'nextra/components'
 
 # Security Checks
 
-FeatureDrop ships with a layered set of static analysis guards designed to prevent common JavaScript security pitfalls from being introduced through manifest entries or component customizations.
+FeatureDrop includes layered safeguards for source code and manifest content.
 
-## Recommended Gate Order
-
-Security checks should run early in CI to prevent wasted time building artifacts that would fail a security audit.
+## Recommended order
 
 ```bash
 pnpm typecheck
@@ -21,56 +19,42 @@ pnpm build
 pnpm size-check
 ```
 
-## Layer 1: Local Static Audit
-
-Run the static analysis check locally before pushing:
+## Layer 1: Static source audit
 
 ```bash
 pnpm security-check
 ```
 
-The static auditor scans your codebase for the following high-risk patterns and exits non-zero if any are found:
+Scans for risky patterns:
 
 | Pattern | Risk |
-|---|---|
+| --- | --- |
 | `eval(...)` | Arbitrary code execution |
 | `new Function(...)` | Arbitrary code execution |
-| Direct `.innerHTML = ...` | XSS injection vector |
-| `dangerouslySetInnerHTML` outside allowlisted components | XSS injection vector |
+| direct `.innerHTML = ...` | XSS vector |
+| non-allowlisted `dangerouslySetInnerHTML` | XSS vector |
 
-If a violation is found, the command prints the exact file and line number before exiting.
-
-## Layer 2: Manifest Safety Validation
-
-The `featuredrop validate` command additionally enforces safety rules on manifest content itself, not just application code:
+## Layer 2: Manifest safety
 
 ```bash
 npx featuredrop validate --pattern "features/**/*.md"
 ```
 
-Manifest-level checks include:
+Checks include:
 
-- **Safe URL protocols**: Rejects `javascript:` or `data:` URIs in `url`, `image`, and `cta.url` fields
-- **Duplicate ID prevention**: Ensures no two entries share the same `id`
-- **Dependency cycle checks**: Detects circular `dependsOn` references
-- **Date consistency**: Validates that `hideAfter` is after `releaseDate`
-- **Unsafe metadata key rejection**: Blocks prototype-polluting keys like `__proto__`, `constructor`, `prototype`
+- URL safety for `url`, `image`, `cta.url`
+- Duplicate IDs
+- Dependency cycles
+- Date ordering (`showNewUntil` after `releasedAt`)
+- Unsafe metadata keys
 
 <Callout type="warning">
-  User-supplied strings in feature titles or descriptions are not rendered as raw HTML by FeatureDrop components. However, if you build a custom headless UI, you are responsible for sanitizing any content before passing it to `dangerouslySetInnerHTML`.
+  If you build custom headless renderers and use `dangerouslySetInnerHTML`, sanitize content explicitly.
 </Callout>
 
-## Layer 3: GitHub CodeQL Scanning
+## Layer 3: GitHub security workflows
 
-The repository's CI workflows include automated CodeQL analysis for deeper static security analysis:
+- `.github/workflows/ci.yml` runs `pnpm security-check`
+- `.github/workflows/codeql.yml` runs CodeQL scans
 
-- `.github/workflows/ci.yml` runs `pnpm security-check` on every push
-- `.github/workflows/codeql.yml` runs full GitHub CodeQL analysis on schedule and PRs
-
-## Vulnerability Reporting
-
-Do not file public GitHub Issues for security vulnerabilities in FeatureDrop. Follow the responsible disclosure process:
-
-- Review [`SECURITY.md`](https://github.com/GLINCKER/featuredrop/blob/main/SECURITY.md) for the full disclosure policy
-- Report via the GitHub Security Advisory feature for this repository
-
+Report vulnerabilities via GitHub Security Advisories. See [`SECURITY.md`](https://github.com/GLINCKER/featuredrop/blob/main/SECURITY.md).

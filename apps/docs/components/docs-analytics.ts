@@ -1,8 +1,10 @@
-type DocsEventName =
+export type DocsEventName =
   | 'landing_quickstart_clicked'
   | 'landing_playground_clicked'
   | 'landing_docs_clicked'
+  | 'landing_gallery_clicked'
   | 'launch_path_clicked'
+  | 'quickstart_completed'
   | 'quickstart_playground_clicked'
   | 'playground_template_opened'
   | 'outbound_github_clicked'

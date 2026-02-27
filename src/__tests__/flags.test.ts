@@ -44,4 +44,32 @@ describe("feature flag bridges", () => {
       { id: "user-1", cohort: "beta" },
     );
   });
+
+  it("returns fallback values when bridge resolvers throw", () => {
+    const onError = vi.fn();
+    const custom = createFlagBridge({
+      isEnabled: () => {
+        throw new Error("custom boom");
+      },
+      defaultValue: true,
+      onError,
+    });
+    expect(custom.isEnabled("custom")).toBe(true);
+    expect(onError).toHaveBeenCalledWith(expect.any(Error), {
+      bridge: "custom",
+      flagKey: "custom",
+    });
+
+    const ldVariation = vi.fn(() => {
+      throw new Error("ld boom");
+    });
+    const ld = new LaunchDarklyBridge({ variation: ldVariation }, { defaultValue: true });
+    expect(ld.isEnabled("ld")).toBe(true);
+
+    const phEval = vi.fn(() => {
+      throw new Error("ph boom");
+    });
+    const ph = new PostHogBridge({ isFeatureEnabled: phEval }, { defaultValue: true });
+    expect(ph.isEnabled("ph")).toBe(true);
+  });
 });

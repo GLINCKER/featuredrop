@@ -1,0 +1,113 @@
+# Preact
+
+FeatureDrop works with Preact through the `preact/compat` compatibility layer. The Preact adapter re-exports the full React API, so you get the same components, hooks, and Provider.
+
+## Install
+
+```bash
+npm install featuredrop preact
+```
+
+## Build aliases
+
+Preact requires bundler aliases so that `react` and `react-dom` imports resolve to `preact/compat`. Configure your bundler:
+
+### Vite
+
+```ts filename="vite.config.ts"
+import { defineConfig } from 'vite'
+import preact from '@preact/preset-vite'
+
+export default defineConfig({
+  plugins: [preact()],
+  resolve: {
+    alias: {
+      react: 'preact/compat',
+      'react-dom': 'preact/compat'
+    }
+  }
+})
+```
+
+### Webpack
+
+```js filename="webpack.config.js"
+module.exports = {
+  resolve: {
+    alias: {
+      react: 'preact/compat',
+      'react-dom': 'preact/compat'
+    }
+  }
+}
+```
+
+### tsconfig.json
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "react": ["./node_modules/preact/compat"],
+      "react-dom": ["./node_modules/preact/compat"]
+    }
+  }
+}
+```
+
+## Usage
+
+Once aliases are configured, import from `featuredrop/preact` exactly like `featuredrop/react`:
+
+```tsx filename="App.tsx"
+import { FeatureDropProvider, NewBadge, ChangelogWidget } from 'featuredrop/preact'
+import { MemoryAdapter } from 'featuredrop'
+import manifest from './features.json'
+
+export function App() {
+  return (
+    <FeatureDropProvider manifest={manifest} storage={new MemoryAdapter()}>
+      <nav>
+        Settings <NewBadge id="dark-mode" />
+      </nav>
+      <ChangelogWidget title="What's new" />
+    </FeatureDropProvider>
+  )
+}
+```
+
+## Available exports
+
+The Preact adapter re-exports everything from the React adapter:
+
+### Components
+
+- `FeatureDropProvider` - Context provider
+- `NewBadge` - "New" badge with variants (pill, dot, count)
+- `ChangelogWidget` - In-app changelog
+- `Spotlight` - Feature highlight with beacon
+- `Banner` - Persistent announcement bar
+- `Toast` - Ephemeral notification
+- `Tour` - Guided product tour
+- `Checklist` - Onboarding checklist
+- `FeedbackWidget` - Feedback collection
+- `Survey` - In-app surveys
+
+### Hooks
+
+- `useFeatureDrop()` - Full context access
+- `useNewFeature(id)` - Single feature check
+- `useNewCount()` - New feature count
+- `useTabNotification(options?)` - Tab title flash
+
+## Bundle size
+
+The Preact adapter adds zero overhead beyond the React adapter since it's a direct re-export. The main benefit comes from Preact itself being ~3 kB vs React's ~40 kB.
+
+## TypeScript
+
+Full `.d.ts` declarations are available:
+
+```ts
+import type { FeatureDropProviderProps } from 'featuredrop/preact'
+```

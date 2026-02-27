@@ -1,0 +1,8 @@
+{
+  "vue": "Vue 3",
+  "svelte": "Svelte 5",
+  "solid": "Solid.js",
+  "preact": "Preact",
+  "angular": "Angular",
+  "web-components": "Web Components"
+}

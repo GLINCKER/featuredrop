@@ -1,0 +1,56 @@
+---
+title: Notification Bridges
+---
+
+import { Callout } from 'nextra/components'
+
+# Notification Bridges
+
+Use `featuredrop/bridges` to notify external channels when features ship.
+
+## Supported bridges
+
+- `SlackBridge.notify(feature, options)`
+- `DiscordBridge.notify(feature, options)`
+- `WebhookBridge.post(feature, options)`
+- `EmailDigestGenerator.generate(features, options?)`
+- `RSSFeedGenerator.generate(manifest, options?)`
+
+## Usage
+
+```ts
+import {
+  SlackBridge,
+  DiscordBridge,
+  WebhookBridge,
+  EmailDigestGenerator,
+  RSSFeedGenerator
+} from 'featuredrop/bridges'
+
+await SlackBridge.notify(feature, { webhookUrl: process.env.SLACK_WEBHOOK! })
+await DiscordBridge.notify(feature, {
+  webhookUrl: process.env.DISCORD_WEBHOOK!,
+  timeoutMs: 3000,
+  maxRetries: 2
+})
+await WebhookBridge.post(feature, {
+  url: 'https://api.example.com/hooks/features',
+  headers: { Authorization: `Bearer ${process.env.FEATURES_HOOK_TOKEN!}` },
+  maxRetries: 3,
+  retryDelayMs: 250
+})
+
+const digestHtml = EmailDigestGenerator.generate(features, {
+  title: 'Weekly Product Updates',
+  template: 'default'
+})
+
+const rss = RSSFeedGenerator.generate(manifest, {
+  title: 'FeatureDrop Updates',
+  link: 'https://docs.example.com/changelog'
+})
+```
+
+<Callout type="info">
+  Bridges are transport utilities. You can set `timeoutMs`, `maxRetries`, and `retryDelayMs` per request.
+</Callout>

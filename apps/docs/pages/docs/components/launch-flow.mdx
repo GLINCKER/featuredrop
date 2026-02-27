@@ -7,25 +7,160 @@ import { LaunchFlowDemo } from '../../../components/demos/launch-flow-demo'
 
 # Composite Launch Flows
 
-FeatureDrop components are not designed to be used in isolation. The true power of the engine emerges when you compose multiple primitives together to create a multi-stage **Launch Flow**.
+FeatureDrop is strongest when components are orchestrated as a sequence, not used in isolation. A single feature launch can span banner, tour, checklist, and feedback in a coordinated flow.
 
-## Strategy & Sequencing
+## Typical launch sequence
 
-A well-architected Launch Flow gently bridges the gap between simply announcing a feature and actually driving a user to adopt it into their daily workflow.
+| Stage | Component | Goal | Interruption |
+| --- | --- | --- | --- |
+| Awareness | `<Banner>` | Announce change exists | Low |
+| Guidance | `<Tour>` / `<SpotlightChain>` | Teach the workflow | Medium |
+| Activation | `<Checklist>` | Drive completion | Medium |
+| Follow-up | `<FeedbackWidget>` / `<Survey>` | Measure quality | Low |
 
-A typical enterprise rollout might follow this chronological sequence:
+## Coordination pattern
 
-1. **Awareness**: A visual `<Banner>` mounts at the top of the dashboard announcing a major workflow migration arriving next week.
-2. **Education**: On launch day, an `<AnnouncementModal>` triggers, explaining the new value proposition.
-3. **Tracking**: A persistent `<Checklist>` appears in the sidebar, outlining the 3 steps the user must take to migrate their old data manually.
-4. **Guidance**: When the user clicks Step 1 on the Checklist, a pulsing `<Hotspot>` appears over the new "Settings" gear, showing them exactly where to click.
+Use callbacks to chain components explicitly. You control sequencing logic in app code instead of hidden SaaS automation rules.
+
+```tsx filename="LaunchFlow.tsx"
+import { useState } from 'react'
+import { Banner, Tour, Checklist, FeedbackWidget } from 'featuredrop/react'
+
+const tourSteps = [
+  { id: 'step-1', target: '#data-source', title: 'Connect', content: 'Link your database here.' },
+  { id: 'step-2', target: '#sync-btn', title: 'Sync', content: 'Click to start syncing.' },
+]
+
+const tasks = [
+  { id: 'connect', title: 'Connect data source', estimatedTime: '2m' },
+  { id: 'sync', title: 'Run first sync', estimatedTime: '1m' },
+  { id: 'verify', title: 'Verify data', estimatedTime: '3m' },
+]
+
+export function LaunchFlow() {
+  const [phase, setPhase] = useState<'banner' | 'tour' | 'checklist' | 'feedback'>('banner')
+
+  return (
+    <>
+      {/* Phase 1: Banner announces the feature */}
+      {phase === 'banner' && (
+        <Banner
+          featureId="data-sync"
+          position="inline"
+          onDismiss={() => setPhase('tour')}
+        />
+      )}
+
+      {/* Phase 2: Tour teaches the workflow */}
+      {phase === 'tour' && (
+        <Tour
+          id="data-sync-tour"
+          steps={tourSteps}
+          onComplete={() => setPhase('checklist')}
+          onSkip={() => setPhase('checklist')}
+        >
+          {({ isActive, step, startTour, nextStep, skipTour }) => (
+            <div>
+              {!isActive && <button onClick={startTour}>Start tour</button>}
+              {isActive && step && (
+                <div>
+                  <h4>{step.title}</h4>
+                  <p>{String(step.content)}</p>
+                  <button onClick={nextStep}>Next</button>
+                  <button onClick={skipTour}>Skip</button>
+                </div>
+              )}
+            </div>
+          )}
+        </Tour>
+      )}
+
+      {/* Phase 3: Checklist drives activation */}
+      {phase === 'checklist' && (
+        <Checklist
+          id="data-sync-checklist"
+          tasks={tasks}
+          position="inline"
+          onComplete={() => setPhase('feedback')}
+        />
+      )}
+
+      {/* Phase 4: Feedback collects signal */}
+      {phase === 'feedback' && (
+        <FeedbackWidget
+          featureId="data-sync"
+          onSubmit={async (payload) => {
+            console.log('Feedback:', payload)
+          }}
+        >
+          {({ isOpen, open, text, setText, submit }) => (
+            <div>
+              {!isOpen ? (
+                <button onClick={open}>How was the setup?</button>
+              ) : (
+                <div>
+                  <textarea value={text} onChange={(e) => setText(e.target.value)} />
+                  <button onClick={submit}>Send feedback</button>
+                </div>
+              )}
+            </div>
+          )}
+        </FeedbackWidget>
+      )}
+    </>
+  )
+}
+```
+
+## Throttling
+
+FeatureDrop's built-in throttler prevents multiple high-interruption surfaces from firing simultaneously. When a tour is active, new spotlights and modals queue until it completes.
+
+```tsx
+<FeatureDropProvider
+  manifest={manifest}
+  storage={storage}
+  throttle={{ maxConcurrent: 1, cooldownMs: 5000 }}
+>
+  {/* Only one tour/spotlight/modal visible at a time */}
+  <App />
+</FeatureDropProvider>
+```
+
+## Analytics across the flow
+
+Track the entire funnel by wiring analytics callbacks:
+
+```tsx
+<FeatureDropProvider
+  manifest={manifest}
+  storage={storage}
+  analytics={{
+    onFeatureImpression: (feature, surface) => {
+      track('feature_impression', { id: feature.id, surface })
+    },
+    onFeatureDismissed: (feature) => {
+      track('feature_dismissed', { id: feature.id })
+    }
+  }}
+>
+  <LaunchFlow />
+</FeatureDropProvider>
+```
 
 <Callout type="info">
-  **State Orchestration**: The FeatureDrop Storage Adapter automatically synchronizes the state across all these components. Completing the Checklist step will automatically unmount the associated Hotspot without any complex React `useEffect` wiring on your end.
+  Coordination is explicit by design. You control sequencing logic in app code instead of hidden SaaS automation rules. This makes flows testable, debuggable, and version-controlled.
 </Callout>
 
 ## Interactive Demo
 
-The demo below provides a sandbox showing how heavily composed components execute a cascading narrative flawlessly.
-
 <LaunchFlowDemo />
+
+## When to use launch flows
+
+- **Major feature launches** that need guided onboarding
+- **Pricing tier upgrades** where new capabilities should be highlighted
+- **Migration workflows** that require multiple steps
+- **Quarterly release roundups** combining changelog + tours
+
+For routine feature updates, a simple `<NewBadge>` or changelog entry is sufficient. Reserve multi-surface flows for launches where adoption directly impacts business metrics.

@@ -1,0 +1,108 @@
+---
+title: Admin Components
+---
+
+import { Callout } from 'nextra/components'
+
+# Admin Components
+
+`featuredrop/admin` ships lightweight building blocks you can wire into your own internal tooling.
+
+```tsx
+import {
+  ManifestEditor,
+  ScheduleCalendar,
+  PreviewPanel,
+  AudienceBuilder
+} from 'featuredrop/admin'
+```
+
+## ManifestEditor
+
+JSON-first manifest editor with optional schema validation.
+
+```tsx
+<ManifestEditor
+  features={features}
+  schema={manifestSchema} // optional: parse/safeParse compatible object
+  onSave={async (updated) => {
+    await fetch('/api/features', { method: 'PUT', body: JSON.stringify(updated) })
+  }}
+/>
+```
+
+Props:
+
+- `features`: current manifest array
+- `onSave(updated)`: persist callback
+- `schema`: optional validator (`parse` or `safeParse`)
+- `readOnly`: disables editing + save
+
+## ScheduleCalendar
+
+Per-feature publish/expiry scheduler for ISO timestamps.
+
+```tsx
+<ScheduleCalendar
+  features={features}
+  minDate="2026-02-01T00:00:00Z"
+  onSchedule={async (id, publishAt) => {
+    await updateFeature(id, { publishAt })
+  }}
+  onExpire={async (id, showNewUntil) => {
+    await updateFeature(id, { showNewUntil })
+  }}
+/>
+```
+
+Props:
+
+- `features`: current manifest array
+- `onSchedule(id, publishAt)`: publish handler
+- `onExpire?(id, showNewUntil)`: optional expiry handler
+- `minDate?`: minimum selectable date
+
+## PreviewPanel
+
+Simple component-surface preview of one selected feature.
+
+```tsx
+<PreviewPanel
+  feature={selectedFeature}
+  components={['badge', 'changelog', 'banner', 'toast']}
+  theme="dark"
+/>
+```
+
+Props:
+
+- `feature?`: selected feature
+- `components?`: preview chip list (`badge | changelog | spotlight | banner | toast`)
+- `theme?`: `light` or `dark`
+
+## AudienceBuilder
+
+Checkbox builder for `AudienceRule`.
+
+```tsx
+<AudienceBuilder
+  segments={['free', 'pro', 'enterprise']}
+  roles={['admin', 'editor', 'viewer']}
+  regions={['us', 'eu', 'apac']}
+  value={selectedFeature?.audience}
+  onSave={async (audience) => {
+    await updateFeature(featureId, { audience })
+  }}
+/>
+```
+
+Props:
+
+- `segments?`, `roles?`, `regions?`: selectable values
+- `value?`: initial `AudienceRule`
+- `onChange?(audience)`: live updates
+- `onSave?(audience)`: persist callback
+
+<Callout type="info">
+  These are deliberately headless-ish utility components. Auth, persistence, permissions, and workflow orchestration stay in your app.
+</Callout>

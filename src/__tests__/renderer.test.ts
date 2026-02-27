@@ -50,6 +50,30 @@ const BASE_MANIFEST: FeatureManifest = [
     sidebarKey: "/product",
     product: "askverdict",
   },
+  {
+    id: "depends-on-core-a",
+    label: "Needs Core A seen",
+    releasedAt: "2026-02-16T00:00:00Z",
+    showNewUntil: "2026-03-10T00:00:00Z",
+    sidebarKey: "/depends",
+    dependsOn: { seen: ["core-a"] },
+  },
+  {
+    id: "usage-triggered",
+    label: "Usage trigger",
+    releasedAt: "2026-02-16T00:00:00Z",
+    showNewUntil: "2026-03-10T00:00:00Z",
+    sidebarKey: "/usage",
+    trigger: { type: "usage", event: "opened-settings", minActions: 2 },
+  },
+  {
+    id: "page-triggered",
+    label: "Page trigger",
+    releasedAt: "2026-02-16T00:00:00Z",
+    showNewUntil: "2026-03-10T00:00:00Z",
+    sidebarKey: "/page",
+    trigger: { type: "page", match: "/settings" },
+  },
 ];
 
 describe("createChangelogRenderer", () => {
@@ -150,6 +174,48 @@ describe("createChangelogRenderer", () => {
     expect(renderer.computed.getFeatureById("product-only")).toBeDefined();
   });
 
+  it("supports dependency and trigger action helpers", () => {
+    const renderer = createChangelogRenderer({
+      manifest: BASE_MANIFEST,
+      storage: new MemoryAdapter(),
+      appVersion: "2.1.0",
+      now: () => new Date("2026-02-20T00:00:00Z"),
+    });
+
+    expect(renderer.computed.getFeatureById("depends-on-core-a")).toBeUndefined();
+    renderer.actions.markFeatureSeen("core-a");
+    expect(renderer.computed.getFeatureById("depends-on-core-a")).toBeDefined();
+
+    expect(renderer.computed.getFeatureById("usage-triggered")).toBeUndefined();
+    renderer.actions.trackUsageEvent("opened-settings");
+    expect(renderer.computed.getFeatureById("usage-triggered")).toBeUndefined();
+    renderer.actions.trackUsageEvent("opened-settings");
+    expect(renderer.computed.getFeatureById("usage-triggered")).toBeDefined();
+
+    expect(renderer.computed.getFeatureById("page-triggered")).toBeUndefined();
+    renderer.actions.setTriggerPath("/settings/profile");
+    expect(renderer.computed.getFeatureById("page-triggered")).toBeDefined();
+  });
+
+  it("supports direct dependency/trigger context updates", () => {
+    const renderer = createChangelogRenderer({
+      manifest: BASE_MANIFEST,
+      storage: new MemoryAdapter(),
+      appVersion: "2.1.0",
+      now: () => new Date("2026-02-20T00:00:00Z"),
+    });
+
+    expect(renderer.computed.getFeatureById("depends-on-core-a")).toBeUndefined();
+    renderer.actions.setDependencyState({ seenIds: new Set(["core-a"]) });
+    expect(renderer.computed.getFeatureById("depends-on-core-a")).toBeDefined();
+
+    expect(renderer.computed.getFeatureById("usage-triggered")).toBeUndefined();
+    renderer.actions.setTriggerContext({
+      usage: { "opened-settings": 2 },
+    });
+    expect(renderer.computed.getFeatureById("usage-triggered")).toBeDefined();
+  });
+
   it("dismisses all and refreshes watermark state", async () => {
     const renderer = createChangelogRenderer({
       manifest: BASE_MANIFEST,
@@ -162,5 +228,25 @@ describe("createChangelogRenderer", () => {
     await renderer.actions.dismissAll();
     expect(renderer.state.newCount).toBe(0);
     expect(renderer.state.watermark).toBe("2026-02-20T00:00:00.000Z");
+  });
+
+  it("stops updates after destroy()", () => {
+    const renderer = createChangelogRenderer({
+      manifest: BASE_MANIFEST,
+      storage: new MemoryAdapter(),
+      appVersion: "1.5.0",
+      now: () => new Date("2026-02-20T00:00:00Z"),
+    });
+
+    const listener = vi.fn();
+    renderer.subscribe(listener);
+    const callsBeforeDestroy = listener.mock.calls.length;
+
+    renderer.destroy();
+    renderer.actions.dismiss("core-a");
+    renderer.actions.trackUsageEvent("opened-settings");
+
+    expect(listener.mock.calls.length).toBe(callsBeforeDestroy);
+    expect(renderer.state.newCount).toBe(2);
   });
 });

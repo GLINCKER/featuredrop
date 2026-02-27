@@ -4,90 +4,94 @@ title: Quickstart
 
 import { Steps, Callout } from 'nextra/components'
 import { trackDocsEvent } from '../../components/docs-analytics'
+import { QuickstartCompletionTracker } from '../../components/quickstart-completion-tracker'
 
 # Quickstart
 
-Get your first working badge in under 10 minutes. This guide covers the simplest setup using the React SDK and an in-memory storage adapter suitable for local development.
+Ship a working changelog + new badge in under 10 minutes.
+
+<QuickstartCompletionTracker />
 
 <Steps>
-### Install the package
+### Install
 
-Install the base library and its React bindings via your package manager of choice.
-
-```bash filename="Terminal"
+```bash
 pnpm add featuredrop
 ```
 
-### Define a manifest
+### Define your manifest
 
-The manifest is your single source of truth. It defines every feature, announcement, or tour your product will surface — along with their targeting rules and expiration dates. Everything lives in your codebase, under version control.
+`FeatureManifest` is an array of typed entries. Required fields are `id`, `label`, `releasedAt`, and `showNewUntil`.
 
-```ts filename="manifest.ts"
+```ts filename="featuredrop.manifest.ts"
 import type { FeatureManifest } from 'featuredrop'
 
 export const manifest: FeatureManifest = [
   {
     id: 'new-dashboard',
-    title: 'New Dashboard',
-    version: '1.0.0',
-    releaseDate: '2026-02-01T00:00:00Z',
-    description: 'A faster dashboard with updated real-time charts and CSV export.'
+    label: 'New dashboard',
+    description: 'Faster charts and CSV export.',
+    sidebarKey: '/dashboard',
+    releasedAt: '2026-02-01T00:00:00Z',
+    showNewUntil: '2026-03-01T00:00:00Z',
+    version: { introduced: '1.4.0' }
   }
 ]
 ```
 
-### Wrap your app
-
-Wrap your React tree with `FeatureDropProvider`. Pass it a manifest and a storage adapter. We use `MemoryAdapter` here for quick local testing — it does not persist state between page reloads.
+### Mount the provider and UI
 
 ```tsx filename="App.tsx"
 import { MemoryAdapter } from 'featuredrop'
-import { FeatureDropProvider, ChangelogWidget, NewBadge } from 'featuredrop/react'
-import { manifest } from './manifest'
+import { ChangelogWidget, FeatureDropProvider, NewBadge, useNewFeature } from 'featuredrop/react'
+import { manifest } from './featuredrop.manifest'
+
+function DashboardNavBadge() {
+  const { isNew, dismiss } = useNewFeature('/dashboard')
+  return <NewBadge variant="dot" show={isNew} dismissOnClick onDismiss={dismiss} />
+}
 
 export function App() {
   return (
-    <FeatureDropProvider manifest={manifest} storage={new MemoryAdapter()}>
-      <div className="flex items-center gap-4">
+    <FeatureDropProvider
+      manifest={manifest}
+      storage={new MemoryAdapter()}
+      appVersion="1.4.0"
+    >
+      <div className="flex items-center gap-2">
         <span>Dashboard</span>
-        {/* Renders a pulsing dot next to 'Dashboard' until the user has seen it */}
-        <NewBadge featureId="new-dashboard" />
+        <DashboardNavBadge />
       </div>
 
-      {/* Global slide-out changelog panel */}
-      <ChangelogWidget />
+      <ChangelogWidget title="Product updates" />
     </FeatureDropProvider>
   )
 }
 ```
 
 <Callout type="warning">
-  **Do not use `MemoryAdapter` in production.** It stores state in memory only — dismissals are lost on every page reload. Use `LocalStorageAdapter` for SPAs or `RemoteAdapter` / `PostgresAdapter` when state must persist across devices and sessions.
+  `MemoryAdapter` is for local/dev only. For production persistence use `LocalStorageAdapter`, `RemoteAdapter`, or a server adapter.
 </Callout>
 
-### Validate before deploying
-
-Run these commands in your CI pipeline to catch manifest errors before they reach users:
+### Add validation to CI
 
 ```bash
-# Validate schema and semantic rules
 npx featuredrop validate --pattern "features/**/*.md"
-
-# Quick local bundle size check
-pnpm featuredrop size-check
+npx featuredrop doctor --pattern "features/**/*.md"
+pnpm size-check
 ```
 
 </Steps>
 
 ---
 
+<div id="quickstart-next-steps" />
+
 ## Next Steps
 
-Now that you have a basic implementation working, explore how to swap the in-memory adapter for a real database, or configure the visual theme to match your design system.
-
-- [View Integration Guides](/docs/integrations)
-- [Explore the Component Gallery](/docs/components/gallery)
 - [Adapter Overview](/docs/adapters/overview)
+- [Component Gallery](/docs/components/gallery)
+- [CI Utilities](/docs/automation/ci)
 
 <div className="mt-8">
   <a
@@ -98,4 +102,3 @@ Now that you have a basic implementation working, explore how to swap the in-mem
     Launch Playground
   </a>
 </div>
-

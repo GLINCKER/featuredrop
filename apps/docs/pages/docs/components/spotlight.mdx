@@ -7,21 +7,36 @@ import { SpotlightDemo } from '../../../components/demos/spotlight-demo'
 
 # The Spotlight
 
-The `<Spotlight>` component is a highly focused guidance tool. Unlike a `<Hotspot>`, which rests passively on the UI, a Spotlight aggressively commands attention by rendering a dark, semi-transparent overlay across your entire application window, leaving only the targeted element illuminated (or "spotlit") at full brightness.
+`<Spotlight>` highlights one target element with a beacon and contextual tooltip.
 
-## Usage & Strategy
+## Usage
 
-Spotlights are the perfect middle-ground between a passive Hotspot and a fully-blocking Announcement Modal. They immediately draw the user's eye to exactly one place while still preserving the visual context of the surrounding application.
+```tsx filename="spotlight.tsx"
+import { Spotlight } from 'featuredrop/react'
 
-- **High-Value Actions**: Use a Spotlight when you deploy a massive new feature (like a highly-requested "Export to CSV" button) that you want 100% of your daily active users to see within 5 seconds of logging in.
-- **Auto-Dismissal**: Spotlights are typically configured to dismiss the moment the user clicks the illuminated element, ensuring a frictionless transition into utilizing the new feature.
+<Spotlight
+  featureId="csv-export-launch"
+  targetSelector="#export-btn"
+  placement="right"
+  autoDismiss
+  autoDismissDelay={4000}
+/>
+```
+
+## Key props
+
+| Prop | Type | Notes |
+| --- | --- | --- |
+| `featureId` | `string` | Required manifest id |
+| `targetSelector` / `targetRef` | selector or ref | Target element |
+| `placement` | `'top' \| 'bottom' \| 'left' \| 'right'` | Tooltip position |
+| `autoDismiss` | `boolean` | Optional auto close |
+| `tooltipContent` | `ReactNode` | Custom tooltip body |
 
 <Callout type="warning">
-  **Avoid Overuse**: Because the Spotlight blocks interactions with the rest of the un-illuminated page, it is inherently disruptive. Do not use Spotlights for minor bug fixes or small copy changes.
+  Use sparingly. Spotlight is intentionally interruptive.
 </Callout>
 
 ## Interactive Demo
-
-The demo below illustrates how the Spotlight dynamically calculates the bounding box of its target element and punches a transparent "hole" through the dark overlay to illuminate it.
 
 <SpotlightDemo />

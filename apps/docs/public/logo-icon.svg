@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Outer rounded square gradient: warm top, deep orange bottom -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#FF7A30"/>
+      <stop offset="100%" stop-color="#C73F00"/>
+    </linearGradient>
+
+    <!-- Glass highlight at top: white arc shimmer -->
+    <radialGradient id="gloss" cx="50%" cy="0%" r="70%" fx="50%" fy="0%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Center dot radial — inner glow -->
+    <radialGradient id="dotGrad" cx="50%" cy="30%" r="70%" fx="50%" fy="30%">
+      <stop offset="0%"   stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#FFE0CC"/>
+    </radialGradient>
+
+    <!-- Outer ring soft glow -->
+    <radialGradient id="ringGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="80%"  stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.0"/>
+    </radialGradient>
+
+    <!-- Drop shadow filter -->
+    <filter id="shadow" x="-15%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="18" stdDeviation="30" flood-color="#7a2800" flood-opacity="0.45"/>
+    </filter>
+
+    <!-- Subtle inner emboss -->
+    <filter id="innerShadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feComposite in="SourceGraphic" in2="SourceGraphic" operator="arithmetic" k1="0" k2="1" k3="0" k4="0"/>
+    </filter>
+
+    <!-- Ring blur for depth -->
+    <filter id="ringBlur">
+      <feGaussianBlur stdDeviation="1.5"/>
+    </filter>
+
+    <!-- Center dot glow -->
+    <filter id="dotGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="glow"/>
+      <feMerge>
+        <feMergeNode in="glow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Drop shadow layer -->
+  <rect x="32" y="32" width="448" height="448" rx="100" fill="#C73F00" filter="url(#shadow)" opacity="0.55"/>
+
+  <!-- Main background square -->
+  <rect x="32" y="32" width="448" height="448" rx="100" fill="url(#bgGrad)"/>
+
+  <!-- Subtle inner border highlight (top edge) -->
+  <rect x="33" y="33" width="446" height="446" rx="99" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.18"/>
+
+  <!-- Glass gloss overlay (top reflection) -->
+  <rect x="32" y="32" width="448" height="224" rx="100" fill="url(#gloss)"/>
+  <!-- Clip the gloss to the square shape -->
+  <clipPath id="squareClip">
+    <rect x="32" y="32" width="448" height="448" rx="100"/>
+  </clipPath>
+  <rect x="32" y="32" width="448" height="230" rx="100" fill="url(#gloss)" clip-path="url(#squareClip)"/>
+
+  <!-- ─── BEACON RINGS ─── -->
+  <!-- Outer ring 1 — most faint, outermost -->
+  <circle cx="256" cy="256" r="168" fill="none" stroke="white" stroke-width="2.5" opacity="0.13"/>
+
+  <!-- Outer ring 2 -->
+  <circle cx="256" cy="256" r="140" fill="none" stroke="white" stroke-width="3" opacity="0.2"/>
+
+  <!-- Middle ring -->
+  <circle cx="256" cy="256" r="108" fill="none" stroke="white" stroke-width="4" opacity="0.32"/>
+
+  <!-- Inner ring — clearly visible -->
+  <circle cx="256" cy="256" r="74" fill="none" stroke="white" stroke-width="5" opacity="0.55"/>
+
+  <!-- Inner ring subtle fill for depth -->
+  <circle cx="256" cy="256" r="74" fill="white" opacity="0.035"/>
+
+  <!-- Center dot glow halo (blurred, behind the dot) -->
+  <circle cx="256" cy="256" r="36" fill="white" opacity="0.18" filter="url(#dotGlow)"/>
+
+  <!-- Center dot — main white filled circle with depth gradient -->
+  <circle cx="256" cy="256" r="30" fill="url(#dotGrad)" filter="url(#dotGlow)"/>
+
+  <!-- Center dot top-left highlight for 3D feel -->
+  <ellipse cx="248" cy="247" rx="12" ry="9" fill="white" opacity="0.45"/>
+
+  <!-- ─── BOTTOM: Teardrop "drop tail" below center ─── -->
+  <!-- A subtle elongated oval below the center dot to nod to "FeatureDrop" -->
+  <ellipse cx="256" cy="302" rx="6" ry="9" fill="white" opacity="0.3"/>
+  <ellipse cx="256" cy="313" rx="3.5" ry="4.5" fill="white" opacity="0.15"/>
+
+  <!-- Bottom shine line — bottom of square -->
+  <rect x="96" y="455" width="320" height="3" rx="2" fill="white" opacity="0.07" clip-path="url(#squareClip)"/>
+</svg>

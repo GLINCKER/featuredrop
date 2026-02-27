@@ -20,7 +20,7 @@ The entire system revolves around a simple, three-part architecture:
 2. **The Provider**: A lightweight React context provider (`<FeatureDropProvider>`) that sits near the top of your app tree. It parses your manifest and tracks which features a user has seen or interacted with.
 3. **The Components**: Drop-in UI primitives like `<ChangelogWidget>`, `<Tour>`, or `<NewBadge>` that automatically read from the Provider to display the right content at the right time.
 
-Because FeatureDrop is completely headless by default, you can use our built-in CSS styling to get up and running instantly, or you can supply your own completely custom UI using render props.
+FeatureDrop ships with usable defaults and render-prop escape hatches, so you can move fast first and customize deeply when needed.
 
 ---
 

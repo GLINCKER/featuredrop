@@ -22,6 +22,7 @@ function mockJsonResponse(status = 200): Response {
     ok: status >= 200 && status < 300,
     status,
     json: async () => ({}),
+    text: async () => "",
   } as Response;
 }
 
@@ -93,6 +94,65 @@ describe("notification bridges", () => {
     await expect(
       SlackBridge.notify(FEATURE, { webhookUrl: "https://hooks.slack.test/1" }),
     ).rejects.toThrow(/Bridge request failed/);
+  });
+
+  it("retries retryable statuses and succeeds when follow-up attempt passes", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock
+      .mockResolvedValueOnce(mockJsonResponse(500))
+      .mockResolvedValueOnce(mockJsonResponse(200));
+
+    await SlackBridge.notify(FEATURE, {
+      webhookUrl: "https://hooks.slack.test/1",
+      maxRetries: 1,
+      retryDelayMs: 0,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry non-retryable statuses by default", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValueOnce(mockJsonResponse(400));
+
+    await expect(
+      SlackBridge.notify(FEATURE, {
+        webhookUrl: "https://hooks.slack.test/1",
+        maxRetries: 3,
+        retryDelayMs: 0,
+      }),
+    ).rejects.toThrow(/Bridge request failed/);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("aborts bridge requests that exceed timeoutMs", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockImplementationOnce((_url, init) => {
+      return new Promise<Response>((_resolve, reject) => {
+        const signal = init?.signal as AbortSignal | undefined;
+        signal?.addEventListener(
+          "abort",
+          () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          },
+          { once: true },
+        );
+      });
+    });
+
+    try {
+      const request = SlackBridge.notify(FEATURE, {
+        webhookUrl: "https://hooks.slack.test/1",
+        timeoutMs: 25,
+      });
+
+      const assertion = expect(request).rejects.toThrow(/timed out/);
+      await vi.advanceTimersByTimeAsync(30);
+      await assertion;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
