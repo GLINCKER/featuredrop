@@ -1,7 +1,9 @@
 import { createInterface } from "node:readline/promises";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { hostname } from "node:os";
 import { buildManifestFromPattern, validateFeatureFiles } from "./changelog-as-code";
+import { getPostHogClient, shutdownPostHog } from "./posthog-client";
 import {
   computeManifestStats,
   generateMarkdownChangelog,
@@ -130,6 +132,10 @@ async function run(): Promise<void> {
     return;
   }
 
+  // Use hostname-based distinct ID for anonymous CLI telemetry
+  const distinctId = `cli:${hostname()}`;
+  const posthog = getPostHogClient();
+
   try {
     if (args.command === "init") {
       const result = await initFeaturedropProject({
@@ -141,6 +147,12 @@ async function run(): Promise<void> {
       for (const path of result.created) {
         console.log(`- ${path}`);
       }
+      posthog?.capture({
+        distinctId,
+        event: "cli_init",
+        properties: { format: result.format, files_created: result.created.length },
+      });
+      await shutdownPostHog();
       return;
     }
 
@@ -160,6 +172,18 @@ async function run(): Promise<void> {
         showDays: args.showDays,
       });
       console.log(`Added feature "${result.entry.id}" -> ${result.path}`);
+      posthog?.capture({
+        distinctId,
+        event: "cli_add_feature",
+        properties: {
+          feature_id: result.entry.id,
+          feature_type: result.entry.type,
+          format: args.format,
+          has_description: Boolean(args.description),
+          has_url: Boolean(args.url),
+        },
+      });
+      await shutdownPostHog();
       return;
     }
 
@@ -176,6 +200,12 @@ async function run(): Promise<void> {
         outFile: args.outFile,
       });
       console.log(`Migrated ${result.entries.length} entries from ${from} -> ${result.outFile}`);
+      posthog?.capture({
+        distinctId,
+        event: "cli_migrate",
+        properties: { source: from, entries_migrated: result.entries.length, out_file: result.outFile },
+      });
+      await shutdownPostHog();
       return;
     }
 
@@ -187,6 +217,12 @@ async function run(): Promise<void> {
         cwd: args.cwd,
       });
       console.log(`Built ${entries.length} feature entries -> ${out}`);
+      posthog?.capture({
+        distinctId,
+        event: "cli_build",
+        properties: { entries_built: entries.length, out_file: out, has_pattern: Boolean(args.pattern) },
+      });
+      await shutdownPostHog();
       return;
     }
 
@@ -196,6 +232,7 @@ async function run(): Promise<void> {
         cwd: args.cwd,
       });
       console.log("Feature files valid");
+      await shutdownPostHog();
       return;
     }
 
@@ -211,6 +248,7 @@ async function run(): Promise<void> {
       console.log(`By category: ${Object.entries(stats.byCategory).map(([k, v]) => `${k}=${v}`).join(", ") || "none"}`);
       if (stats.newestRelease) console.log(`Newest release: ${stats.newestRelease}`);
       if (stats.oldestRelease) console.log(`Oldest release: ${stats.oldestRelease}`);
+      await shutdownPostHog();
       return;
     }
 
@@ -222,6 +260,7 @@ async function run(): Promise<void> {
       console.log("");
       console.log(`${report.warnings.length} warning(s), ${report.errors.length} error(s).`);
       if (report.errors.length > 0) process.exitCode = 1;
+      await shutdownPostHog();
       return;
     }
 
@@ -234,6 +273,12 @@ async function run(): Promise<void> {
       });
       await writeFile(join(args.cwd ?? process.cwd(), out), `${xml}\n`, "utf8");
       console.log(`Generated RSS feed -> ${out}`);
+      posthog?.capture({
+        distinctId,
+        event: "cli_generate_rss",
+        properties: { entries_count: entries.length, out_file: out },
+      });
+      await shutdownPostHog();
       return;
     }
 
@@ -242,11 +287,24 @@ async function run(): Promise<void> {
       const markdown = generateMarkdownChangelog(entries);
       await writeFile(join(args.cwd ?? process.cwd(), out), markdown, "utf8");
       console.log(`Generated markdown changelog -> ${out}`);
+      posthog?.capture({
+        distinctId,
+        event: "cli_generate_changelog",
+        properties: { entries_count: entries.length, out_file: out },
+      });
+      await shutdownPostHog();
       return;
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`featuredrop: ${message}`);
+    posthog?.captureException(error, distinctId, { command: args.command });
+    posthog?.capture({
+      distinctId,
+      event: "cli_error",
+      properties: { command: args.command, error_message: message },
+    });
+    await shutdownPostHog();
     process.exitCode = 1;
   }
 }

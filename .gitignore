@@ -35,3 +35,4 @@ claude.md
 *.log
 npm-debug.log*
 pnpm-debug.log*
+posthog-setup-report.md
