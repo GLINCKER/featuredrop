@@ -7,24 +7,47 @@ import { SurveyDemo } from '../../../components/demos/survey-demo'
 
 # The Survey Component
 
-The `<Survey>` primitive allows you to aggressively gather qualitative and quantitative telemetry from your users without requiring them to leave your app to fill out a Google Form. 
+`<Survey>` collects structured user feedback (NPS/CSAT/CES/custom) with trigger rules and cooldowns.
 
-## Usage & Strategy
+## Usage
 
-Surveys are unique because they are typically gate-kept by prior completion metrics. You should not spam users with Surveys upon login.
+```tsx filename="nps-survey.tsx"
+import { Survey } from 'featuredrop/react'
 
-Instead, map the `<Survey>` component to trigger *after* a specific, meaningful interaction has successfully completed.
+<Survey
+  id="post-launch-nps"
+  type="nps"
+  trigger="manual"
+  prompt="How likely are you to recommend FeatureDrop?"
+  onSubmit={async (payload) => {
+    await fetch('/api/surveys', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+  }}
+>
+  {({ show }) => (
+    <button onClick={() => show({ force: true })}>Open survey</button>
+  )}
+</Survey>
+```
 
-- **Event-Driven Rollouts**: Trigger a Survey immediately after a user successfully exports a CSV using your newly launched Reports Engine.
-- **Short-Form Focus**: In-app surveys must be frictionless. Keep them to 1-2 questions maximum.
-- **Graceful Deferment**: FeatureDrop Survey components include built-in "Ask Me Later" semantics, which map to configurable cooldown windows in your Storage Adapter.
+## Key props
+
+| Prop | Type | Notes |
+| --- | --- | --- |
+| `id` | `string` | Required survey id |
+| `type` | `'nps' \| 'csat' \| 'ces' \| 'custom'` | Survey scale |
+| `trigger` | `'auto' \| 'manual'` | Show mode |
+| `triggerRules` | `SurveyTriggerRules` | Page/usage/time/sample gating |
+| `questions` | `SurveyQuestion[]` | Optional custom questions |
+| `onSubmit` | `(payload) => Promise<void> \| void` | Required submit handler |
 
 <Callout type="tip">
-  **NPS Campaigns**: The Survey component natively supports 1-10 range inputs for Net Promoter Score (NPS) campaigns or 1-5 star ratings for CSAT scorecards.
+  Keep surveys short and tied to meaningful moments (post-feature use, not first page load).
 </Callout>
 
 ## Interactive Demo
-
-The demo below shows how the Survey component manages complex form state (radio buttons, text areas) while maintaining a minimal visual footprint in the UI.
 
 <SurveyDemo />

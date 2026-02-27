@@ -6,38 +6,55 @@ import { Callout } from 'nextra/components'
 
 # Remote Adapter
 
-The `RemoteAdapter` is the standard choice for production web applications. It ensures that a user's adoption state (e.g., "Has seen the Dashboard Tour") converges perfectly across all their distinct sessions and devices.
+`RemoteAdapter` keeps dismissal/read state synchronized through your backend API.
 
-If a user dismisses a Changelog on their mobile phone, the `RemoteAdapter` ensures the Changelog remains dismissed when they log in to their desktop browser an hour later.
+Use it when users switch devices and you need consistent state.
 
-## Core Capabilities
-
-Because distributed systems are inherently unreliable, the Remote Adapter ships with enterprise-grade safeguards natively:
-
-- **Exponential Backoff**: Failed network requests seamlessly retry with escalating delays to avoid swamping your API.
-- **Circuit Breakers**: If an upstream API goes down, the adapter trips a local fast-fail circuit to prevent a runaway loop of failing network requests from hanging the browser thread.
-- **Diagnostic Signals**: You can observe the adapter's `isHealthy()` signal to feed telemetry dashboards.
-
-## Typical Integration
+## Typical integration
 
 ```ts filename="featuredrop.config.ts"
-import { RemoteAdapter } from 'featuredrop'
+import { RemoteAdapter } from 'featuredrop/adapters'
 
-// Initialize the remote adapter pointing to your backend endpoint
 export const storage = new RemoteAdapter({
-  baseUrl: '/api/featuredrop',
-  retry: { 
-    maxAttempts: 3, 
-    baseDelayMs: 300 
-  },
-  circuitBreaker: { 
-    failureThreshold: 5, 
-    cooldownMs: 60000 // Halt requests for 1 minute if 5 consecutive errors occur
+  url: '/api/featuredrop',
+  userId: 'current-user-id',
+  fetchInterval: 300_000,
+  requestTimeoutMs: 10_000,
+  retryAttempts: 3,
+  retryBaseDelayMs: 300,
+  retryOnStatuses: [408, 429, 500, 502, 503, 504],
+  circuitBreakerThreshold: 5,
+  circuitBreakerCooldownMs: 60_000,
+  dismissBatchWindowMs: 150,
+  syncOnOnline: true,
+  syncOnVisibilityChange: true,
+  syncIntervalMs: 60_000,
+  onError: (error, context) => {
+    console.warn('featuredrop remote error', context.operation, context.attempt, error)
   }
 })
 ```
 
+## Expected endpoints
+
+- `GET /api/featuredrop` (manifest, optional if you fetch manifest separately)
+- `GET /api/featuredrop/state` -> `{ watermark, dismissedIds }`
+- `POST /api/featuredrop/dismiss` with `{ featureId }`
+- `POST /api/featuredrop/dismiss-batch` with `{ featureIds }` (optional but recommended)
+- `POST /api/featuredrop/dismiss-all` with `{ watermark }`
+
+## Operational notes
+
+- Adapter retries failed requests with exponential backoff.
+- Parallel `fetchManifest()` / `syncState()` calls are coalesced to a single in-flight request.
+- Circuit breaker opens after repeated failures to avoid request storms.
+- Rapid dismiss interactions are batched by `dismissBatchWindowMs`.
+- Failed queued dismisses are retained and retried on subsequent flushes.
+- Enable `syncOnOnline` / `syncOnVisibilityChange` when you want automatic recovery sync after reconnect or tab return.
+- Use `await storage.isHealthy()` for diagnostics.
+- Use `await storage.flushPendingDismisses()` before route unloads if you need aggressive durability.
+- Call `await storage.destroy()` during teardown tests to remove listeners/timers.
+
 <Callout type="warning">
-  **Operational Recommendations**:
-  Always ensure that you set request-level timeouts at the transport layer logic on your backend `/api/featuredrop` route. If the remote goes down, FeatureDrop will gracefully fall back, but you should log circuit state transitions to your monitoring provider.
+  Keep backend route latency predictable and return explicit non-2xx on failures so retry logic behaves correctly.
 </Callout>

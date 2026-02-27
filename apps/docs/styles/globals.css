@@ -2,87 +2,547 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Google Fonts ─── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..500&display=swap');
+
+/* ─── Design Token: Color Scheme ─── */
 :root {
   color-scheme: light;
-  --noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+
+  /* Surfaces */
+  --surface-bg: #fafafa;
+  --surface-card: #ffffff;
+  --surface-elevated: #ffffff;
+  --surface-code: #f4f5f7;
+  --surface-code-dark: #1a1d27;
+
+  /* Borders */
+  --border-subtle: rgba(0,0,0,0.07);
+  --border-default: rgba(0,0,0,0.1);
+  --border-strong: rgba(0,0,0,0.18);
+
+  /* Text */
+  --text-primary: #111118;
+  --text-secondary: #525263;
+  --text-muted: #8a8a9a;
+  --text-code: #d6336c;
+
+  /* Shadows — Stripe-grade layered */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.07), 0 8px 10px -6px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.04);
+  --shadow-xl: 0 20px 50px -12px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.04);
+
+  /* Brand */
+  --brand: #ea580c;
+  --brand-subtle: rgba(234, 88, 12, 0.08);
+  --brand-glow: rgba(234, 88, 12, 0.25);
 }
 
 .dark {
   color-scheme: dark;
+
+  --surface-bg: #0a0d14;
+  --surface-card: #0f1220;
+  --surface-elevated: #141826;
+  --surface-code: #12151f;
+  --surface-code-dark: #0d1018;
+
+  --border-subtle: rgba(255,255,255,0.04);
+  --border-default: rgba(255,255,255,0.07);
+  --border-strong: rgba(255,255,255,0.14);
+
+  --text-primary: #f0f1f5;
+  --text-secondary: #9899b0;
+  --text-muted: #5c5d72;
+  --text-code: #f97316;
+
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+  --shadow-xl: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+
+  --brand-subtle: rgba(234, 88, 12, 0.12);
+  --brand-glow: rgba(234, 88, 12, 0.35);
+}
+
+/* ─── Base Styles ─── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   @apply font-body bg-slate-50 text-slate-900;
-  position: relative;
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background-image: var(--noise);
-  background-attachment: fixed;
-  mix-blend-mode: overlay;
-  opacity: 0.15; /* Reduced opacity for light mode */
-  pointer-events: none;
+  background-color: var(--surface-bg);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 .dark body {
   @apply bg-slate-950 text-slate-100;
+  background-color: var(--surface-bg);
+}
+
+/* ─── Ambient Background — subtle gradient orbs (light) ─── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(234,88,12,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(99,102,241,0.03) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 50% 100%, rgba(234,88,12,0.025) 0%, transparent 60%);
 }
 
 .dark body::before {
-  mix-blend-mode: soft-light;
-  opacity: 0.08; /* Reduced opacity for dark mode */
+  background:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(234,88,12,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(99,102,241,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 50% 100%, rgba(234,88,12,0.04) 0%, transparent 60%);
 }
 
-.fd-glass {
-  @apply rounded-xl border border-slate-300 bg-white/95 shadow-glass backdrop-blur-3xl;
+/* ─── Nextra: Global doc wrapper ─── */
+.nextra-nav-container {
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid var(--border-subtle) !important;
+  background: rgba(250,250,250,0.85) !important;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
-.dark .fd-glass {
-  @apply border-slate-700 bg-[#070b14]/80;
+.dark .nextra-nav-container {
+  background: rgba(10,13,20,0.88) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
 }
 
-.fd-glass-surface {
-  @apply rounded-lg border border-slate-200 bg-white shadow-sm transition-all duration-300;
+/* ─── Sidebar ─── */
+.nextra-sidebar-container {
+  border-right: 1px solid var(--border-subtle) !important;
+  background: rgba(250,250,250,0.7) !important;
+  backdrop-filter: blur(8px);
 }
 
-.dark .fd-glass-surface {
-  @apply border-slate-800 bg-slate-900/50 shadow-none;
+.dark .nextra-sidebar-container {
+  background: rgba(10,13,20,0.7) !important;
+  border-right: 1px solid rgba(255,255,255,0.04) !important;
 }
 
-.fd-chip {
-  @apply inline-flex items-center rounded-sm border border-slate-300 bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-widest text-slate-900;
+/* Sidebar nav links — refined */
+.nextra-sidebar-container .nx-text-sm {
+  font-size: 0.8125rem;
+  font-weight: 450;
+  letter-spacing: -0.01em;
 }
 
-.dark .fd-chip {
-  @apply border-slate-700 bg-slate-900 text-slate-100;
+/* Active sidebar item — Stripe-style left accent */
+.nextra-sidebar-container li a[aria-selected="true"],
+.nextra-sidebar-container li a.nx-text-primary-600 {
+  background: var(--brand-subtle) !important;
+  border-radius: 0.375rem;
 }
 
-.fd-cta {
-  @apply inline-flex items-center rounded-none border-2 border-slate-900 bg-slate-900 px-6 py-2.5 text-sm font-bold text-white transition-all duration-300 hover:bg-brand hover:border-brand;
+/* ─── Typography ─── */
+article h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+  color: var(--text-primary);
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.dark .fd-cta {
-  @apply border-slate-100 bg-slate-100 text-slate-900 hover:bg-brand hover:border-brand hover:text-white hover:shadow-glow-primary;
+.dark article h1 {
+  background: linear-gradient(135deg, #f0f1f5 0%, #9899b0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
-.fd-cta-secondary {
-  @apply inline-flex items-center rounded-none border-2 border-slate-300 bg-transparent px-6 py-2.5 text-sm font-bold text-slate-900 transition-all duration-300 hover:border-slate-900;
+article h2 {
+  font-size: 1.3rem;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-subtle);
 }
 
-.dark .fd-cta-secondary {
-  @apply border-slate-700 bg-transparent text-slate-100 hover:border-slate-300;
+article h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
-/* Fix Nextra overriding syntax highlighter spans and breaking code blocks onto new lines */
+/* Inline code */
+article :not(pre) > code {
+  font-size: 0.8em;
+  font-weight: 500;
+  color: var(--text-code);
+  background: rgba(234,88,12,0.06);
+  border: 1px solid rgba(234,88,12,0.12);
+  border-radius: 0.3rem;
+  padding: 0.1em 0.4em;
+  font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+  transition: background 0.15s ease;
+}
+
+.dark article :not(pre) > code {
+  background: rgba(234,88,12,0.1);
+  border-color: rgba(234,88,12,0.2);
+}
+
+/* ─── Callouts ─── */
+.nextra-callout {
+  border-radius: 0.5rem !important;
+  border-width: 1px !important;
+  backdrop-filter: blur(4px);
+}
+
+/* ─── Tables — Apple Notes / Stripe precision ─── */
+.nextra-scrollable-table {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+
+article table {
+  width: 100%;
+  font-size: 0.875rem;
+  border-collapse: collapse;
+}
+
+article th {
+  background: rgba(0,0,0,0.03);
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.dark article th {
+  background: rgba(255,255,255,0.03);
+}
+
+article td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  vertical-align: top;
+}
+
+.dark article td {
+  color: rgba(255,255,255,0.65);
+}
+
+article tr:last-child td {
+  border-bottom: none;
+}
+
+article tr:hover td {
+  background: rgba(0,0,0,0.012);
+  transition: background 0.1s ease;
+}
+
+.dark article tr:hover td {
+  background: rgba(255,255,255,0.02);
+}
+
+/* ─── Code Blocks — Premium Stripe/Linear style ─── */
+
+/* Fix Nextra overriding syntax highlighter spans */
 .nice-scrollbar pre span {
   display: inline !important;
 }
 
-/* Define Dark Mode mappings for the FeatureDrop ChangelogPage component */
+/* Outer wrapper */
+.nextra-code-block {
+  border-radius: 0.625rem !important;
+  overflow: hidden;
+  border: 1px solid var(--border-default) !important;
+  box-shadow: var(--shadow-md);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  margin: 1.25rem 0;
+}
+
+.dark .nextra-code-block {
+  border-color: rgba(255,255,255,0.07) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+.nextra-code-block:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-strong) !important;
+}
+
+.dark .nextra-code-block:hover {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.09);
+  border-color: rgba(255,255,255,0.1) !important;
+}
+
+/* The pre element */
+.nextra-code-block pre,
+pre.nx-bg-primary-700\/5 {
+  background: var(--surface-code) !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 1.25rem 1.5rem !important;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  overflow-x: auto;
+}
+
+.dark .nextra-code-block pre,
+.dark pre.nx-bg-primary-700\/5 {
+  background: var(--surface-code-dark) !important;
+}
+
+/* Filename bar — premium tab style */
+.nextra-code-block .nx-absolute.nx-top-0,
+[data-nextra-code] .nx-absolute.nx-top-0 {
+  background: rgba(0,0,0,0.035) !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  padding: 0.45rem 1rem !important;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  font-family: ui-monospace, 'Cascadia Code', monospace;
+  font-weight: 500;
+}
+
+.dark .nextra-code-block .nx-absolute.nx-top-0,
+.dark [data-nextra-code] .nx-absolute.nx-top-0 {
+  background: rgba(255,255,255,0.025) !important;
+  border-bottom-color: rgba(255,255,255,0.05) !important;
+  color: rgba(255,255,255,0.3);
+}
+
+/* ─── Copy Button — polished ─── */
+[data-nextra-code] button[title="Copy code"],
+.nextra-code-block button[title="Copy code"] {
+  opacity: 0;
+  transition: opacity 0.18s ease, background 0.15s ease, transform 0.12s ease, border-color 0.15s ease;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid var(--border-default);
+  border-radius: 0.4rem;
+  color: var(--text-secondary);
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 10;
+  box-shadow: var(--shadow-xs);
+}
+
+.dark [data-nextra-code] button[title="Copy code"],
+.dark .nextra-code-block button[title="Copy code"] {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.5);
+  box-shadow: none;
+}
+
+/* Reveal on hover */
+[data-nextra-code]:hover button[title="Copy code"],
+.nextra-code-block:hover button[title="Copy code"] {
+  opacity: 1;
+}
+
+/* Hover */
+[data-nextra-code] button[title="Copy code"]:hover,
+.nextra-code-block button[title="Copy code"]:hover {
+  background: #ffffff;
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  transform: scale(1.06);
+  box-shadow: var(--shadow-sm);
+}
+
+.dark [data-nextra-code] button[title="Copy code"]:hover,
+.dark .nextra-code-block button[title="Copy code"]:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.9);
+  box-shadow: none;
+}
+
+/* Active press */
+[data-nextra-code] button[title="Copy code"]:active,
+.nextra-code-block button[title="Copy code"]:active {
+  transform: scale(0.95);
+}
+
+/* Copied state — green confirmation */
+[data-nextra-code] button[aria-label="Copied!"],
+.nextra-code-block button[aria-label="Copied!"] {
+  opacity: 1 !important;
+  background: rgba(34,197,94,0.1) !important;
+  border-color: rgba(34,197,94,0.3) !important;
+  color: rgb(22,163,74) !important;
+  transform: scale(1) !important;
+}
+
+.dark [data-nextra-code] button[aria-label="Copied!"],
+.dark .nextra-code-block button[aria-label="Copied!"] {
+  background: rgba(34,197,94,0.12) !important;
+  border-color: rgba(34,197,94,0.3) !important;
+  color: rgb(134,239,172) !important;
+}
+
+/* ─── Utility Classes ─── */
+
+.fd-glass {
+  @apply rounded-xl;
+  background: rgba(255,255,255,0.95);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+}
+
+.dark .fd-glass {
+  background: rgba(15,18,32,0.85);
+  border-color: rgba(255,255,255,0.06);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+.fd-glass-surface {
+  @apply rounded-lg;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.dark .fd-glass-surface {
+  background: var(--surface-card);
+  border-color: rgba(255,255,255,0.05);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+
+.fd-glass-surface:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-default);
+  transform: translateY(-1px);
+}
+
+.dark .fd-glass-surface:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  border-color: rgba(255,255,255,0.09);
+}
+
+.fd-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 0.25rem;
+  border: 1px solid var(--border-default);
+  background: rgba(0,0,0,0.03);
+  padding: 0.2rem 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.dark .fd-chip {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.4);
+}
+
+.fd-cta {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 0.5rem;
+  border: 1.5px solid #111118;
+  background: #111118;
+  padding: 0.6rem 1.4rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.fd-cta:hover {
+  background: var(--brand);
+  border-color: var(--brand);
+  box-shadow: 0 4px 16px var(--brand-glow), 0 1px 2px rgba(0,0,0,0.2);
+  transform: translateY(-1px);
+}
+
+.dark .fd-cta {
+  background: #f8fafc;
+  border-color: #f8fafc;
+  color: #0a0d14;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+
+.dark .fd-cta:hover {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #ffffff;
+  box-shadow: 0 4px 20px var(--brand-glow);
+}
+
+.fd-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 0.5rem;
+  border: 1.5px solid var(--border-default);
+  background: rgba(255,255,255,0.8);
+  padding: 0.6rem 1.4rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--shadow-xs);
+  backdrop-filter: blur(8px);
+}
+
+.fd-cta-secondary:hover {
+  border-color: var(--border-strong);
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.dark .fd-cta-secondary {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.9);
+}
+
+.dark .fd-cta-secondary:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.2);
+}
+
+/* ─── Dark Mode Changelog Component Vars ─── */
 .dark [data-featuredrop-changelog-page] {
   --featuredrop-card-bg: #0f172a;
   --featuredrop-border-color: #1e293b;
@@ -94,3 +554,345 @@ body::before {
   --featuredrop-btn-bg: #f8fafc;
   --featuredrop-btn-text: #0f172a;
 }
+
+/* ─── Smooth Scroll & Selection ─── */
+html {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  background: rgba(234, 88, 12, 0.15);
+  color: inherit;
+}
+
+.dark ::selection {
+  background: rgba(234, 88, 12, 0.25);
+}
+
+/* ─── Focus Ring — accessible + beautiful ─── */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* ─── Nextra Steps component ─── */
+.nextra-steps {
+  border-left: 2px solid var(--border-default) !important;
+}
+
+.dark .nextra-steps {
+  border-left-color: rgba(255,255,255,0.08) !important;
+}
+
+
+/* ─── TOC (Table of Contents) — Premium right rail ─── */
+/* ─── TOC (Table of Contents) — non-destructive polish ─── */
+/*
+ * IMPORTANT: Do NOT override color on .nextra-toc li a globally.
+ * Nextra v2 uses IntersectionObserver + JS to toggle nx-text-primary-600
+ * on the active item. Forcing a static color here breaks that mechanism.
+ * We only style layout, spacing, hover, and the "On This Page" header.
+ */
+
+.nextra-toc {
+  padding-top: 1.25rem !important;
+}
+
+/* Left rail border for the list */
+.nextra-toc ul {
+  border-left: 1px solid var(--border-subtle);
+  padding-left: 0.625rem;
+  margin-left: 0;
+  list-style: none;
+}
+
+/* Base link: layout and text only, NO color override */
+.nextra-toc li a {
+  display: block;
+  padding: 0.22rem 0.5rem;
+  font-size: 0.78rem;
+  border-radius: 0.3rem;
+  transition: background 0.12s ease;
+  line-height: 1.5;
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+
+/* Hover: subtle bg, let color inherit from Nextra */
+.nextra-toc li a:hover {
+  background: rgba(0,0,0,0.035);
+}
+
+.dark .nextra-toc li a:hover {
+  background: rgba(255,255,255,0.045);
+}
+
+/*
+ * Active item: Nextra adds nx-font-semibold AND nx-text-primary-600
+ * to the currently-in-view TOC link. We add a matching left accent
+ * and subtle brand background without touching the color value.
+ */
+.nextra-toc li a.nx-font-semibold,
+.nextra-toc li a[class*="nx-text-primary"] {
+  background: var(--brand-subtle);
+  font-weight: 600;
+  border-left: 2px solid var(--brand);
+  margin-left: -1px;
+  padding-left: calc(0.5rem - 1px);
+}
+
+/* "On This Page" heading label */
+.nextra-toc p.nx-mb-4,
+.nextra-toc p.nx-font-semibold {
+  font-size: 0.69rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  margin-bottom: 0.75rem !important;
+}
+
+
+/* ─── Search Input — elevated, modern ─── */
+.nextra-search input[type="search"],
+.nextra-search input {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.875rem !important;
+  color: var(--text-primary) !important;
+  box-shadow: var(--shadow-xs) !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+  padding: 0.5rem 0.875rem !important;
+  height: 2.25rem !important;
+}
+
+.nextra-search input:focus {
+  border-color: var(--brand) !important;
+  box-shadow: 0 0 0 3px var(--brand-subtle), var(--shadow-xs) !important;
+  outline: none !important;
+}
+
+.dark .nextra-search input {
+  background: rgba(255,255,255,0.05) !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+
+.dark .nextra-search input:focus {
+  border-color: var(--brand) !important;
+  box-shadow: 0 0 0 3px var(--brand-subtle) !important;
+}
+
+/* Search results dropdown */
+.nextra-search ul {
+  background: var(--surface-elevated) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: 0.625rem !important;
+  box-shadow: var(--shadow-xl) !important;
+  overflow: hidden;
+  padding: 0.375rem !important;
+}
+
+.nextra-search li {
+  border-radius: 0.375rem !important;
+  padding: 0 !important;
+  transition: background 0.1s ease;
+}
+
+.nextra-search li:hover,
+.nextra-search li[aria-selected="true"] {
+  background: var(--brand-subtle) !important;
+}
+
+.nextra-search li a {
+  padding: 0.5rem 0.75rem !important;
+  display: block;
+  text-decoration: none;
+}
+
+/* Theme toggle button — refined */
+button[aria-label="Toggle theme"],
+button[aria-label="light"],
+button[aria-label="dark"] {
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: 0.4rem;
+  width: 2.1rem;
+  height: 2.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+button[aria-label="Toggle theme"]:hover,
+button[aria-label="light"]:hover,
+button[aria-label="dark"]:hover {
+  background: rgba(0,0,0,0.04);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.dark button[aria-label="Toggle theme"]:hover,
+.dark button[aria-label="light"]:hover,
+.dark button[aria-label="dark"]:hover {
+  background: rgba(255,255,255,0.07);
+}
+
+/* ─── Changelog component dark mode vars ─── */
+.dark [data-featuredrop-changelog-page] {
+  --featuredrop-card-bg: #0f172a;
+  --featuredrop-border-color: #1e293b;
+  --featuredrop-text: #f8fafc;
+  --featuredrop-muted: #94a3b8;
+  --featuredrop-pill-active-bg: #ea580c;
+  --featuredrop-pill-active-text: #ffffff;
+  --featuredrop-reaction-active: rgba(234, 88, 12, 0.2);
+  --featuredrop-btn-bg: #f8fafc;
+  --featuredrop-btn-text: #0f172a;
+}
+
+/* ─── Landing Page Animations ─── */
+@keyframes stagger-fade-in {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes slide-in-left {
+  0% { opacity: 0; transform: translateX(-40px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-in-right {
+  0% { opacity: 0; transform: translateX(40px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scale-in {
+  0% { opacity: 0; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes count-up {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scroll-indicator {
+  0%, 100% { opacity: 0.5; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(6px); }
+}
+
+.animate-stagger-1 { animation: stagger-fade-in 0.6s ease-out 0.1s both; }
+.animate-stagger-2 { animation: stagger-fade-in 0.6s ease-out 0.2s both; }
+.animate-stagger-3 { animation: stagger-fade-in 0.6s ease-out 0.3s both; }
+.animate-stagger-4 { animation: stagger-fade-in 0.6s ease-out 0.4s both; }
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.1) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradient-shift 6s ease infinite;
+}
+
+.animate-scroll-indicator {
+  animation: scroll-indicator 2s ease-in-out infinite;
+}
+
+.animate-slide-left { animation: slide-in-left 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-slide-right { animation: slide-in-right 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-scale-in { animation: scale-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Landing showcase tab */
+.fd-showcase-tab {
+  @apply rounded-lg;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.fd-showcase-tab:hover {
+  background: rgba(0,0,0,0.04);
+  color: var(--text-primary);
+}
+
+.dark .fd-showcase-tab:hover {
+  background: rgba(255,255,255,0.04);
+}
+
+.fd-showcase-tab[data-active="true"] {
+  background: var(--surface-card);
+  color: var(--brand);
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-sm);
+}
+
+.dark .fd-showcase-tab[data-active="true"] {
+  background: var(--surface-card);
+  border-color: rgba(255,255,255,0.08);
+}
+
+/* Connector line for steps */
+.fd-connector {
+  position: relative;
+}
+
+.fd-connector::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -2rem;
+  width: 2px;
+  height: 2rem;
+  background: linear-gradient(to bottom, var(--border-default), transparent);
+}
+
+/* Animated gradient border */
+.fd-gradient-border {
+  position: relative;
+  overflow: hidden;
+}
+
+.fd-gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--brand), #8b5cf6, #06b6d4, var(--brand));
+  background-size: 300% 300%;
+  animation: gradient-shift 4s ease infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.fd-gradient-border:hover::before {
+  opacity: 1;
+}
+

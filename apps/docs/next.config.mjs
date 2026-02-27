@@ -4,7 +4,8 @@ import { fileURLToPath } from 'url'
 
 const withNextra = nextra({
   theme: 'nextra-theme-docs',
-  themeConfig: './theme.config.tsx'
+  themeConfig: './theme.config.tsx',
+  defaultShowCopyCode: true,
 })
 
 const __filename = fileURLToPath(import.meta.url)

@@ -1,91 +1,159 @@
 ---
-title: API
+title: API Reference
 ---
 
-# API Reference Map
+import { Callout } from 'nextra/components'
 
-This page is the practical index for what to import, when to import it, and what to run in CI.
+# API Reference
 
-Full reference with complete signatures:
+Practical import map and signatures for the public API.
 
-- Core/API: [`docs/API.md`](https://github.com/GLINCKER/featuredrop/blob/main/docs/API.md)
-- Architecture: [`docs/ARCHITECTURE.md`](https://github.com/GLINCKER/featuredrop/blob/main/docs/ARCHITECTURE.md)
-- Recipes: [`docs/RECIPES.md`](https://github.com/GLINCKER/featuredrop/blob/main/docs/RECIPES.md)
-
-## 1) Pick the right package entrypoint
+## Package Entrypoints
 
 | Import path | Use when |
 | --- | --- |
-| `featuredrop` | Core logic, adapters, manifest helpers, parser, analytics primitives |
-| `featuredrop/react` | Provider, hooks, and built-in UI components |
-| `featuredrop/schema` | Runtime validation (`validateManifest`) + Zod/JSON schema exports |
-| `featuredrop/testing` | Mock manifest/storage helpers and React test wrappers |
-| `featuredrop/ci` | Manifest diffing and CI summary generation |
-| `featuredrop/flags` | Feature flag bridges and gating helpers |
-| `featuredrop/bridges` | Slack/Discord/webhook/email/RSS notification bridge utilities |
-| `featuredrop/admin` | Manifest editor + preview/admin UI blocks |
-| `featuredrop/vue` / `featuredrop/svelte` / `featuredrop/solid` / `featuredrop/preact` / `featuredrop/web-components` / `featuredrop/angular` | Framework adapters |
+| `featuredrop` | Core helpers and lightweight browser adapters |
+| `featuredrop/adapters` | Full adapter surface (remote, hybrid, DB, IndexedDB) |
+| `featuredrop/react` | Provider, hooks, and React UI components |
+| `featuredrop/markdown` | Markdown to sanitized HTML parser |
+| `featuredrop/rss` | RSS feed generator |
+| `featuredrop/schema` | `validateManifest` + schema exports |
+| `featuredrop/testing` | Mock helpers and test wrappers |
+| `featuredrop/ci` | Manifest diffing/CI summaries |
+| `featuredrop/cms` | CMS/content adapters |
+| `featuredrop/renderer` | Headless changelog renderer protocol |
+| `featuredrop/flags` | Feature flag bridges |
+| `featuredrop/bridges` | Slack/Discord/webhook/email/RSS bridges |
+| `featuredrop/admin` | Manifest editor/admin components |
 
-## 2) Core runtime primitives (`featuredrop`)
+## Core Runtime (`featuredrop`)
 
 ```ts
 import {
   isNew,
   getNewFeatures,
   getNewFeatureCount,
+  hasNewFeature,
   getNewFeaturesSorted,
-  MemoryAdapter
+  LocalStorageAdapter
 } from 'featuredrop'
+import { parseDescription } from 'featuredrop/markdown'
+import { generateRSS } from 'featuredrop/rss'
 
-const storage = new MemoryAdapter()
+const storage = new LocalStorageAdapter({ prefix: 'app' })
+
 const entries = getNewFeatures(manifest, storage)
 const count = getNewFeatureCount(manifest, storage)
 const sorted = getNewFeaturesSorted(manifest, storage)
-```
+const hasSidebarBadge = hasNewFeature(manifest, '/dashboard', storage)
 
-Most common helpers:
-
-- `isNew(...)` -> single-entry eligibility gate
-- `getNewFeatures(...)` -> all currently eligible entries
-- `getNewFeatureCount(...)` -> count for badges/notifications
-- `parseDescription(markdown)` -> markdown to sanitized HTML
-- `generateRSS(manifest, options?)` -> changelog RSS XML
-
-## 3) React SDK (`featuredrop/react`)
-
-```tsx
-import { MemoryAdapter } from 'featuredrop'
-import {
-  FeatureDropProvider,
-  ChangelogWidget,
-  NewBadge,
-  useFeatureDrop
-} from 'featuredrop/react'
-
-function ReleaseActions() {
-  const { dismissAll } = useFeatureDrop()
-  return <button onClick={dismissAll}>Mark all read</button>
+const first = manifest[0]
+if (first) {
+  const active = isNew(first, storage.getWatermark(), storage.getDismissedIds())
+  console.log(active)
 }
 
-export function App() {
+const html = parseDescription('**Release** with `code`')
+const rss = generateRSS(manifest, { title: 'Product Updates' })
+```
+
+| Helper | Description |
+| --- | --- |
+| `isNew(feature, watermark, dismissedIds, now?, userContext?, matchAudience?, appVersion?, dependencyState?, triggerContext?, flagBridge?, product?)` | Evaluate one feature against all gates |
+| `getNewFeatures(manifest, storage, ...)` | Returns eligible unseen entries |
+| `getNewFeatureCount(manifest, storage, ...)` | Returns unread count |
+| `hasNewFeature(manifest, sidebarKey, storage, ...)` | Sidebar-key check for nav badges |
+| `getNewFeaturesSorted(manifest, storage, ...)` | Priority + date sorted entries |
+
+## Headless Renderer (`featuredrop/renderer`)
+
+```ts
+import { createChangelogRenderer } from 'featuredrop/renderer'
+import { LocalStorageAdapter } from 'featuredrop'
+
+const renderer = createChangelogRenderer({
+  manifest,
+  storage: new LocalStorageAdapter({ prefix: 'app' }),
+  appVersion: '2.4.0'
+})
+
+renderer.actions.trackUsageEvent('opened-settings')
+renderer.actions.markFeatureSeen('dashboard-v2')
+renderer.subscribe((state) => console.log(state.newCount))
+```
+
+Use this when you want FeatureDrop filtering/state without React components.
+
+## Adapters (`featuredrop/adapters`)
+
+```ts
+import {
+  RemoteAdapter,
+  IndexedDBAdapter,
+  HybridAdapter,
+  PostgresAdapter
+} from 'featuredrop/adapters'
+```
+
+Use this entrypoint for non-core adapters (remote, hybrid, and server-side database adapters).
+
+`RemoteAdapter` also exposes `flushPendingDismisses()` and `destroy()` for aggressive queue durability and teardown-safe cleanup.
+
+## React SDK (`featuredrop/react`)
+
+### Provider
+
+```tsx
+import { FeatureDropProvider } from 'featuredrop/react'
+import { LocalStorageAdapter } from 'featuredrop'
+
+<FeatureDropProvider
+  manifest={manifest}
+  storage={new LocalStorageAdapter({ prefix: 'app' })}
+  appVersion="2.4.0"
+  userContext={{ plan: 'pro', role: 'admin', region: 'us' }}
+>
+  {children}
+</FeatureDropProvider>
+```
+
+Key props: `manifest`, `storage`, `appVersion`, `userContext`, `matchAudience`, `product`, `throttle`, `flagBridge`, `locale`, `animation`.
+
+### `useFeatureDrop()`
+
+```tsx
+import { useFeatureDrop } from 'featuredrop/react'
+
+function ReleaseActions() {
+  const { newFeatures, newCount, dismiss, dismissAll, isNew, getFeature } = useFeatureDrop()
+
   return (
-    <FeatureDropProvider manifest={manifest} storage={new MemoryAdapter()} appVersion="2.4.0">
-      <NewBadge featureId="new-dashboard" />
-      <ChangelogWidget />
-      <ReleaseActions />
-    </FeatureDropProvider>
+    <div>
+      <span>{newCount} updates</span>
+      <button onClick={() => void dismissAll()}>Mark all read</button>
+      <button onClick={() => dismiss(newFeatures[0]?.id ?? '')}>Dismiss first</button>
+      <span>{isNew('/dashboard') ? 'new' : 'seen'}</span>
+      <span>{getFeature('/dashboard')?.label ?? 'none'}</span>
+    </div>
   )
 }
 ```
 
-Use component pages for behavior + live demos:
+### Core Components
 
-- [Changelog](/docs/components/changelog)
-- [Tours](/docs/components/tours)
-- [Checklist](/docs/components/checklist)
-- [Launch flow](/docs/components/launch-flow)
+- [`<ChangelogWidget />`](/docs/components/changelog)
+- [`<ChangelogPage />`](/docs/components/changelog)
+- [`<NewBadge />`](/docs/components/changelog)
+- [`<Banner />` / `<Toast />`](/docs/components/banner-toast)
+- [`<Tour />`](/docs/components/tours)
+- [`<Checklist />`](/docs/components/checklist)
+- [`<Hotspot />` / `<Spotlight />` / `<SpotlightChain />`](/docs/components/spotlight)
+- [`<AnnouncementModal />`](/docs/components/announcement)
+- [`<Survey />`](/docs/components/survey)
+- [`<FeedbackWidget />`](/docs/components/feedback)
+- [`<FeatureRequestButton />` / `<FeatureRequestForm />`](/docs/components/feature-requests)
 
-## 4) Validation and schema (`featuredrop/schema`)
+## Validation (`featuredrop/schema`)
 
 ```ts
 import { validateManifest } from 'featuredrop/schema'
@@ -97,50 +165,20 @@ if (!result.valid) {
 }
 ```
 
-`validateManifest` checks:
+`validateManifest` checks required fields (`id`, `label`, `releasedAt`, `showNewUntil`), duplicate IDs, date ordering (`showNewUntil > releasedAt`), dependency cycles, URL safety, and unsafe `meta` keys.
 
-- required fields (`id`, `label`, `releasedAt`, `showNewUntil`)
-- duplicate IDs
-- date ordering (`showNewUntil` after `releasedAt`)
-- dependency cycle safety (`dependsOn`)
-- URL safety (`url`, `image`, `cta.url`)
-- unsafe object keys inside `meta`
-
-## 5) Adapters and delivery surfaces
-
-Storage and source options are documented in:
-
-- [Adapters overview](/docs/adapters/overview)
-- [Remote adapter](/docs/adapters/remote)
-- [IndexedDB adapter](/docs/adapters/indexeddb)
-- [Hybrid adapter](/docs/adapters/hybrid)
-- [Database adapters](/docs/adapters/databases)
-
-## 6) Automation surfaces for production
-
-```ts
-import { diffManifest, generateChangelogDiff, validateManifestForCI } from 'featuredrop/ci'
-import { createFlagBridge } from 'featuredrop/flags'
-```
-
-```ts
-import { createMockManifest, createMockStorage } from 'featuredrop/testing'
-```
-
-```ts
-import { SlackBridge, RSSFeedGenerator } from 'featuredrop/bridges'
-```
-
-## 7) CLI commands you should actually run
+## CLI
 
 ```bash
-# Authoring + build
+npx featuredrop init --format markdown
+npx featuredrop add --label "New Analytics" --category analytics --show-days 21
 npx featuredrop validate --pattern "features/**/*.md"
 npx featuredrop build --pattern "features/**/*.md" --out featuredrop.manifest.json
-
-# Release safety
+npx featuredrop doctor --pattern "features/**/*.md"
 pnpm security-check
 pnpm size-check
 ```
 
-Detailed command docs: [CLI guide](/docs/automation/cli) and [CI utilities](/docs/automation/ci).
+<Callout type="info">
+  Full command flags: [CLI Reference](/docs/automation/cli). CI patterns: [CI Utilities](/docs/automation/ci).
+</Callout>

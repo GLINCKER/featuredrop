@@ -7,26 +7,49 @@ import { AnnouncementDemo } from '../../../components/demos/announcement-demo'
 
 # The Announcement Modal
 
-The `<AnnouncementModal>` is a high-interruption, central takeover component. It is designed to commanded absolute attention when a user logs in.
+`<AnnouncementModal>` is the highest-attention surface in FeatureDrop.
 
-Because it completely blocks the underlying application UI, you should use it sparingly. It is meant for major paradigm shifts, not iterative updates.
+Use it for major launches, migrations, or policy updates where users need context before acting.
 
-## Usage & Strategy
+## Usage
 
-Use an Announcement Modal when a release needs a structured narrative and clear, undeniable calls to action. 
+```tsx filename="billing-announcement.tsx"
+import { AnnouncementModal } from 'featuredrop/react'
+
+<AnnouncementModal
+  id="pricing-update-2026"
+  trigger="manual"
+  frequency="once"
+  slides={[
+    {
+      title: 'Pricing update',
+      description: 'Plans update on March 15. Your current plan is unchanged.',
+      primaryCta: { label: 'View details', url: '/pricing' }
+    },
+    {
+      title: 'Need help?',
+      description: 'Support is available during migration week.',
+      secondaryCta: { label: 'Contact support', url: '/support' }
+    }
+  ]}
+/>
+```
+
+## Key props
+
+| Prop | Type | Notes |
+| --- | --- | --- |
+| `id` | `string` | Stable modal identifier |
+| `featureId` / `feature` | `string` / `FeatureEntry` | Build slide from manifest entry |
+| `slides` | `AnnouncementSlide[]` | Custom multi-slide content |
+| `trigger` | `'auto' \| 'manual'` | Auto-open or controlled |
+| `frequency` | `'once' \| 'every-session' \| 'always'` | Re-display policy |
+| `dismissible` | `boolean` | User can close modal |
 
 <Callout type="warning">
-  **Best Use Cases**:
-  - Major workflow redesigns where old buttons have moved.
-  - New tier, billing, or pricing communication.
-  - Migration windows requiring guided CTA paths (e.g., "Click here to migrate your data securely").
+  Keep this for high-impact updates. For routine releases use changelog, badges, banner, or toast.
 </Callout>
 
-- **Multi-Slide Sequences**: If one modal isn't enough to explain a complex migration, you can configure the Modal to display a paginated carousel of slides.
-- **Frequency Controls**: By default, an Announcement is dismissed permanently once closed. However, you can configure the `frequency` prop to `every-session` if acknowledging the modal is legally or operationally required.
-
 ## Interactive Demo
-
-The demo below shows how the Announcement Modal takes focus, traps the user's keyboard navigation (for accessibility), and presents a clear call to action.
 
 <AnnouncementDemo />

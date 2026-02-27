@@ -1,0 +1,169 @@
+# Solid.js
+
+FeatureDrop's Solid adapter uses fine-grained reactivity with `createSignal` and Solid's context API. No unnecessary re-renders.
+
+## Install
+
+```bash
+npm install featuredrop solid-js
+```
+
+## Quick setup
+
+```tsx filename="App.tsx"
+import { FeatureDropProvider } from 'featuredrop/solid'
+import { MemoryAdapter } from 'featuredrop'
+import manifest from './features.json'
+
+export function App() {
+  return (
+    <FeatureDropProvider manifest={manifest} storage={new MemoryAdapter()}>
+      <Router />
+    </FeatureDropProvider>
+  )
+}
+```
+
+## Provider props
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `manifest` | `FeatureManifest` | Yes | Array of feature entries |
+| `storage` | `StorageAdapter` | Yes | Persistence adapter |
+| `analytics` | `AnalyticsCallbacks` | No | Track impressions, dismissals |
+| `userContext` | `UserContext` | No | Audience segmentation context |
+| `matchAudience` | `AudienceMatchFn` | No | Custom audience matcher |
+| `appVersion` | `string` | No | Current app version for version-pinning |
+| `children` | `JSX.Element` | No | Child elements |
+
+## Hooks
+
+### `useFeatureDrop()`
+
+Access the full store from any descendant of `FeatureDropProvider`.
+
+```tsx
+import { useFeatureDrop } from 'featuredrop/solid'
+
+function Sidebar() {
+  const store = useFeatureDrop()
+
+  return (
+    <div>
+      <p>{store.newCount()} new features</p>
+      <For each={store.newFeatures()}>
+        {(feature) => (
+          <div>
+            {feature.label}
+            <button onClick={() => store.dismiss(feature.id)}>Dismiss</button>
+          </div>
+        )}
+      </For>
+    </div>
+  )
+}
+```
+
+Note: In Solid, reactive values are accessors (functions). Call `store.newFeatures()` and `store.newCount()` to read the current value.
+
+### `useNewFeature(sidebarKey)`
+
+Check if a single feature is new.
+
+```tsx
+import { useNewFeature } from 'featuredrop/solid'
+
+function SettingsLink() {
+  const { isNew, feature, dismiss } = useNewFeature('dark-mode')
+
+  return (
+    <a href="/settings">
+      Settings
+      <Show when={isNew()}>
+        <span class="badge">New</span>
+      </Show>
+    </a>
+  )
+}
+```
+
+### `useNewCount()`
+
+Reactive count of new features.
+
+```tsx
+import { useNewCount } from 'featuredrop/solid'
+
+function Badge() {
+  const count = useNewCount()
+
+  return (
+    <Show when={count() > 0}>
+      <span class="badge">{count()}</span>
+    </Show>
+  )
+}
+```
+
+### `useTabNotification(options?)`
+
+Flash the browser tab title when features are new.
+
+```tsx
+import { useTabNotification } from 'featuredrop/solid'
+
+function App() {
+  useTabNotification({
+    template: '({count}) {title}',
+    flashInterval: 1500
+  })
+
+  return <Router />
+}
+```
+
+## Standalone store (no Provider)
+
+Use `createFeatureDropStore()` without a Provider for non-component contexts:
+
+```tsx
+import { createFeatureDropStore } from 'featuredrop/solid'
+import { MemoryAdapter } from 'featuredrop'
+
+const store = createFeatureDropStore({
+  manifest: features,
+  storage: new MemoryAdapter()
+})
+
+// Use as Solid accessors
+console.log(store.newCount())
+console.log(store.newFeatures())
+```
+
+## User segmentation
+
+```tsx
+<FeatureDropProvider
+  manifest={manifest}
+  storage={storage}
+  userContext={{
+    plan: 'pro',
+    role: 'admin',
+    region: 'eu'
+  }}
+>
+  <App />
+</FeatureDropProvider>
+```
+
+## TypeScript
+
+Full `.d.ts` declarations are generated for the Solid adapter. All accessor types are properly typed:
+
+```ts
+import type {
+  FeatureDropProviderProps,
+  UseNewFeatureResult,
+  FeatureDropSolidStore
+} from 'featuredrop/solid'
+```

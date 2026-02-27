@@ -7,23 +7,46 @@ import { TourDemo } from '../../../components/demos/tour-demo'
 
 # The Tour Component
 
-FeatureDrop supports guided product onboarding through a powerful, sequenced `<Tour>` component.
+`<Tour>` is a guided, anchored step sequence for onboarding flows.
 
-Rather than flooding the user with popup announcements on login, a Tour allows you to orchestrate an interactive sequence of steps that guides the user through high-value activation flows directly in context.
+## Usage
 
-## Usage & Strategy
+```tsx filename="v2-feature-tour.tsx"
+import { Tour } from 'featuredrop/react'
 
-Tours are composed of an ordered list of "Steps," which attach themselves to specific CSS selector targets visible in your application's DOM. 
+const steps = [
+  {
+    id: 'sidebar',
+    target: '#sidebar-nav',
+    title: 'Redesigned sidebar',
+    content: 'Primary navigation is now grouped by workflow.'
+  },
+  {
+    id: 'quick-actions',
+    target: '#quick-actions-bar',
+    title: 'Quick actions',
+    content: 'Create reports and exports from one place.'
+  }
+]
 
-- **Orchestrate Multiple Interactions**: A tour combines `Spotlight` (focused callouts) and `Spotlight Chain` (chained highlights) logic out-of-the-box.
-- **Throttling Controls**: The FeatureDrop engine ensures users aren’t prompted with more than one uncompleted tour during a single session, protecting your UX.
+<Tour id="v2-dashboard-tour" steps={steps} onTourCompleted={() => console.log('Tour done')} />
+```
+
+## Key props
+
+| Prop | Type | Notes |
+| --- | --- | --- |
+| `id` | `string` | Required stable tour id |
+| `steps` | `TourStep[]` | Required ordered steps |
+| `overlay` | `boolean` | Backdrop on/off |
+| `showProgress` | `boolean` | Progress indicator |
+| `persistence` | `boolean` | Resume from saved step |
+| `onTourCompleted` / `onTourSkipped` | callbacks | Lifecycle events |
 
 <Callout type="warning">
-  **UX Guardrails**: FeatureDrop enforces strict accessibility constraints on tours. All popovers default to `aria-modal="true"`, focus is trapped within the active step, and the user can easily exit by pressing the `Esc` key. Always give your users an obvious "Dismiss" button if they do not wish to complete the tour.
+  Keep targets stable and include a skip path (`Esc` is supported). Missing targets are skipped.
 </Callout>
 
 ## Interactive Demo
-
-The code block below demonstrates how a `<Tour>` takes an array of steps pointing at `#nav-target` or `#settings-target`, yielding internal state properties like `isActive` and `currentStep` so that you can control progression metrics within your custom UI render functions.
 
 <TourDemo />

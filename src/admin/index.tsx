@@ -17,13 +17,95 @@ const headingStyles: CSSProperties = {
 export interface ManifestEditorProps {
   features: readonly FeatureEntry[];
   onSave: (updated: FeatureEntry[]) => Promise<void> | void;
+  schema?: {
+    parse?: (value: unknown) => unknown;
+    safeParse?: (value: unknown) => { success: boolean; data?: unknown; error?: unknown };
+  };
   readOnly?: boolean;
   children?: ReactNode;
+}
+
+interface DraftParseResult {
+  parsed: FeatureEntry[] | null;
+  error: string;
+}
+
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "string" && error.trim()) return error.trim();
+  return "Invalid manifest data";
+}
+
+function parseDraft(
+  draft: string,
+  schema: ManifestEditorProps["schema"] | undefined,
+): DraftParseResult {
+  try {
+    const raw = JSON.parse(draft) as unknown;
+    if (!Array.isArray(raw)) {
+      return {
+        parsed: null,
+        error: "Manifest must be an array",
+      };
+    }
+
+    if (!schema) {
+      return {
+        parsed: raw as FeatureEntry[],
+        error: "",
+      };
+    }
+
+    if (typeof schema.safeParse === "function") {
+      const result = schema.safeParse(raw);
+      if (!result.success) {
+        return {
+          parsed: null,
+          error: toErrorMessage(result.error),
+        };
+      }
+      if (!Array.isArray(result.data)) {
+        return {
+          parsed: null,
+          error: "Schema output must be an array",
+        };
+      }
+      return {
+        parsed: result.data as FeatureEntry[],
+        error: "",
+      };
+    }
+
+    if (typeof schema.parse === "function") {
+      const parsed = schema.parse(raw);
+      if (!Array.isArray(parsed)) {
+        return {
+          parsed: null,
+          error: "Schema output must be an array",
+        };
+      }
+      return {
+        parsed: parsed as FeatureEntry[],
+        error: "",
+      };
+    }
+
+    return {
+      parsed: raw as FeatureEntry[],
+      error: "",
+    };
+  } catch (error: unknown) {
+    return {
+      parsed: null,
+      error: toErrorMessage(error),
+    };
+  }
 }
 
 export function ManifestEditor({
   features,
   onSave,
+  schema,
   readOnly = false,
   children,
 }: ManifestEditorProps) {
@@ -31,15 +113,8 @@ export function ManifestEditor({
   const [status, setStatus] = useState<string>("idle");
   const [error, setError] = useState<string>("");
 
-  const parsed = useMemo(() => {
-    try {
-      const next = JSON.parse(draft) as unknown;
-      if (!Array.isArray(next)) throw new Error("Manifest must be an array");
-      return next as FeatureEntry[];
-    } catch {
-      return null;
-    }
-  }, [draft]);
+  const parsedResult = useMemo(() => parseDraft(draft, schema), [draft, schema]);
+  const parsed = parsedResult.parsed;
 
   const save = async () => {
     if (readOnly || !parsed) return;
@@ -80,7 +155,7 @@ export function ManifestEditor({
           Save
         </button>
         <span aria-live="polite">{status}</span>
-        {!parsed && <span style={{ color: "#dc2626" }}>Invalid JSON</span>}
+        {!parsed && <span style={{ color: "#dc2626" }}>{parsedResult.error || "Invalid JSON"}</span>}
         {error && <span style={{ color: "#dc2626" }}>{error}</span>}
       </div>
     </section>
@@ -90,10 +165,26 @@ export function ManifestEditor({
 export interface ScheduleCalendarProps {
   features: readonly FeatureEntry[];
   onSchedule: (featureId: string, publishAt: string) => Promise<void> | void;
+  onExpire?: (featureId: string, expiresAt: string) => Promise<void> | void;
+  minDate?: string;
 }
 
-export function ScheduleCalendar({ features, onSchedule }: ScheduleCalendarProps) {
+function toDateTimeInputMin(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toISOString().slice(0, 16);
+}
+
+export function ScheduleCalendar({
+  features,
+  onSchedule,
+  onExpire,
+  minDate,
+}: ScheduleCalendarProps) {
   const [values, setValues] = useState<Record<string, string>>({});
+  const [expireValues, setExpireValues] = useState<Record<string, string>>({});
+  const minDateInput = toDateTimeInputMin(minDate);
 
   return (
     <section data-featuredrop-admin-schedule-calendar style={panelStyles}>
@@ -116,12 +207,27 @@ export function ScheduleCalendar({ features, onSchedule }: ScheduleCalendarProps
               <input
                 type="datetime-local"
                 value={values[feature.id] ?? ""}
+                min={minDateInput}
                 onChange={(event) => {
                   const value = event.target.value;
                   setValues((previous) => ({ ...previous, [feature.id]: value }));
                 }}
               />
             </label>
+            {onExpire && (
+              <label style={{ display: "grid", gap: "4px" }}>
+                Expire at
+                <input
+                  type="datetime-local"
+                  value={expireValues[feature.id] ?? ""}
+                  min={minDateInput}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setExpireValues((previous) => ({ ...previous, [feature.id]: value }));
+                  }}
+                />
+              </label>
+            )}
             <button
               type="button"
               onClick={() => {
@@ -132,6 +238,18 @@ export function ScheduleCalendar({ features, onSchedule }: ScheduleCalendarProps
             >
               Schedule
             </button>
+            {onExpire && (
+              <button
+                type="button"
+                onClick={() => {
+                  const value = expireValues[feature.id];
+                  if (!value) return;
+                  void onExpire(feature.id, new Date(value).toISOString());
+                }}
+              >
+                Set expiry
+              </button>
+            )}
           </li>
         ))}
       </ul>
@@ -142,24 +260,41 @@ export function ScheduleCalendar({ features, onSchedule }: ScheduleCalendarProps
 export interface PreviewPanelProps {
   feature?: FeatureEntry | null;
   components?: Array<"badge" | "changelog" | "spotlight" | "banner" | "toast">;
+  theme?: "light" | "dark";
 }
 
-export function PreviewPanel({ feature, components = ["badge", "changelog"] }: PreviewPanelProps) {
+export function PreviewPanel({
+  feature,
+  components = ["badge", "changelog"],
+  theme = "light",
+}: PreviewPanelProps) {
+  const dark = theme === "dark";
   return (
-    <section data-featuredrop-admin-preview-panel style={panelStyles}>
+    <section
+      data-featuredrop-admin-preview-panel
+      data-featuredrop-theme={theme}
+      style={{
+        ...panelStyles,
+        background: dark ? "#111827" : "#ffffff",
+        borderColor: dark ? "#374151" : "#e5e7eb",
+        color: dark ? "#f9fafb" : "#111827",
+      }}
+    >
       <p style={headingStyles}>Preview Panel</p>
       {!feature ? (
-        <p style={{ margin: 0, color: "#6b7280" }}>Select a feature to preview.</p>
+        <p style={{ margin: 0, color: dark ? "#9ca3af" : "#6b7280" }}>Select a feature to preview.</p>
       ) : (
         <>
           <p style={{ margin: "0 0 6px", fontWeight: 600 }}>{feature.label}</p>
-          <p style={{ margin: "0 0 8px", color: "#6b7280" }}>{feature.description ?? "No description"}</p>
+          <p style={{ margin: "0 0 8px", color: dark ? "#9ca3af" : "#6b7280" }}>
+            {feature.description ?? "No description"}
+          </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
             {components.map((component) => (
               <span
                 key={component}
                 style={{
-                  border: "1px solid #d1d5db",
+                  border: dark ? "1px solid #4b5563" : "1px solid #d1d5db",
                   borderRadius: "999px",
                   padding: "2px 8px",
                   fontSize: "12px",

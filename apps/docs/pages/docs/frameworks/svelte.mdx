@@ -1,0 +1,170 @@
+# Svelte 5
+
+FeatureDrop provides a Svelte adapter built on the Svelte store contract. Create a store, subscribe to state, and derive counts or feature lookups.
+
+## Install
+
+```bash
+npm install featuredrop svelte
+```
+
+## Quick setup
+
+```svelte filename="App.svelte"
+<script>
+  import { createFeatureDropStore } from 'featuredrop/svelte'
+  import { MemoryAdapter } from 'featuredrop'
+  import manifest from './features.json'
+
+  const store = createFeatureDropStore({
+    manifest,
+    storage: new MemoryAdapter()
+  })
+</script>
+
+{#if $store.newCount > 0}
+  <span class="badge">{$store.newCount} new</span>
+{/if}
+```
+
+## `createFeatureDropStore(options)`
+
+Creates a Svelte-compatible store with the full FeatureDrop API.
+
+```ts
+import { createFeatureDropStore } from 'featuredrop/svelte'
+
+const store = createFeatureDropStore({
+  manifest: FeatureManifest,
+  storage: StorageAdapter,
+  analytics?: AnalyticsCallbacks,
+  userContext?: UserContext,
+  matchAudience?: AudienceMatchFn,
+  appVersion?: string
+})
+```
+
+### Store state
+
+Subscribe with Svelte's `$store` syntax to access:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `$store.manifest` | `FeatureManifest` | Current manifest |
+| `$store.newFeatures` | `FeatureEntry[]` | Features currently marked new |
+| `$store.newCount` | `number` | Count of new features |
+| `$store.newFeaturesSorted` | `FeatureEntry[]` | New features sorted by publish date |
+
+### Store methods
+
+| Method | Description |
+|--------|-------------|
+| `store.refresh()` | Re-compute new features from storage |
+| `store.dismiss(id)` | Mark a feature as dismissed |
+| `store.dismissAll()` | Mark all features as dismissed (async) |
+| `store.isNew(sidebarKey)` | Check if a specific feature is new |
+| `store.getFeature(sidebarKey)` | Get a feature entry by ID |
+
+## Derived stores
+
+### `createNewCountStore(store)`
+
+A derived store that emits only the count.
+
+```svelte
+<script>
+  import { createFeatureDropStore, createNewCountStore } from 'featuredrop/svelte'
+
+  const store = createFeatureDropStore({ manifest, storage })
+  const count = createNewCountStore(store)
+</script>
+
+<span>{$count}</span>
+```
+
+### `createNewFeatureStore(store, sidebarKey)`
+
+A derived store for a single feature's newness.
+
+```svelte
+<script>
+  import { createFeatureDropStore, createNewFeatureStore } from 'featuredrop/svelte'
+
+  const store = createFeatureDropStore({ manifest, storage })
+  const darkMode = createNewFeatureStore(store, 'dark-mode')
+</script>
+
+{#if $darkMode.isNew}
+  <span class="badge">New</span>
+{/if}
+```
+
+## Tab notification
+
+Flash the browser tab title when features are new:
+
+```svelte
+<script>
+  import { createFeatureDropStore, attachTabNotification } from 'featuredrop/svelte'
+
+  const store = createFeatureDropStore({ manifest, storage })
+
+  attachTabNotification(store, {
+    template: '({count}) {title}',
+    flashInterval: 1500
+  })
+</script>
+```
+
+## Sidebar example
+
+```svelte filename="Sidebar.svelte"
+<script>
+  import { getContext } from 'svelte'
+
+  // Assume store is set in context by a parent component
+  const store = getContext('featuredrop')
+</script>
+
+<nav>
+  <a href="/settings">
+    Settings
+    {#if store.isNew('dark-mode')}
+      <span class="badge">New</span>
+    {/if}
+  </a>
+</nav>
+
+<ul>
+  {#each $store.newFeatures as feature (feature.id)}
+    <li>
+      {feature.label}
+      <button on:click={() => store.dismiss(feature.id)}>Dismiss</button>
+    </li>
+  {/each}
+</ul>
+```
+
+## User segmentation
+
+```ts
+const store = createFeatureDropStore({
+  manifest,
+  storage,
+  userContext: {
+    plan: 'pro',
+    role: 'admin',
+    region: 'eu'
+  }
+})
+```
+
+Features with `audience` rules will only appear as "new" if the user context matches.
+
+## TypeScript
+
+The Svelte adapter does not generate `.d.ts` files since Svelte's compiler handles type inference. Import core types directly:
+
+```ts
+import type { FeatureManifest, StorageAdapter, FeatureEntry } from 'featuredrop'
+```

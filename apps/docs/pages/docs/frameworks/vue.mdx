@@ -1,0 +1,182 @@
+# Vue 3
+
+FeatureDrop ships a first-class Vue 3 adapter with `provide/inject` context, composables, and pre-built components.
+
+## Install
+
+```bash
+npm install featuredrop vue
+```
+
+## Quick setup
+
+```vue filename="App.vue"
+<script setup>
+import { FeatureDropProvider } from 'featuredrop/vue'
+import { MemoryAdapter } from 'featuredrop'
+import manifest from './features.json'
+
+const storage = new MemoryAdapter()
+</script>
+
+<template>
+  <FeatureDropProvider :manifest="manifest" :storage="storage">
+    <router-view />
+  </FeatureDropProvider>
+</template>
+```
+
+## Provider props
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `manifest` | `FeatureManifest` | Yes | Array of feature entries |
+| `storage` | `StorageAdapter` | Yes | Persistence adapter |
+| `analytics` | `AnalyticsCallbacks` | No | Track impressions, dismissals |
+| `userContext` | `UserContext` | No | Audience segmentation context |
+| `matchAudience` | `AudienceMatchFn` | No | Custom audience matcher |
+| `appVersion` | `string` | No | Current app version for version-pinning |
+
+## Composables
+
+### `useFeatureDrop()`
+
+Access the full context inside any descendant of `FeatureDropProvider`.
+
+```vue filename="Sidebar.vue"
+<script setup>
+import { useFeatureDrop } from 'featuredrop/vue'
+
+const { newFeatures, newCount, dismiss, dismissAll, isNew, refresh } = useFeatureDrop()
+</script>
+
+<template>
+  <div>
+    <p>{{ newCount }} new features</p>
+    <ul>
+      <li v-for="f in newFeatures" :key="f.id">
+        {{ f.label }}
+        <button @click="dismiss(f.id)">Dismiss</button>
+      </li>
+    </ul>
+  </div>
+</template>
+```
+
+### `useNewFeature(sidebarKey)`
+
+Check if a single feature is new.
+
+```vue
+<script setup>
+import { useNewFeature } from 'featuredrop/vue'
+
+const { isNew, feature, dismiss } = useNewFeature('dark-mode')
+</script>
+
+<template>
+  <span v-if="isNew" class="badge">New</span>
+</template>
+```
+
+### `useNewCount()`
+
+Reactive count of new features.
+
+```vue
+<script setup>
+import { useNewCount } from 'featuredrop/vue'
+
+const count = useNewCount()
+</script>
+
+<template>
+  <span v-if="count > 0" class="badge">{{ count }}</span>
+</template>
+```
+
+### `useTabNotification(options?)`
+
+Flash the browser tab title when new features are available.
+
+```vue
+<script setup>
+import { useTabNotification } from 'featuredrop/vue'
+
+useTabNotification({
+  template: '({count}) {title}',
+  flashInterval: 1500
+})
+</script>
+```
+
+## Pre-built components
+
+The Vue adapter includes the same components as React:
+
+```vue
+<script setup>
+import { NewBadge, ChangelogWidget, Spotlight, Banner, Toast } from 'featuredrop/vue'
+</script>
+
+<template>
+  <nav>
+    Settings <NewBadge sidebar-key="dark-mode" />
+  </nav>
+  <ChangelogWidget title="What's new" />
+  <Spotlight feature-id="onboarding" target-selector="#start-btn" />
+  <Banner feature-id="maintenance" position="inline" />
+  <Toast :feature-ids="['new-api']" :auto-dismiss-ms="5000" />
+</template>
+```
+
+## Reactivity
+
+The adapter uses Vue's `ref()` and `computed()` internally. All composable return values are reactive and will trigger re-renders when the manifest, storage, or user context changes.
+
+```vue
+<script setup>
+import { watch } from 'vue'
+import { useFeatureDrop } from 'featuredrop/vue'
+
+const { newCount } = useFeatureDrop()
+
+watch(newCount, (count) => {
+  console.log(`New feature count changed: ${count}`)
+})
+</script>
+```
+
+## User segmentation
+
+Pass `userContext` to target features to specific audiences:
+
+```vue
+<script setup>
+import { FeatureDropProvider } from 'featuredrop/vue'
+
+const userContext = {
+  plan: 'pro',
+  role: 'admin',
+  region: 'eu'
+}
+</script>
+
+<template>
+  <FeatureDropProvider
+    :manifest="manifest"
+    :storage="storage"
+    :user-context="userContext"
+  >
+    <slot />
+  </FeatureDropProvider>
+</template>
+```
+
+## TypeScript
+
+Vue composable types are inferred automatically. No separate type declarations are generated for the Vue adapter since Vue's template compiler handles type inference.
+
+```ts
+import type { FeatureManifest, StorageAdapter } from 'featuredrop'
+```

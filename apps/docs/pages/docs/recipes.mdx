@@ -2,39 +2,39 @@
 title: Recipes
 ---
 
-import { Tabs } from 'nextra/components'
+import { Tabs, Callout } from 'nextra/components'
 
 # Recipes
 
-Recipes are practical implementation patterns optimized for shipping speed.
+Copy-paste starting points for common launch/adoption workflows.
 
-## Start here
+<Callout type="info">
+  Full recipe set in repo: [RECIPES.md](https://github.com/GLINCKER/featuredrop/blob/main/docs/RECIPES.md).
+</Callout>
 
-- [Repository recipe guide](https://github.com/GLINCKER/featuredrop/blob/main/docs/RECIPES.md)
-
-## High-value recipes
-
-- Sidebar "What's New" badge + changelog widget
-- Banner -> Tour -> Spotlight launch sequence
-- Feedback + survey collection loop
-- Beamer/Headway migration setup
-- Remote + offline adapter rollout strategy
-
-## Copy-paste starters
-
-<Tabs items={['Launch feed', 'Sequenced onboarding', 'Remote + offline']}>
+<Tabs items={['Changelog + Badge', 'Launch Sequence', 'Feedback + Survey', 'Remote + Offline']}>
   <Tabs.Tab>
 
 ```tsx filename="release-feed.tsx"
-import { MemoryAdapter } from 'featuredrop'
-import { FeatureDropProvider, ChangelogWidget, NewBadge } from 'featuredrop/react'
+import { LocalStorageAdapter } from 'featuredrop'
+import { ChangelogWidget, FeatureDropProvider, NewBadge, useNewFeature } from 'featuredrop/react'
 import { manifest } from './featuredrop.manifest'
+
+function SettingsBadge() {
+  const { isNew, dismiss } = useNewFeature('/settings')
+  return <NewBadge variant="dot" show={isNew} dismissOnClick onDismiss={dismiss} />
+}
 
 export function ReleaseFeed() {
   return (
-    <FeatureDropProvider manifest={manifest} storage={new MemoryAdapter()}>
-      <nav>
-        Settings <NewBadge featureId="settings-redesign" />
+    <FeatureDropProvider
+      manifest={manifest}
+      storage={new LocalStorageAdapter({ prefix: 'app' })}
+      appVersion={process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0'}
+    >
+      <nav className="flex items-center gap-2">
+        <span>Settings</span>
+        <SettingsBadge />
       </nav>
       <ChangelogWidget />
     </FeatureDropProvider>
@@ -45,17 +45,23 @@ export function ReleaseFeed() {
   </Tabs.Tab>
   <Tabs.Tab>
 
-```tsx filename="onboarding-flow.tsx"
-import { MemoryAdapter } from 'featuredrop'
-import { FeatureDropProvider, Banner, Tour, Checklist } from 'featuredrop/react'
-import { manifest } from './featuredrop.manifest'
+```tsx filename="launch-sequence.tsx"
+import { Banner, Checklist, FeatureDropProvider, Tour, useChecklist, useTour } from 'featuredrop/react'
 
-export function OnboardingFlow() {
+const TOUR_ID = 'v2-tour'
+const CHECKLIST_ID = 'v2-checklist'
+
+export function LaunchSequence({ manifest, storage }: { manifest: any; storage: any }) {
+  const tour = useTour(TOUR_ID)
+  const checklist = useChecklist(CHECKLIST_ID)
+
   return (
-    <FeatureDropProvider manifest={manifest} storage={new MemoryAdapter()}>
-      <Banner featureId="v2-launch" />
-      <Tour tourId="v2-tour" />
-      <Checklist checklistId="v2-checklist" />
+    <FeatureDropProvider manifest={manifest} storage={storage}>
+      <Banner featureId="v2-launch" position="inline" />
+      <Tour id={TOUR_ID} steps={[{ id: 'nav', target: '#nav', title: 'New nav', content: 'Start here.' }]} />
+      <Checklist id={CHECKLIST_ID} tasks={[{ id: 'start-tour', title: 'Run tour' }]} position="inline" />
+      <button onClick={tour.startTour}>Start onboarding</button>
+      <button onClick={() => checklist.completeTask('start-tour')}>Mark checklist task</button>
     </FeatureDropProvider>
   )
 }
@@ -64,26 +70,54 @@ export function OnboardingFlow() {
   </Tabs.Tab>
   <Tabs.Tab>
 
-```ts filename="adapter-strategy.ts"
-import { HybridAdapter, IndexedDBAdapter, RemoteAdapter } from 'featuredrop'
+```tsx filename="feedback-loop.tsx"
+import { FeedbackWidget, Survey } from 'featuredrop/react'
 
-const local = new IndexedDBAdapter({ dbName: 'featuredrop' })
-const remote = new RemoteAdapter({ url: '/api/featuredrop/state', fetchInterval: 300_000 })
+export function FeedbackLoop() {
+  return (
+    <>
+      <FeedbackWidget
+        featureId="new-export"
+        onSubmit={(payload) => console.log('Feedback', payload)}
+      />
+      <Survey
+        id="new-export-nps"
+        type="nps"
+        trigger="manual"
+        onSubmit={(payload) => console.log('Survey', payload)}
+      />
+    </>
+  )
+}
+```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```ts filename="adapter-strategy.ts"
+import { HybridAdapter, IndexedDBAdapter, RemoteAdapter } from 'featuredrop/adapters'
+
+const local = new IndexedDBAdapter({ dbName: 'featuredrop-v1' })
+
+const remote = new RemoteAdapter({
+  url: '/api/featuredrop',
+  fetchInterval: 300_000
+})
 
 export const storage = new HybridAdapter({
   local,
   remote,
-  syncOnInit: true,
-  syncInterval: 60_000
+  syncBeforeWrite: false,
+  syncIntervalMs: 60_000
 })
 ```
 
   </Tabs.Tab>
 </Tabs>
 
-## Recommended workflow
+## Workflow
 
-- Copy the nearest recipe
-- Run locally with component demos
-- Add CI checks (`size-check`, `security-check`) before merge
-- Add `npx featuredrop validate` in CI to catch schema drift before deploy
+1. Start from nearest recipe
+2. Replace dev adapter with production adapter
+3. Validate with `featuredrop validate` + `featuredrop doctor`
+4. Gate merge with tests + `pnpm size-check` + `pnpm security-check`

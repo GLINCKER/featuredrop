@@ -1,0 +1,51 @@
+---
+title: Localization + RTL
+---
+
+import { Callout } from 'nextra/components'
+
+# Localization + RTL
+
+Built-in components localize copy and date formatting through provider settings.
+
+## Provider setup
+
+```tsx
+import { FeatureDropProvider } from 'featuredrop/react'
+
+<FeatureDropProvider
+  manifest={manifest}
+  storage={storage}
+  locale="fr"
+  translations={{ submit: 'Envoyer maintenant' }}
+>
+  {children}
+</FeatureDropProvider>
+```
+
+Supported locale packs include: `en`, `es`, `fr`, `de`, `pt`, `zh-cn`, `ja`, `ko`, `ar`, `hi`.
+
+RTL locales (for example `ar`) automatically switch `direction` to `rtl` in supported components.
+
+## Utility APIs
+
+```ts
+import {
+  FEATUREDROP_TRANSLATIONS,
+  resolveLocale,
+  resolveTranslations,
+  getLocaleDirection,
+  formatDateForLocale,
+  formatRelativeTimeForLocale
+} from 'featuredrop'
+
+const locale = resolveLocale('fr-CA')
+const t = resolveTranslations(locale, { askLater: 'Plus tard' })
+const direction = getLocaleDirection('ar') // rtl
+const absolute = formatDateForLocale('2026-02-20T00:00:00Z', locale)
+const relative = formatRelativeTimeForLocale('2026-02-20T00:00:00Z', locale)
+```
+
+<Callout type="info">
+  Prefer locale-aware date helpers instead of hand-rolled formatting in custom renderers.
+</Callout>

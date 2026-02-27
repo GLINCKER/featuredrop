@@ -1,0 +1,68 @@
+---
+title: Deployment
+---
+
+# Deployment
+
+Docs app is static-exported and works on Vercel, GitHub Pages, and Cloudflare Pages.
+
+## Required build command
+
+```bash
+pnpm --dir apps/docs build
+```
+
+This runs:
+
+- prebuild SEO generation (`robots.txt`, `sitemap.xml`)
+- static export (`apps/docs/out`)
+- postbuild export verification (`apps/docs/scripts/verify-static-export.mjs`)
+
+## Required environment variables
+
+Set `NEXT_PUBLIC_SITE_URL` per host:
+
+- Vercel production: `https://docs.glincker.com` (or your preview/prod URL)
+- GitHub Pages: `https://<owner>.github.io/<repo>`
+- Cloudflare Pages: your pages domain/custom domain
+
+Optional analytics vars:
+
+- `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`
+- `NEXT_PUBLIC_GA_ID`
+- `NEXT_PUBLIC_ANALYTICS_ENDPOINT` (optional event forwarder target)
+
+## GitHub Pages notes
+
+Pages workflow should provide:
+
+- `NEXT_PUBLIC_BASE_PATH=/<repo>`
+- `NEXT_PUBLIC_SITE_URL=https://<owner>.github.io/<repo>`
+
+This keeps canonical/meta/sitemap URLs accurate.
+
+## Cloudflare Pages notes
+
+Use:
+
+- Build command: `pnpm --dir apps/docs build`
+- Output directory: `apps/docs/out`
+
+Set `NEXT_PUBLIC_SITE_URL` in project environment variables.
+
+## Pre-release checks
+
+Run before pushing:
+
+```bash
+pnpm lint
+pnpm --dir apps/docs build
+pnpm --dir apps/docs qa:export
+pnpm --dir apps/docs qa:metadata
+```
+
+Then verify:
+
+- homepage loads
+- `/docs/quickstart` loads
+- `/sitemap.xml` and `/robots.txt` are present

@@ -1,0 +1,157 @@
+# Angular
+
+FeatureDrop's Angular adapter provides a service-based API compatible with Angular 17+ signals and dependency injection.
+
+## Install
+
+```bash
+npm install featuredrop
+```
+
+No Angular peer dependency is required. The adapter uses a `SignalLike` abstraction that you wire to Angular's `signal()`.
+
+## Quick setup
+
+Create a service that wraps FeatureDrop:
+
+```ts filename="featuredrop.service.ts"
+import { Injectable, signal } from '@angular/core'
+import { FeatureDropService } from 'featuredrop/angular'
+import { LocalStorageAdapter } from 'featuredrop'
+import manifest from './features.json'
+
+@Injectable({ providedIn: 'root' })
+export class AppFeatureDropService extends FeatureDropService {
+  constructor() {
+    super({
+      manifest,
+      storage: new LocalStorageAdapter(),
+      createSignal: (initial) => {
+        const s = signal(initial)
+        const accessor = () => s()
+        accessor.set = (v: typeof initial) => s.set(v)
+        return accessor
+      }
+    })
+  }
+}
+```
+
+## Using in components
+
+```ts filename="sidebar.component.ts"
+import { Component, inject } from '@angular/core'
+import { AppFeatureDropService } from './featuredrop.service'
+
+@Component({
+  selector: 'app-sidebar',
+  template: `
+    <nav>
+      <a routerLink="/settings">
+        Settings
+        @if (fd.isNew('dark-mode')) {
+          <span class="badge">New</span>
+        }
+      </a>
+    </nav>
+    <p>{{ fd.newCount() }} new features</p>
+    <button (click)="fd.dismissAll()">Mark all read</button>
+  `
+})
+export class SidebarComponent {
+  fd = inject(AppFeatureDropService)
+}
+```
+
+## Factory function
+
+For more control, use `createFeatureDropService()` directly:
+
+```ts
+import { createFeatureDropService } from 'featuredrop/angular'
+import { signal } from '@angular/core'
+
+const service = createFeatureDropService({
+  manifest,
+  storage: new LocalStorageAdapter(),
+  createSignal: (initial) => {
+    const s = signal(initial)
+    const accessor = () => s()
+    accessor.set = (v: typeof initial) => s.set(v)
+    return accessor
+  }
+})
+```
+
+## API reference
+
+### `FeatureDropService`
+
+| Method / Property | Type | Description |
+|-------------------|------|-------------|
+| `newFeatures` | `SignalLike<FeatureEntry[]>` | Reactive list of new features |
+| `newCount()` | `number` | Current count of new features |
+| `newFeaturesSorted()` | `FeatureEntry[]` | New features sorted by date |
+| `refresh()` | `void` | Re-compute from storage |
+| `dismiss(id)` | `void` | Mark one feature dismissed |
+| `dismissAll()` | `Promise<void>` | Mark all features dismissed |
+| `isNew(sidebarKey)` | `boolean` | Check if a feature is new |
+| `getFeature(sidebarKey)` | `FeatureEntry \| undefined` | Look up a feature by ID |
+
+### Options
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `manifest` | `FeatureManifest` | Yes | Feature entries array |
+| `storage` | `StorageAdapter` | Yes | Persistence adapter |
+| `createSignal` | `CreateSignalLikeFn` | Yes | Signal factory (Angular's `signal()`) |
+| `analytics` | `AnalyticsCallbacks` | No | Track events |
+| `userContext` | `UserContext` | No | Audience segmentation |
+| `matchAudience` | `AudienceMatchFn` | No | Custom audience matcher |
+| `appVersion` | `string` | No | Version for version-pinning |
+
+## The `SignalLike` pattern
+
+The adapter does not import `@angular/core` directly. Instead, it defines a minimal `SignalLike<T>` interface:
+
+```ts
+interface SignalLike<T> {
+  (): T       // Read the value
+  set: (value: T) => void  // Write the value
+}
+```
+
+You bridge Angular's `signal()` to this interface in the `createSignal` option. This keeps the adapter framework-agnostic at the package level while supporting Angular's reactivity.
+
+## User segmentation
+
+```ts
+@Injectable({ providedIn: 'root' })
+export class AppFeatureDropService extends FeatureDropService {
+  constructor() {
+    super({
+      manifest,
+      storage: new LocalStorageAdapter(),
+      createSignal: createSignalBridge,
+      userContext: {
+        plan: 'pro',
+        role: 'admin',
+        region: 'eu'
+      }
+    })
+  }
+}
+```
+
+## TypeScript
+
+Full `.d.ts` declarations are generated:
+
+```ts
+import type {
+  AngularFeatureDropOptions,
+  AngularFeatureDropService,
+  SignalLike,
+  CreateSignalLikeFn
+} from 'featuredrop/angular'
+```

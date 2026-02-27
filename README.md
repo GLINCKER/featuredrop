@@ -1,904 +1,431 @@
 <p align="center">
-  <h1 align="center">featuredrop</h1>
-  <p align="center">
-    <strong>"New" badges that actually expire.</strong>
-    <br />
-    Lightweight feature discovery for SaaS sidebars, dashboards, and nav menus.
-  </p>
+  <img src="apps/docs/public/branding/icon-256.png" alt="FeatureDrop" width="72" height="72" />
+</p>
+
+<h1 align="center">FeatureDrop</h1>
+
+<p align="center">
+  <strong>The open-source product adoption toolkit.</strong><br />
+  Changelogs • Tours • Checklists • Hotspots • Feedback — from your own codebase.<br />
+  &lt; 3 kB core &nbsp;·&nbsp; Zero vendor lock-in &nbsp;·&nbsp; MIT licensed
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/featuredrop"><img src="https://img.shields.io/npm/v/featuredrop?color=f59e0b&label=npm" alt="npm version"></a>
-  <a href="https://bundlephobia.com/package/featuredrop"><img src="https://img.shields.io/bundlephobia/minzip/featuredrop?color=22c55e&label=size" alt="bundle size"></a>
-  <a href="https://github.com/GLINCKER/featuredrop/actions/workflows/ci.yml"><img src="https://github.com/GLINCKER/featuredrop/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/GLINCKER/featuredrop/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/featuredrop?color=blue" alt="license"></a>
+  <a href="https://github.com/GLINCKER/featuredrop/stargazers"><img src="https://img.shields.io/github/stars/GLINCKER/featuredrop?style=flat&color=f59e0b&label=stars" alt="GitHub stars" /></a>
+  <a href="https://www.npmjs.com/package/featuredrop"><img src="https://img.shields.io/npm/v/featuredrop?color=ea580c&label=npm" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/featuredrop"><img src="https://img.shields.io/npm/dm/featuredrop?color=22c55e&label=downloads" alt="npm downloads" /></a>
+  <a href="https://bundlephobia.com/package/featuredrop"><img src="https://img.shields.io/bundlephobia/minzip/featuredrop?color=22c55e&label=gzipped" alt="bundle size" /></a>
+  <a href="https://github.com/GLINCKER/featuredrop/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/featuredrop?color=6366f1&label=license" alt="MIT license" /></a>
+  <a href="https://featuredrop.dev"><img src="https://img.shields.io/badge/docs-live-ea580c" alt="Live docs" /></a>
 </p>
 
 <p align="center">
-  <a href="#quick-start">Quick Start</a> &bull;
-  <a href="#components">Components</a> &bull;
-  <a href="#react">React</a> &bull;
-  <a href="https://github.com/GLINCKER/featuredrop/blob/main/docs/API.md">API Docs</a> &bull;
-  <a href="https://github.com/GLINCKER/featuredrop/blob/main/docs/ARCHITECTURE.md">Architecture</a>
+  <a href="https://featuredrop.dev/docs/quickstart">Quickstart</a> &bull;
+  <a href="https://featuredrop.dev/docs/components/gallery">Components</a> &bull;
+  <a href="https://featuredrop.dev/playground">Playground</a> &bull;
+  <a href="https://featuredrop.dev/docs/api">API Reference</a> &bull;
+  <a href="#migration-from-beamer--pendo">Migration Guide</a>
 </p>
+
+<p align="center">
+  <img src="apps/docs/public/og/github-social.png" alt="FeatureDrop — The open-source product adoption toolkit" width="720" />
+</p>
+
 
 ---
 
-## The Problem
+## Why FeatureDrop?
 
-Every SaaS ships features. Users miss them. You need "New" badges on sidebar items, but:
+Every SaaS ships features. Users miss them. The usual options are bad:
 
-- **LaunchDarkly / PostHog** — Feature flags, not discovery badges. Overkill.
-- **Beamer / Headway** — External widget, vendor lock-in, $59-299/mo.
-- **Joyride / Shepherd.js** — Product tours, not persistent badges.
-- **DIY** — You build it, forget expiry, badges stay forever. Users stop noticing.
+| Option | Problem |
+|---|---|
+| **Beamer / Headway / AnnounceKit** | External widget, vendor lock-in, $49–399/mo |
+| **Pendo / Appcues** | Feature flags AND onboarding, ~$7k+/yr |
+| **Joyride / Shepherd.js** | Tours only, not persistence or changelog |
+| **DIY** | You build it, forget expiry, badges stay forever |
 
-## The Solution
+**FeatureDrop** gives you a free, self-hosted middle path: production-ready adoption components that run inside your own React tree, powered by a JSON manifest you own.
 
-**featuredrop** is a free, self-hosted alternative to Beamer, Headway, and AnnounceKit. Zero deps, < 10 kB, headless-first.
-
-```
-npm install featuredrop          # 0 dependencies, < 2 kB core
-```
-
-```
-┌─────────────────────────────────────────┐
-│  ☰  My SaaS App                    🔔  │
-├──────────┬──────────────────────────────┤
-│          │                              │
-│ Dashboard│   Welcome back, Sarah!       │
-│          │                              │
-│ Journal ●│   ┌─────────────────────┐    │
-│          │   │  What's New (2)     │    │
-│ Analytics│   │                     │    │
-│     NEW  │   │  ★ AI Journal       │    │
-│          │   │  Track decisions    │    │
-│ Billing  │   │  with AI insights.  │    │
-│          │   │       [Try it →]    │    │
-│ Settings │   │                     │    │
-│          │   │  ★ Analytics v2     │    │
-│          │   │  Real-time charts   │    │
-│          │   │  and CSV export.    │    │
-│          │   │                     │    │
-│          │   │  [Mark all as read] │    │
-│          │   └─────────────────────┘    │
-│          │                              │
-└──────────┴──────────────────────────────┘
-
-  ● = dot badge    NEW = pill badge    (2) = count badge
-```
+---
 
 ## Quick Start
 
-**1. Define features** (just an array of objects):
+```bash
+npm install featuredrop     # < 3 kB core, zero runtime dependencies
+```
+
+**1. Define your features:**
 
 ```ts
 import { createManifest } from 'featuredrop'
 
-export const FEATURES = createManifest([
+export const features = createManifest([
   {
-    id: 'ai-journal',
-    label: 'AI Decision Journal',
-    description: 'Track decisions with AI-powered insights.',
-    releasedAt: '2026-02-20T00:00:00Z',
-    showNewUntil: '2026-03-20T00:00:00Z',
-    sidebarKey: '/journal',
+    id: 'dark-mode',
+    label: 'Dark Mode',
+    description: 'Full dark theme support across every surface.',
+    releasedAt: '2026-03-01T00:00:00Z',
+    showNewUntil: '2026-04-01T00:00:00Z',
     type: 'feature',
-    priority: 'critical',
-    cta: { label: 'Try it', url: '/journal' },
-  },
-  {
-    id: 'scheduled-reports',
-    label: 'Scheduled Reports',
-    releasedAt: '2026-02-23T00:00:00Z',
-    showNewUntil: '2026-03-23T00:00:00Z',
-    dependsOn: { clicked: ['ai-journal'] }, // progressive rollout
-    trigger: { type: 'page', match: '/reports/*' }, // contextual trigger
+    priority: 'high',
+    cta: { label: 'Try it', url: '/settings/appearance' },
   },
 ])
 ```
 
-**2. Create a storage adapter:**
+**2. Wrap your app:**
 
-```ts
+```tsx
+import { FeatureDropProvider } from 'featuredrop/react'
 import { LocalStorageAdapter } from 'featuredrop'
+import { features } from './features'
 
-const storage = new LocalStorageAdapter({
-  watermark: user.featuresSeenAt, // from your server
-  onDismissAll: (now) => api.markFeaturesSeen(now), // optional server sync
-})
-```
-
-For offline-heavy apps, use `IndexedDBAdapter` to persist the same state with IndexedDB + local fallback.
-It also supports queued dismiss sync (`flushQueue`) + remote state reconciliation (`syncFromRemote`) for offline-first flows.
-For remote/state sync, `RemoteAdapter` now includes retry + circuit-breaker protection and a monitoring-friendly `isHealthy()` check.
-
-**3. Check what's new:**
-
-```ts
-import { getNewFeatures, hasNewFeature } from 'featuredrop'
-
-const newFeatures = getNewFeatures(FEATURES, storage)
-hasNewFeature(FEATURES, '/journal', storage) // true/false
-```
-
-Works with **any framework**. Zero React dependency for vanilla use.
-
-## Adoption Analytics
-
-Pipe structured adoption events to PostHog/Amplitude/Mixpanel/Segment or your own endpoint.
-
-```ts
-import { AnalyticsCollector, PostHogAdapter } from 'featuredrop'
-
-const collector = new AnalyticsCollector({
-  adapter: new PostHogAdapter(posthog),
-  batchSize: 20,
-  flushInterval: 10_000,
-  sampleRate: 1,
-})
-```
-
-```tsx
-<FeatureDropProvider
-  manifest={FEATURES}
-  storage={storage}
-  collector={collector}
->
+<FeatureDropProvider manifest={features} storage={new LocalStorageAdapter()}>
   <App />
 </FeatureDropProvider>
 ```
 
-## A/B Announcement Variants
-
-Run deterministic per-user announcement variants with weighted splits.
-
-```ts
-{
-  id: 'ai-journal',
-  label: 'AI Decision Journal',
-  variants: {
-    control: { description: 'Track decisions with AI-powered insights.' },
-    treatment: { description: 'Never second-guess decisions again.' },
-  },
-  variantSplit: [50, 50],
-}
-```
+**3. Add badges and a changelog:**
 
 ```tsx
-<FeatureDropProvider
-  manifest={FEATURES}
-  storage={storage}
-  variantKey={user.id} // stable key for deterministic assignment
->
-  <App />
-</FeatureDropProvider>
+import { NewBadge, ChangelogWidget } from 'featuredrop/react'
+
+// Sidebar nav item
+<a href="/settings">
+  Settings <NewBadge id="dark-mode" />           {/* auto-expires */}
+</a>
+
+// Changelog button  
+<ChangelogWidget title="What's new" showReactions />
 ```
 
-## Theme Engine
+That's it. Badges expire on schedule. No database setup. No vendor account. No tracking pixels.
 
-Theme all featuredrop components with CSS variables (no CSS-in-JS runtime).
+→ **Full walkthrough:** [10-minute quickstart](https://featuredrop.dev/docs/quickstart)
 
-```tsx
-import { ThemeProvider, ChangelogWidget } from 'featuredrop/react'
+---
 
-<ThemeProvider theme="dark">
-  <ChangelogWidget />
-</ThemeProvider>
+## Components
+
+Everything you'd get from Beamer or Pendo, but free, self-hosted, and headless-first.
+
+| Component | Description |
+|---|---|
+| `<ChangelogWidget>` | Trigger button + slide-out/modal changelog with emoji reactions |
+| `<ChangelogPage>` | Full-page changelog with filters, search, and pagination |
+| `<NewBadge>` | Auto-expiring pill / dot / count badge |
+| `<Banner>` | Top-of-page or inline banner with `announcement`, `warning`, `info` variants |
+| `<Toast>` | Stackable toast notifications with auto-dismiss and position control |
+| `<Tour>` | Multi-step guided product tours with keyboard nav and persistence |
+| `<Checklist>` | Onboarding task checklists with progress tracking |
+| `<Spotlight>` | Pulsing DOM-attached beacon/tooltip |
+| `<SpotlightChain>` | Chained spotlight walkthrough ("here are 3 new things") |
+| `<AnnouncementModal>` | Priority-gated modal with optional image carousel |
+| `<Hotspot>` / `<TooltipGroup>` | Persistent contextual hints with visibility caps |
+| `<FeedbackWidget>` | In-app feedback with category, emoji, screenshot support |
+| `<Survey>` | NPS / CSAT / CES / custom survey engine with trigger rules |
+| `<FeatureRequestButton>` | Per-feature voting button with vote guard |
+| `<FeatureRequestForm>` | Request capture + sortable request list |
+
+All components are headless-capable via render props. [See live demos →](https://featuredrop.dev/docs/components/gallery)
+
+---
+
+## How It Works
+
+```
+  Manifest (static)                Storage (runtime)
+  ┌─────────────────────┐         ┌──────────────────────┐
+  │ releasedAt: Mar 1   │         │ watermark ← server   │
+  │ showNewUntil: Apr 1 │         │ dismissed ← localStorage │
+  └──────────┬──────────┘         └──────────┬───────────┘
+             │                               │
+             └──────────┐  ┌─────────────────┘
+                        ▼  ▼
+                ┌───────────────┐
+                │   isNew()     │
+                │               │
+                │  !dismissed   │
+                │  !expired     │
+                │  afterWatermark│
+                └───────┬───────┘
+                        │
+                   true / false
 ```
 
-```tsx
-import { createTheme } from 'featuredrop'
-import { ThemeProvider, ChangelogPage } from 'featuredrop/react'
+New users see everything (no watermark). Returning users see only features shipped since their last visit. Dismissals are instant (localStorage). "Mark all seen" syncs across devices with one optional server write.
 
-const myTheme = createTheme({
-  colors: { primary: '#7c3aed' },
-  radii: { lg: '16px' },
-})
+Read the full [Architecture doc](https://featuredrop.dev/docs/concepts/architecture) for cross-device sync and custom adapter patterns.
 
-<ThemeProvider theme={myTheme}>
-  <ChangelogPage />
-</ThemeProvider>
-```
+---
 
-Presets: `light`, `dark`, `auto`, `minimal`, `vibrant`.
-You can also pass `theme` directly to `ChangelogWidget` and `ChangelogPage` for component-scoped overrides.
+## Storage Adapters
 
-## Internationalization
+| Adapter | Import | Best For |
+|---|---|---|
+| `LocalStorageAdapter` | `featuredrop` | Browser apps (default) |
+| `MemoryAdapter` | `featuredrop` | Testing, SSR |
+| `IndexedDBAdapter` | `featuredrop/adapters` | Offline-first PWAs |
+| `RemoteAdapter` | `featuredrop/adapters` | Server-backed with retry + circuit-breaker |
+| `HybridAdapter` | `featuredrop/adapters` | Local + remote with batched flush |
+| Redis / PostgreSQL / DynamoDB | `featuredrop/adapters` | Database-backed server-side apps |
 
-Use built-in locale packs or supply partial overrides:
+[All adapters →](https://featuredrop.dev/docs/adapters/overview)
 
-```tsx
-<FeatureDropProvider
-  manifest={FEATURES}
-  storage={storage}
-  locale="fr"
-  translations={{
-    submit: 'Envoyer maintenant',
-  }}
->
-  <App />
-</FeatureDropProvider>
-```
+---
 
-Built-in locales: `en`, `es`, `fr`, `de`, `pt`, `zh-cn`, `ja`, `ko`, `ar`, `hi`.
-Locale helpers include locale-aware date formatting, pluralized count copy, and RTL direction support for Arabic.
-Use `formatRelativeTimeForLocale()` for localized "x days ago" labels, or set `dateFormat="relative"` on `ChangelogWidget` / `ChangelogPage`.
+## CLI
 
-## Animation Presets
-
-Choose built-in motion levels globally:
-
-```tsx
-<FeatureDropProvider manifest={FEATURES} storage={storage} animation="subtle">
-  <App />
-</FeatureDropProvider>
-```
-
-Available presets: `none`, `subtle`, `normal`, `playful`.  
-Reduced-motion users automatically receive `none`.
-Built-in `ChangelogWidget`, `AnnouncementModal`, and `Toast` include enter/exit animations, and `Tour`, `Survey`, `FeedbackWidget`, `Spotlight`, `SpotlightChain`, and `Hotspot` follow the same preset for enter/pulse motion.
-
-## Custom Renderer Protocol
-
-Need full UI control? Use a UI-agnostic renderer with state/actions/computed helpers:
-
-```ts
-import { createChangelogRenderer } from 'featuredrop'
-
-const renderer = createChangelogRenderer({ manifest: FEATURES, storage })
-renderer.subscribe((state) => console.log(state.newCount))
-renderer.actions.dismiss('ai-journal')
-```
-
-## Accessibility
-
-featuredrop components include keyboard navigation, focus trapping/return for dialogs, ARIA live regions, and reduced-motion support.
-
-Automated accessibility regression checks run in CI via `axe-core` + `vitest-axe` (`src/__tests__/accessibility-axe.test.tsx`).
-
-## Changelog-as-Code
-
-Manage announcements as markdown files in your repo and compile to a manifest:
+Manage your manifest from the command line:
 
 ```bash
-npx featuredrop init --format markdown
-npx featuredrop add --label "AI Journal" --category ai --description "Track decisions with AI."
+# Scaffold
+npx featuredrop init
+npx featuredrop add --label "Dark Mode" --category ui --type feature
+
+# Validate & audit
+npx featuredrop validate          # schema + duplicate ID check
+npx featuredrop doctor            # security + best practice audit
+npx featuredrop stats             # manifest summary stats
+
+# Build (markdown → JSON)
 npx featuredrop build --pattern "features/**/*.md" --out featuredrop.manifest.json
-npx featuredrop validate --pattern "features/**/*.md"
-npx featuredrop stats --pattern "features/**/*.md"
-npx featuredrop doctor --pattern "features/**/*.md"
-npx featuredrop generate-rss --pattern "features/**/*.md" --out featuredrop.rss.xml
-npx featuredrop generate-changelog --pattern "features/**/*.md" --out CHANGELOG.generated.md
-npx featuredrop migrate --from beamer --input beamer-export.json --out featuredrop.manifest.json
-npx featuredrop migrate --from headway --input headway-export.json --out featuredrop.manifest.json
-npx featuredrop migrate --from announcekit --input announcekit-export.json --out featuredrop.manifest.json
-npx featuredrop migrate --from canny --input canny-export.json --out featuredrop.manifest.json
-npx featuredrop migrate --from launchnotes --input launchnotes-export.json --out featuredrop.manifest.json
+
+# Generate outputs
+npx featuredrop generate-rss         --out featuredrop.rss.xml
+npx featuredrop generate-changelog   --out CHANGELOG.generated.md
+
+# Migrate from vendors
+npx featuredrop migrate --from beamer      --input beamer-export.json
+npx featuredrop migrate --from headway     --input headway-export.json
+npx featuredrop migrate --from announcekit --input announcekit-export.json
+npx featuredrop migrate --from canny       --input canny-export.json
+npx featuredrop migrate --from launchnotes --input launchnotes-export.json
 ```
 
-Example feature file:
+[CLI reference →](https://featuredrop.dev/docs/automation/ci)
 
-```md
 ---
-id: ai-journal
-label: AI Journal
-type: feature
-category: ai
-releasedAt: 2026-02-15T00:00:00Z
-showNewUntil: 2026-03-15T00:00:00Z
-cta:
-  label: Try it now
-  url: /journal
+
+## Framework Adapters
+
+| Framework | Status | Import |
+|---|---|---|
+| React / Next.js | ✅ Stable | `featuredrop/react` |
+| Vanilla JS | ✅ Stable | `featuredrop` |
+| SolidJS | 🔬 Preview | `featuredrop/solid` |
+| Preact | 🔬 Preview | `featuredrop/preact` |
+| Web Components | 🔬 Preview | `featuredrop/web-components` |
+| Angular | 🔬 Preview | `featuredrop/angular` |
+| Vue 3 | 🔬 Preview | `featuredrop/vue` |
+| Svelte 5 | 🔬 Preview | `featuredrop/svelte` |
+
 ---
-Track decisions and outcomes with AI-powered insights.
-```
 
-## CMS Adapters
+## React Hooks
 
-Pull releases from your CMS and map them into `FeatureEntry[]`:
+| Hook | Returns |
+|---|---|
+| `useFeatureDrop()` | Full context: features, count, dismiss, throttle controls |
+| `useNewFeature(key)` | Single nav item: `{ isNew, feature, dismiss }` |
+| `useNewCount()` | Current unread badge count |
+| `useTour(id)` | Imperative tour controls and step snapshot |
+| `useTourSequencer(sequence)` | Ordered multi-tour orchestration |
+| `useChecklist(id)` | Checklist progress + task controls |
+| `useSurvey(id)` | Survey controls: `show`, `hide`, `askLater` |
+| `useTabNotification()` | Browser tab title count: `"(3) My App"` |
 
-```ts
-import { ContentfulAdapter, SanityAdapter, StrapiAdapter, NotionAdapter, MarkdownAdapter } from 'featuredrop'
-
-const contentful = new ContentfulAdapter({
-  spaceId: process.env.CONTENTFUL_SPACE!,
-  accessToken: process.env.CONTENTFUL_TOKEN!,
-  contentType: 'featureRelease',
-})
-
-const entries = await contentful.load()
-```
-
-Each adapter accepts optional `fieldMapping` overrides so you can map your content model fields without reshaping server responses.
+---
 
 ## Notification Bridges
 
-Use framework-agnostic bridge helpers to fan out release notifications:
+Fan out release notifications to Slack, Discord, email, webhooks, or RSS on deploy:
 
 ```ts
-import {
-  SlackBridge,
-  DiscordBridge,
-  EmailDigestGenerator,
-  WebhookBridge,
-  RSSFeedGenerator,
-} from 'featuredrop/bridges'
+import { SlackBridge, DiscordBridge, WebhookBridge, EmailDigestGenerator, RSSFeedGenerator } from 'featuredrop/bridges'
 
 await SlackBridge.notify(feature, { webhookUrl: process.env.SLACK_WEBHOOK! })
 await DiscordBridge.notify(feature, { webhookUrl: process.env.DISCORD_WEBHOOK! })
 await WebhookBridge.post(feature, { url: 'https://api.example.com/hooks/features' })
 
-const html = EmailDigestGenerator.generate(features, { title: 'Weekly updates' })
-const rss = RSSFeedGenerator.generate(features, { title: 'Product Updates' })
+const html = EmailDigestGenerator.generate(features, { title: 'Weekly Product Updates' })
+const rss  = RSSFeedGenerator.generate(features, { title: 'Product Updates' })
 ```
 
-## CI Utilities
+---
 
-Use `featuredrop/ci` for manifest diffing in pull-request checks:
+## Analytics
+
+Pipe adoption events to any analytics provider:
+
+```tsx
+<FeatureDropProvider
+  manifest={features}
+  storage={storage}
+  analytics={{
+    onFeatureSeen:      (f) => posthog.capture('feature_seen',      { id: f.id }),
+    onFeatureDismissed: (f) => posthog.capture('feature_dismissed', { id: f.id }),
+    onFeatureClicked:   (f) => posthog.capture('feature_clicked',   { id: f.id }),
+    onWidgetOpened:     ()  => posthog.capture('changelog_opened'),
+  }}
+>
+  <App />
+</FeatureDropProvider>
+```
+
+Works with PostHog, Mixpanel, Amplitude, Segment, or any custom endpoint.
+
+---
+
+## User Segmentation
+
+Show the right features to the right users:
+
+```tsx
+<FeatureDropProvider
+  manifest={features}
+  storage={storage}
+  userContext={{ plan: 'pro', role: 'admin', region: 'eu' }}
+>
+  <App />
+</FeatureDropProvider>
+```
+
+Define audience rules per feature in your manifest:
+
+```json
+{
+  "id": "ai-copilot",
+  "label": "AI Copilot",
+  "audience": { "plan": ["pro", "enterprise"], "region": ["us", "eu"] }
+}
+```
+
+Users outside the audience never see the feature. No server calls. No feature flag service needed.
+
+---
+
+## CI Integration
+
+Validate your manifest in every pull request:
 
 ```ts
-import { diffManifest, generateChangelogDiff, validateManifestForCI } from 'featuredrop/ci'
+import {
+  diffManifest,
+  generateChangelogDiff,
+  generateChangelogDiffMarkdown,
+  validateManifestForCI
+} from 'featuredrop/ci'
 
-const diff = diffManifest(beforeManifest, afterManifest)
-const summary = generateChangelogDiff(diff, { includeFieldChanges: true })
+const diff       = diffManifest(beforeManifest, afterManifest)
+const summary    = generateChangelogDiff(diff, { includeFieldChanges: true })
+const markdown   = generateChangelogDiffMarkdown(diff, { includeFieldChanges: true })
 const validation = validateManifestForCI(afterManifest)
 ```
 
-Run bundle budget checks after `pnpm build`:
+```bash
+pnpm size-check   # bundle budget check post-build
+```
+
+[CI setup guide →](https://featuredrop.dev/docs/automation/ci)
+
+---
+
+## Migration from Beamer / Pendo
 
 ```bash
-pnpm size-check
+npx featuredrop migrate --from beamer --input beamer-export.json --out features.json
 ```
 
-## Feature Flag Bridges
+| | Beamer | Pendo | **FeatureDrop** |
+|---|---|---|---|
+| Price | $59–399/mo | $7k+/yr | **Free forever** |
+| Bundle impact | External script | ~300 kB agent | **< 3 kB core** |
+| Vendor lock-in | Yes | Yes | **No** |
+| Data ownership | Vendor-hosted | Vendor-hosted | **Your repo** |
+| Customization | CSS themes | Limited | **Full source access** |
 
-Gate announcement visibility behind flags via `feature.flagKey`:
+[Full migration guide →](https://featuredrop.dev/docs/migration)
 
-```ts
-import { createFlagBridge, LaunchDarklyBridge, PostHogBridge } from 'featuredrop/flags'
+---
 
-const bridge = createFlagBridge({
-  isEnabled: (flagKey) => myFlagService.isOn(flagKey),
-})
+## Full Comparison
 
-// Provider + feature entry
-<FeatureDropProvider manifest={FEATURES} storage={storage} flagBridge={bridge} />
-// { id: 'ai-journal', flagKey: 'ai-journal-enabled', ... }
-
-// Or vendor bridges
-const ld = new LaunchDarklyBridge(ldClient)
-const ph = new PostHogBridge(posthog)
-```
-
-## Multi-Product Support
-
-Scope visibility by product using `FeatureDropProvider` + `feature.product`:
-
-```tsx
-<FeatureDropProvider manifest={FEATURES} storage={storage} product="askverdict" />
-// feature.product can be "askverdict", "other-product", or "*" for shared entries
-```
-
-## Admin Components
-
-Use optional admin UI primitives via `featuredrop/admin`:
-
-```tsx
-import {
-  ManifestEditor,
-  ScheduleCalendar,
-  PreviewPanel,
-  AudienceBuilder,
-} from 'featuredrop/admin'
-
-<ManifestEditor features={features} onSave={saveManifest} />
-<ScheduleCalendar features={features} onSchedule={scheduleFeature} />
-<PreviewPanel feature={selectedFeature} components={['badge', 'changelog', 'toast']} />
-<AudienceBuilder segments={['free', 'pro']} roles={['admin', 'viewer']} onSave={saveAudience} />
-```
-
-## Resilience
-
-Built-in React exports are wrapped in internal error boundaries. If a featuredrop component throws, it unmounts itself (no host app crash) and optionally reports through provider `onError`.
-
-## Schema Validation
-
-Validate manifest JSON in CI or tooling pipelines.
-
-```ts
-import {
-  featureEntrySchema,
-  featureEntryJsonSchema,
-  validateManifest,
-} from 'featuredrop/schema'
-
-featureEntrySchema.parse({
-  id: 'ai-journal',
-  label: 'AI Journal',
-  releasedAt: '2026-02-15T00:00:00Z',
-  showNewUntil: '2026-03-15T00:00:00Z',
-})
-
-const result = validateManifest(data)
-if (!result.valid) {
-  throw new Error(result.errors.map((e) => `${e.path}: ${e.message}`).join("; "))
-}
-
-console.log(featureEntryJsonSchema.properties.id.type) // "string"
-```
-
-## Testing Utilities
-
-Use `featuredrop/testing` to speed up unit and component tests.
-
-```tsx
-import { render, screen } from '@testing-library/react'
-import { useNewCount } from 'featuredrop/react'
-import { createMockManifest, createMockStorage, createTestProvider } from 'featuredrop/testing'
-
-const manifest = createMockManifest([{ label: 'AI Journal', releasedAt: 'today', showNewUntil: '+14d' }])
-const storage = createMockStorage()
-const Wrapper = createTestProvider({ manifest, storage })
-
-function Count() {
-  return <span>{useNewCount()}</span>
-}
-
-render(<Count />, { wrapper: Wrapper })
-expect(screen.getByText('1')).toBeInTheDocument()
-```
-
-## Playground & Online Demos
-
-Use the lightweight component playground for quick UI iteration:
-
-```bash
-pnpm --dir examples/sandbox-react install
-pnpm playground
-pnpm playground:build
-```
-
-One-click editable demos:
-
-- React sandbox source: `examples/sandbox-react`
-- StackBlitz: https://stackblitz.com/github/GLINCKER/featuredrop/tree/main/examples/sandbox-react
-- CodeSandbox: https://codesandbox.io/p/sandbox/github/GLINCKER/featuredrop/tree/main/examples/sandbox-react
-
-## Docs Site (Nextra + Vercel)
-
-The repo now includes a docs app scaffold at `apps/docs` for a fast validation launch on Vercel.
-
-```bash
-pnpm docs:install
-pnpm docs:dev
-pnpm docs:build
-```
-
-The docs app is static-export ready, so it can also deploy on Cloudflare Pages or GitHub Pages.
-
-## Components
-
-Everything you'd expect from Beamer or Headway — but free, self-hosted, and headless-first.
-
-### Changelog Widget
-
-The #1 feature people install these tools for. Trigger button with unread count badge, slide-out panel with rich changelog feed.
-
-```tsx
-import { ChangelogWidget } from 'featuredrop/react'
-
-// Default: slide-out panel with all features
-<ChangelogWidget />
-
-// Or modal / popover variant
-<ChangelogWidget variant="modal" title="Release Notes" />
-
-// Enable emoji reactions on entries
-<ChangelogWidget showReactions />
-
-// Fully headless
-<ChangelogWidget>
-  {({ isOpen, toggle, features, count, dismissAll }) => (
-    <YourCustomUI />
-  )}
-</ChangelogWidget>
-```
-
-### Spotlight Beacon
-
-Pulsing beacon that attaches to any DOM element. Click to see feature tooltip.
-
-```tsx
-import { Spotlight } from 'featuredrop/react'
-
-const ref = useRef<HTMLButtonElement>(null)
-<button ref={ref}>Analytics</button>
-<Spotlight featureId="analytics-v2" targetRef={ref} />
-
-// Or with CSS selector
-<Spotlight featureId="analytics-v2" targetSelector="#analytics-btn" />
-```
-
-### Announcement Banner
-
-Top-of-page or inline banner for major announcements. Auto-expires like badges.
-
-```tsx
-import { Banner } from 'featuredrop/react'
-
-<Banner featureId="v2-launch" variant="announcement" />
-<Banner featureId="breaking-change" variant="warning" />
-<Banner featureId="security-fix" variant="info" position="fixed" />
-```
-
-### Toast Notifications
-
-Brief popup notifications for new features. Auto-dismiss, stackable, configurable position.
-
-```tsx
-import { Toast } from 'featuredrop/react'
-
-<Toast position="bottom-right" maxVisible={3} />
-
-// Specific features only
-<Toast featureIds={["ai-journal"]} autoDismissMs={5000} />
-```
-
-### Product Tours
-
-Guided, multi-step onboarding with keyboard navigation and persistence.
-
-```tsx
-import { Tour, useTour } from 'featuredrop/react'
-
-<Tour id="onboarding" steps={steps} />
-const { startTour, nextStep, skipTour } = useTour('onboarding')
-```
-
-### Onboarding Checklist
-
-Task-based onboarding that can trigger tours, links, or callbacks.
-
-```tsx
-import { Checklist, useChecklist } from 'featuredrop/react'
-
-<Checklist id="getting-started" tasks={tasks} />
-const { completeTask, progress } = useChecklist('getting-started')
-```
-
-### Feedback Widget
-
-Collect lightweight in-app feedback with optional emoji and screenshots.
-
-```tsx
-import { FeedbackWidget } from 'featuredrop/react'
-
-<FeedbackWidget
-  featureId="ai-journal"
-  onSubmit={async (payload) => {
-    await fetch('/api/feedback', { method: 'POST', body: JSON.stringify(payload) })
-  }}
-  showEmoji
-  showScreenshot
-  rateLimit="1-per-feature"
-/>
-```
-
-### Survey (NPS / CSAT / CES / Custom)
-
-Run micro-surveys with trigger rules and imperative controls.
-
-```tsx
-import { Survey, useSurvey } from 'featuredrop/react'
-
-<Survey
-  id="nps-main"
-  type="nps"
-  prompt="How likely are you to recommend us?"
-  triggerRules={{ minDaysSinceSignup: 7, signupAt: user.createdAt }}
-  onSubmit={saveSurvey}
-/>
-
-const { show } = useSurvey('nps-main')
-```
-
-### Feature Request Voting
-
-Capture and rank product requests with local persistence and optional webhook sync.
-
-```tsx
-import { FeatureRequestButton, FeatureRequestForm } from 'featuredrop/react'
-
-<FeatureRequestButton featureId="dark-mode" requestTitle="Dark mode" />
-
-<FeatureRequestForm
-  categories={['UI', 'Performance', 'Integration', 'Other']}
-  onSubmit={async (request) => {
-    await fetch('/api/requests', { method: 'POST', body: JSON.stringify(request) })
-  }}
-/>
-```
-
-### Hotspots & Tooltips
-
-Persistent contextual hints attached to specific UI targets.
-
-```tsx
-import { Hotspot, TooltipGroup } from 'featuredrop/react'
-
-<TooltipGroup maxVisible={1}>
-  <Hotspot id="export-help" target="#export-btn" frequency="once">
-    Export supports CSV, PDF, and Excel.
-  </Hotspot>
-</TooltipGroup>
-```
-
-### Announcement Modal
-
-Priority-based modal announcements with optional slide carousel.
-
-```tsx
-import { AnnouncementModal } from 'featuredrop/react'
-
-<AnnouncementModal
-  feature={criticalFeature}
-  trigger="auto"
-  frequency="once"
-/>
-```
-
-### Spotlight Chain
-
-Lightweight chained spotlights for "here are 3 new things" flows.
-
-```tsx
-import { SpotlightChain } from 'featuredrop/react'
-
-<SpotlightChain
-  steps={[
-    { target: '#sidebar', content: 'New navigation' },
-    { target: '#search', content: 'Global search' },
-  ]}
-/>
-```
-
-### NewBadge
-
-Headless badge component with variants. Zero CSS framework dependency.
-
-```tsx
-import { NewBadge } from 'featuredrop/react'
-
-<NewBadge />                          // "New" pill
-<NewBadge variant="dot" />            // Pulsing dot
-<NewBadge variant="count" count={3} /> // Count badge
-```
-
-### Tab Title Notification
-
-Updates the browser tab title with unread count. Restores when all read.
-
-```tsx
-import { useTabNotification } from 'featuredrop/react'
-
-useTabNotification() // "(3) My App"
-useTabNotification({ template: "[{count} new] {title}", flash: true })
-```
-
-## React
-
-```bash
-npm install featuredrop react    # react is an optional peer dep
-```
-
-**Wrap your app:**
-
-```tsx
-import { FeatureDropProvider } from 'featuredrop/react'
-
-<FeatureDropProvider manifest={FEATURES} storage={storage} appVersion="2.5.1">
-  <App />
-</FeatureDropProvider>
-```
-
-**Throttling + quiet mode:**
-
-```tsx
-<FeatureDropProvider
-  manifest={FEATURES}
-  storage={storage}
-  throttle={{
-    maxSimultaneousBadges: 3,
-    maxSimultaneousSpotlights: 1,
-    maxToastsPerSession: 3,
-    minTimeBetweenModals: 30000,
-    minTimeBetweenTours: 86400000,
-    sessionCooldown: 5000,
-    respectDoNotDisturb: true,
-  }}
->
-  <App />
-</FeatureDropProvider>
-```
-
-**Add badges to your sidebar:**
-
-```tsx
-import { useNewFeature, NewBadge } from 'featuredrop/react'
-
-function SidebarItem({ path, label }: { path: string; label: string }) {
-  const { isNew, dismiss } = useNewFeature(path)
-  return (
-    <a href={path} onClick={() => isNew && dismiss()}>
-      {label}
-      {isNew && <NewBadge />}
-    </a>
-  )
-}
-```
-
-**Or drop in the full changelog widget:**
-
-```tsx
-import { ChangelogWidget } from 'featuredrop/react'
-
-<ChangelogWidget variant="panel" />
-```
-
-**Hooks & Components:**
-
-| Export | What it does |
-|--------|-------------|
-| `useFeatureDrop()` | Full context: features, count, dismiss, dismissAll |
-| `useNewFeature(key)` | Single nav item: `{ isNew, feature, dismiss }` |
-| `useNewCount()` | Just the badge count |
-| `useTabNotification()` | Updates browser tab title with count |
-| `useTour(id)` | Imperative tour controls and current step snapshot |
-| `useTourSequencer(sequence)` | Ordered multi-tour orchestration by feature readiness |
-| `useChecklist(id)` | Imperative checklist controls + progress |
-| `useSurvey(id)` | Imperative survey controls (`show`, `hide`, `askLater`) + state |
-| `<NewBadge />` | Headless badge: `pill`, `dot`, or `count` variant |
-| `<ChangelogWidget />` | Full changelog feed with trigger button + optional reactions |
-| `<ChangelogPage />` | Full-page changelog with filters/search/pagination |
-| `<Spotlight />` | Pulsing beacon attached to DOM elements |
-| `<Banner />` | Announcement banner with variants |
-| `<Toast />` | Stackable toast notifications |
-| `<Tour />` | Multi-step guided product tour |
-| `<Checklist />` | Onboarding task checklist |
-| `<FeedbackWidget />` | In-app feedback form with category/emoji/screenshot support |
-| `<Survey />` | NPS/CSAT/CES/custom survey engine with trigger rules |
-| `<FeatureRequestButton />` | Per-feature voting button with persisted vote guard |
-| `<FeatureRequestForm />` | Request capture form + sortable request list |
-| `<Hotspot />` / `<TooltipGroup />` | Contextual tooltips with visibility caps |
-| `<AnnouncementModal />` | Priority/frequency-gated modal announcements |
-| `<SpotlightChain />` | Lightweight chained spotlight walkthrough |
-
-`useFeatureDrop()` also exposes queue/throttle controls: `queuedFeatures`, `totalNewCount`, `quietMode`, `setQuietMode`, `markFeatureSeen`, `markFeatureClicked`, toast-slot helpers, modal/tour pacing checks, and spotlight slot controls.
-It also exposes trigger runtime helpers: `trackUsageEvent`, `trackTriggerEvent`, `trackMilestone`, and `setTriggerPath`.
-
-**Analytics integration:**
-
-```tsx
-<FeatureDropProvider
-  manifest={FEATURES}
-  storage={storage}
-  appVersion="2.5.1" // optional semver for version-pinned features
-  analytics={{
-    onFeatureSeen: (f) => posthog.capture('feature_seen', { id: f.id }),
-    onFeatureDismissed: (f) => posthog.capture('feature_dismissed', { id: f.id }),
-    onFeatureClicked: (f) => posthog.capture('feature_clicked', { id: f.id }),
-    onWidgetOpened: () => posthog.capture('changelog_opened'),
-  }}
->
-```
-
-All components accept an optional `analytics` prop for component-level tracking too.
-
-## How It Works
-
-```
-  Manifest (static)              Storage (runtime)
-  ┌───────────────────┐         ┌──────────────────────┐
-  │ releasedAt: Feb 20 │         │ watermark ← server   │
-  │ showNewUntil: Mar 20│         │ dismissed ← localStorage│
-  └────────┬──────────┘         └──────────┬───────────┘
-           │                               │
-           └──────────┐  ┌────────────────┘
-                      ▼  ▼
-              ┌───────────────┐
-              │   isNew()     │
-              │               │
-              │ !dismissed    │
-              │ !expired      │
-              │ afterWatermark│
-              │ afterPublishAt│
-              └───────┬───────┘
-                      │
-                 true / false
-```
-
-New users see everything (no watermark). Returning users only see features shipped since their last visit. Individual dismissals are instant (localStorage). "Mark all seen" syncs across devices (one server write).
-
-**Scheduled publishing**: Set `publishAt` to hide entries until a specific date — ship code now, reveal later.
-
-**Priority sorting**: Critical features surface first in widgets and toasts. Priority levels: `critical`, `normal`, `low`.
-
-**Entry types**: `feature`, `improvement`, `fix`, `breaking` — each with default icon/color in built-in components.
-
-Read the full [Architecture doc](docs/ARCHITECTURE.md) for cross-device sync flow and custom adapter patterns.
-
-## Comparison
-
-| | featuredrop | Beamer | Headway | AnnounceKit | Canny |
+| | FeatureDrop | Beamer | Headway | AnnounceKit | Pendo |
 |---|:---:|:---:|:---:|:---:|:---:|
-| **Price** | **Free** | $59-399/mo | $49-249/mo | $79-299/mo | $79+ |
-| Auto-expiring badges | Yes | - | - | - | - |
-| Changelog widget | Yes | Yes | Yes | Yes | Yes |
-| Product tours | Yes | - | - | - | - |
-| Onboarding checklists | Yes | - | - | - | - |
-| Spotlight/beacon | Yes | - | - | - | - |
-| Hotspot tooltips | Yes | - | - | - | - |
-| Announcement modal | Yes | - | - | - | - |
-| Spotlight chaining | Yes | - | - | - | - |
-| Toast notifications | Yes | - | - | - | - |
-| Announcement banner | Yes | - | - | - | - |
-| Tab title notification | Yes | - | - | - | - |
-| Zero dependencies | Yes | - | - | - | - |
-| Framework agnostic | Yes | - | - | - | - |
-| React bindings | Yes | - | - | - | - |
-| Headless mode | Yes | - | - | - | - |
-| Cross-device sync | Yes | Yes | Yes | Yes | Yes |
-| Per-feature dismiss | Yes | - | - | - | - |
-| Scheduled publishing | Yes | Yes | Yes | Yes | - |
-| Priority levels | Yes | - | - | - | - |
-| Analytics callbacks | Yes | Built-in | Built-in | Built-in | Built-in |
-| < 10 kB minzipped | Yes | - | - | - | - |
-| Self-hosted | Yes | - | - | - | - |
-| Open source | Yes | - | - | - | - |
+| **Price** | **Free** | $59–399/mo | $49–249/mo | $79–299/mo | $7k+/yr |
+| Auto-expiring badges | ✅ | — | — | — | — |
+| Changelog widget | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Product tours | ✅ | — | — | — | ✅ |
+| Onboarding checklists | ✅ | — | — | — | ✅ |
+| Spotlight / beacon | ✅ | — | — | — | — |
+| Hotspot tooltips | ✅ | — | — | — | — |
+| Announcement modal | ✅ | — | — | — | — |
+| Toast notifications | ✅ | — | — | — | — |
+| Feedback & surveys | ✅ | — | — | — | ✅ |
+| Feature request voting | ✅ | — | — | — | — |
+| Tab title notification | ✅ | — | — | — | — |
+| Zero runtime deps (core) | ✅ | — | — | — | — |
+| Framework agnostic | ✅ | — | — | — | — |
+| Headless mode | ✅ | — | — | — | — |
+| Analytics callbacks | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Self-hosted | ✅ | — | — | — | — |
+| Open source | ✅ | — | — | — | — |
 
-## Framework Support
-
-| Framework | Status | Import |
-|-----------|--------|--------|
-| React / Next.js | Stable | `featuredrop/react` |
-| Vanilla JS | Stable | `featuredrop` |
-| SolidJS | Preview | `featuredrop/solid` |
-| Preact (compat) | Preview | `featuredrop/preact` |
-| Web Components | Preview | `featuredrop/web-components` |
-| Angular | Preview | `featuredrop/angular` |
-| Vue 3 | Preview | `featuredrop/vue` |
-| Svelte 5 | Preview (store bindings) | `featuredrop/svelte` |
+---
 
 ## Documentation
 
-- [Docs App Source](apps/docs/) — Next.js + Nextra site scaffold (`/`, `/docs`, `/playground`)
-- [Docs Site Guide](docs/DOCS_SITE.md) — Local commands and Vercel deployment setup
-- [API Reference](docs/API.md) — All functions, adapters, hooks, components
-- [Recipes](docs/RECIPES.md) — Copy-paste integration patterns (sidebar badge, tours, migration, A/B tests)
-- [Architecture](docs/ARCHITECTURE.md) — Three-check algorithm, cross-device sync, custom adapters
-- [Next.js Example](examples/nextjs/) — Full App Router integration
-- [Vanilla Example](examples/vanilla/) — Plain HTML, zero build step
-- [React Sandbox](examples/sandbox-react/) — Interactive local/online playground
+| Resource | Description |
+|---|---|
+| [**Live Docs**](https://featuredrop.dev) | Full documentation site |
+| [Quickstart](https://featuredrop.dev/docs/quickstart) | Ship your first badge in 10 minutes |
+| [Component Gallery](https://featuredrop.dev/docs/components/gallery) | Live interactive demos |
+| [Playground](https://featuredrop.dev/playground) | Local sandbox + hosted templates |
+| [API Reference](https://featuredrop.dev/docs/api) | All functions, hooks, and components |
+| [Migration Guide](https://featuredrop.dev/docs/migration) | Migrate from Beamer, Pendo, Headway |
+| [Architecture](https://featuredrop.dev/docs/concepts/architecture) | Three-check algorithm, cross-device sync |
+| [Recipes](https://featuredrop.dev/docs/recipes) | Copy-paste integration patterns |
+| [Frameworks](https://featuredrop.dev/docs/frameworks/vue) | Vue, Svelte, Solid, Angular, Preact, Web Components |
+
+---
+
+## Branding Assets
+
+All marketing assets are in [`apps/docs/public/og/`](apps/docs/public/og/).
+
+| File | Ratio | Use |
+|---|---|---|
+| `og.png` | 1200×630 (1.91:1) | Website OG / link previews, Discord, Slack |
+| `github-social.png` | 1280×640 (2:1) | **GitHub repo social preview** ← upload this |
+| `twitter-header.png` | 1500×500 (3:1) | X.com profile header |
+| `linkedin-banner.png` | 1584×396 (4:1) | LinkedIn company page banner |
+| `reddit-16x9.png` | 1920×1080 (16:9) | Reddit posts, r/reactjs, r/webdev |
+| `producthunt.png` | 1270×760 | Product Hunt launch |
+| `story-9x16.png` | 1080×1920 (9:16) | Instagram / LinkedIn Stories |
+
+**GitHub social preview**: Repo **Settings → Social preview → Upload** `apps/docs/public/og/github-social.png`.
+
+---
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, commit conventions, and how releases work.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, commit conventions, and release process.
 
 ## Security
 
-- Report vulnerabilities privately via [SECURITY.md](SECURITY.md).
-- CI includes CodeQL static analysis on pull requests and `main`.
-- `pnpm security-check` scans runtime source for unsafe execution/rendering patterns.
+- Report vulnerabilities privately via [SECURITY.md](SECURITY.md)
+- CI includes CodeQL static analysis on PRs and `main`
+- `pnpm security-check` scans runtime source for unsafe execution patterns
 
 ## License
 
-MIT &copy; [Glincker](https://glincker.com)
+MIT © [GLINR STUDIOS](https://glincker.com)
 
 ---
 
 <p align="center">
-  <sub>Built and battle-tested at <a href="https://askverdict.ai">AskVerdict</a>.</sub>
-  <br />
-  <strong>A <a href="https://glincker.com">GLINCKER</a> open source project.</strong>
+  <sub>Built and battle-tested at <a href="https://askverdict.ai">AskVerdict AI</a>.</sub><br />
+  <strong>A <a href="https://glincker.com">GLINR STUDIOS</a> open source project.</strong>
 </p>

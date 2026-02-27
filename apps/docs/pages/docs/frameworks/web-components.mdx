@@ -1,0 +1,192 @@
+# Web Components
+
+FeatureDrop provides framework-agnostic custom elements that work in any HTML page. No build step required.
+
+## Install
+
+```bash
+npm install featuredrop
+```
+
+Or use directly from a CDN:
+
+```html
+<script type="module">
+  import { configureFeatureDropWebComponents, registerFeatureDropWebComponents }
+    from 'https://esm.sh/featuredrop/web-components'
+</script>
+```
+
+## Quick setup
+
+```html filename="index.html"
+<script type="module">
+  import {
+    configureFeatureDropWebComponents,
+    registerFeatureDropWebComponents
+  } from 'featuredrop/web-components'
+
+  // 1. Configure with your manifest
+  configureFeatureDropWebComponents({
+    manifest: [
+      {
+        id: 'dark-mode',
+        label: 'Dark Mode',
+        description: 'Full dark theme support',
+        releasedAt: '2025-03-01',
+        showNewUntil: '2025-04-01'
+      }
+    ]
+  })
+
+  // 2. Register custom elements
+  registerFeatureDropWebComponents()
+</script>
+
+<!-- 3. Use in HTML -->
+<nav>
+  <a href="/settings">
+    Settings <feature-drop-badge sidebar-key="dark-mode"></feature-drop-badge>
+  </a>
+</nav>
+
+<feature-drop-changelog title="What's New"></feature-drop-changelog>
+```
+
+## Configuration
+
+### `configureFeatureDropWebComponents(config)`
+
+Call once before using any custom elements.
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `manifest` | `FeatureManifest` | Yes | Feature entries array |
+| `storage` | `StorageAdapter` | No | Defaults to `LocalStorageAdapter` |
+| `userContext` | `UserContext` | No | Audience segmentation |
+| `matchAudience` | `AudienceMatchFn` | No | Custom audience matcher |
+| `appVersion` | `string` | No | Version for version-pinning |
+
+### `registerFeatureDropWebComponents(options?)`
+
+Registers the custom elements with the browser.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `badgeTag` | `string` | `"feature-drop-badge"` | Custom tag name for the badge element |
+| `changelogTag` | `string` | `"feature-drop-changelog"` | Custom tag name for the changelog element |
+
+Returns `{ badgeTag, changelogTag }` with the registered tag names.
+
+## Custom elements
+
+### `<feature-drop-badge>`
+
+Displays a "New" indicator next to navigation items.
+
+```html
+<feature-drop-badge sidebar-key="dark-mode" variant="pill"></feature-drop-badge>
+```
+
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `sidebar-key` | `string` | Required | Feature ID to check |
+| `variant` | `"pill" \| "dot" \| "count"` | `"pill"` | Badge style |
+
+#### CSS parts
+
+Style the badge using `::part()` selectors:
+
+```css
+feature-drop-badge::part(pill) {
+  background: #ea580c;
+  color: white;
+  font-size: 10px;
+}
+
+feature-drop-badge::part(dot) {
+  background: #ea580c;
+  width: 8px;
+  height: 8px;
+}
+
+feature-drop-badge::part(count) {
+  background: #ea580c;
+  color: white;
+  border-radius: 999px;
+}
+```
+
+### `<feature-drop-changelog>`
+
+A toggleable changelog panel.
+
+```html
+<feature-drop-changelog
+  title="What's New"
+  trigger-label="View updates"
+  position="right"
+></feature-drop-changelog>
+```
+
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `title` | `string` | `"What's New"` | Panel heading |
+| `trigger-label` | `string` | `"What's New"` | Button text |
+| `position` | `"left" \| "right"` | `"right"` | Panel position |
+
+## Manual refresh
+
+If the manifest changes after initial configuration, call:
+
+```js
+import { refreshFeatureDropWebComponents } from 'featuredrop/web-components'
+
+// After updating config
+refreshFeatureDropWebComponents()
+```
+
+## Shadow DOM
+
+Both custom elements use Shadow DOM for style encapsulation. Internal styles won't leak into your page, and your page styles won't break the components.
+
+To customize appearance, use the `::part()` CSS pseudo-element (shown above) or CSS custom properties.
+
+## Vanilla JS (no custom elements)
+
+If you prefer to skip custom elements entirely, use the core API directly:
+
+```html
+<script type="module">
+  import { isNew, getNewFeatures, LocalStorageAdapter } from 'featuredrop'
+
+  const manifest = await fetch('/features.json').then(r => r.json())
+  const storage = new LocalStorageAdapter()
+  const dismissed = storage.getDismissedIds()
+  const watermark = storage.getWatermark()
+
+  // Check individual features
+  if (isNew(manifest[0], { dismissed, watermark })) {
+    document.querySelector('.badge').style.display = 'inline'
+  }
+
+  // List all new features
+  const newFeatures = getNewFeatures(manifest, { dismissed, watermark })
+  console.log(`${newFeatures.length} new features`)
+</script>
+```
+
+## TypeScript
+
+Full `.d.ts` declarations are generated:
+
+```ts
+import type {
+  WebComponentsConfig,
+  RegisterWebComponentsOptions
+} from 'featuredrop/web-components'
+```
+
+## Browser support
+
+Web Components are supported in all modern browsers. No polyfills needed for Chrome, Firefox, Safari, and Edge.

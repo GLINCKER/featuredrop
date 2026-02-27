@@ -6,77 +6,159 @@ import { Callout, Steps } from 'nextra/components'
 
 # Migration Guide
 
-Migrating from Beamer, Headway, AnnounceKit, Canny, or LaunchNotes? This guide walks you through the complete transition to FeatureDrop, from exporting your historical data to connecting your first storage adapter.
+FeatureDrop is a code-first replacement for hosted changelog and onboarding tools like Beamer, Pendo, Headway, and Canny. This guide walks through migrating from any vendor.
 
-## Why Migrate
+## Field mapping
 
-Traditional SaaS adoption tools attach themselves to your application as third-party JavaScript bundles, polling external servers on every page load. They have no concept of your version control workflow, no type safety, and no way to guarantee a rollout announcement is tied to code that the user's browser has actually received.
+| Vendor field | FeatureDrop field | Notes |
+|-------------|-------------------|-------|
+| Title / Headline | `label` | Plain text |
+| Body / Description | `description` | Supports markdown |
+| Category / Tag | `category` | Single string |
+| Publish date | `releasedAt` | ISO 8601 date string |
+| Expiry / Hide after | `showNewUntil` | ISO 8601 date string |
+| CTA button | `cta` | `{ label, href }` object |
+| Type (feature/fix/improvement) | `type` | `"feature" \| "improvement" \| "fix"` |
+| Priority | `priority` | `"low" \| "medium" \| "high" \| "critical"` |
+| Audience / Segment | `audience` | `AudienceRule` object |
+| Version | `version` | Semver string |
 
-FeatureDrop solves these problems by living inside your bundle, validated by your TypeScript compiler, and versioned with your git history.
+## What migrates cleanly
 
-## Export Your Existing Data
+- **Release entries**: Title, description, category, dates, CTAs all have direct equivalents
+- **Categories/tabs**: Map to the `category` field, used by `ChangelogWidget` filter pills
+- **Scheduling windows**: `releasedAt` + `showNewUntil` replace vendor scheduling features
+- **Audience targeting**: Vendor segment rules map to `AudienceRule` with plan/role/region fields
 
-The CLI supports direct imports from the most common adoption platforms.
+## What does not migrate automatically
+
+- **Read/dismiss state**: Vendor-hosted seen/dismiss tracking is proprietary and not exportable. Plan for a one-time state reset (see below).
+- **Analytics history**: Historical impression/click data stays with the vendor. Start fresh with FeatureDrop's analytics callbacks.
+- **Embedded scripts**: Vendor `<script>` tags must be removed. FeatureDrop components replace them.
+- **Automations**: Vendor-side triggers (email on publish, Slack notifications) need re-implementation via [Notification Bridges](/docs/integrations/bridges).
+
+## Migration steps
 
 <Steps>
-### Export from your existing tool
+### Export old data
 
-Every supported platform has a CSV or JSON export feature. Log into your dashboard and export all historical entries.
+Export entries from your current provider. Most vendors support JSON or CSV export:
 
-### Run the migrate command
+- **Beamer**: Settings > Export > JSON
+- **Pendo**: Guides > Export as CSV
+- **Headway**: Account > Export changelog
+- **Canny**: API export or manual copy
 
-```bash
-npx featuredrop migrate \
-  --from beamer \
-  --input beamer-export.json \
-  --out featuredrop.manifest.json
-```
+### Convert to FeatureDrop format
 
-Supported `--from` values: `beamer`, `headway`, `announcekit`, `canny`, `launchnotes`.
+Write a conversion script or manually transform entries:
 
-### Review the output
+```ts filename="scripts/migrate.ts"
+import { readFileSync, writeFileSync } from 'fs'
 
-Inspect `featuredrop.manifest.json`. The migrator carries over titles, descriptions, dates, and categories. Fields that do not map directly (e.g., proprietary targeting) will be left with commented-out `// TODO` markers for you to fill in.
+// Example: Convert Beamer export to FeatureDrop manifest
+const beamerExport = JSON.parse(readFileSync('beamer-export.json', 'utf-8'))
 
-### Validate before deploying
+const manifest = beamerExport.map((entry: any) => ({
+  id: entry.id || entry.slug,
+  label: entry.title,
+  description: entry.content,
+  category: entry.category?.toLowerCase() || 'general',
+  releasedAt: new Date(entry.date).toISOString(),
+  showNewUntil: new Date(Date.now() + 30 * 86400000).toISOString(), // 30 days from now
+  type: mapType(entry.type),
+  ...(entry.link && { cta: { label: 'Learn more', href: entry.link } })
+}))
 
-```bash
-npx featuredrop validate --pattern featuredrop.manifest.json
-```
+writeFileSync('features.json', JSON.stringify(manifest, null, 2))
 
-Fix any schema errors flagged by the validator before wiring the manifest into your application.
-</Steps>
-
-## Wire Up the Provider
-
-Once you have a valid manifest, replace your old third-party script tag with the FeatureDrop provider:
-
-```tsx filename="app/layout.tsx"
-import { FeatureDropProvider } from 'featuredrop/react'
-import { LocalStorageAdapter } from 'featuredrop'
-import { manifest } from '@/featuredrop.manifest'
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <body>
-        <FeatureDropProvider
-          manifest={manifest}
-          storage={new LocalStorageAdapter({ prefix: 'featuredrop' })}
-          appVersion={process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0'}
-        >
-          {children}
-        </FeatureDropProvider>
-      </body>
-    </html>
-  )
+function mapType(vendorType: string) {
+  const typeMap: Record<string, string> = {
+    new: 'feature',
+    improvement: 'improvement',
+    fix: 'fix',
+    announcement: 'feature'
+  }
+  return typeMap[vendorType?.toLowerCase()] || 'feature'
 }
 ```
 
+### Validate the manifest
+
+```bash
+npx featuredrop validate
+npx featuredrop doctor
+```
+
+Fix any schema errors before proceeding.
+
+### Handle historical entries
+
+For old entries that should NOT resurface as "new", set `showNewUntil` to a past date:
+
+```json
+{
+  "id": "old-feature",
+  "label": "Some old feature",
+  "releasedAt": "2024-01-15T00:00:00Z",
+  "showNewUntil": "2024-02-15T00:00:00Z"
+}
+```
+
+These entries appear in the changelog history but never trigger badges or notifications.
+
+### Remove vendor scripts
+
+Remove the vendor's embedded script tag from your HTML:
+
+```diff
+- <script src="https://app.getbeamer.com/js/beamer-embed.js"></script>
+- <script>var beamer_config = { ... }</script>
+```
+
+### Add FeatureDrop components
+
+Replace vendor widgets with FeatureDrop components:
+
+```tsx
+import { FeatureDropProvider, ChangelogWidget, NewBadge } from 'featuredrop/react'
+import { LocalStorageAdapter } from 'featuredrop'
+import manifest from './features.json'
+
+<FeatureDropProvider manifest={manifest} storage={new LocalStorageAdapter()}>
+  <nav>
+    Settings <NewBadge id="dark-mode" />
+  </nav>
+  <ChangelogWidget title="What's new" />
+</FeatureDropProvider>
+```
+
+### Deploy and monitor
+
+Ship the migration. Monitor analytics callbacks to verify impressions and dismissals are firing correctly.
+</Steps>
+
+## Handling the state reset
+
 <Callout type="warning">
-  **Dismissal State is Not Transferable**: Your old tool's "already seen" state (stored in their cloud) cannot be migrated. On the first deploy of FeatureDrop, all users will be treated as if they have not seen any historical entries. Set `hideAfter` on older entries to avoid resurging stale announcements.
+  Dismissal/read state from SaaS vendors is not portable. All existing users will see migrated features as "new" on first load after migration.
 </Callout>
 
-## Remove the Old Script Tag
+**Strategies to minimize disruption:**
 
-After verifying FeatureDrop renders correctly in a staging environment, remove the old third-party `<script>` tag from your `<head>`. This will improve your page load performance by eliminating the external polling request.
+1. **Set past `showNewUntil`** on all historical entries. Only recent entries (last 2-4 weeks) should have future expiry dates.
+2. **Use the watermark strategy**: Set the initial watermark to a recent date so only truly new entries surface:
+   ```tsx
+   const storage = new LocalStorageAdapter({ initialWatermark: '2025-03-01T00:00:00Z' })
+   ```
+3. **Phased rollout**: Deploy FeatureDrop with only new entries first. Add historical entries to the changelog later without triggering badges.
+
+## Cost comparison
+
+| | Beamer | Pendo | FeatureDrop |
+|---|---|---|---|
+| Monthly cost | $49-249/mo | $7,000+/yr | Free |
+| Vendor lock-in | Yes | Yes | No |
+| Data ownership | Vendor-hosted | Vendor-hosted | Your repo |
+| Bundle impact | External script | ~300 kB agent | < 3 kB core |
+| Customization | CSS themes | Limited | Full source access |

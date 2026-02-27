@@ -2,103 +2,59 @@
 title: Core Architecture
 ---
 
-import { Callout, Steps, Cards, Card } from 'nextra/components'
-import { Database, Zap, Sparkles } from 'lucide-react'
+import { Callout, Steps } from 'nextra/components'
 
 # Core Architecture
 
-FeatureDrop flips the script on traditional product adoption tools. Instead of injecting a slow, third-party JavaScript bundle into your `window` object that polls an external server, **FeatureDrop is compiled directly into your application bundle as a set of pure React components and state machines.**
+FeatureDrop is a library, not a hosted platform.
 
-You own the rendering, the storage, and the analytics.
+You own rendering, storage, and analytics.
 
-## The Data Flow
+## Data Flow
 
-The architecture is highly deterministic. UI components never fetch their own data; they strictly subscribe to a unified React Context provided by `<FeatureDropProvider>`.
+1. Pass `manifest` + `storage` to `<FeatureDropProvider>`.
+2. Provider reads user state (`watermark`, dismissed IDs).
+3. Provider evaluates all visibility rules.
+4. Components/hooks consume computed state from context.
+5. Interactions emit analytics callbacks/collector events.
 
-1. Manifest source is passed into `FeatureDropProvider`.
-2. Storage adapter provides seen/dismissed state to `FeatureDropProvider`.
-3. UI components (`NewBadge`, `ChangelogWidget`, `Tour`) consume provider state.
-4. Component interactions emit analytics callbacks.
-
-## The Three Pillars
-
-FeatureDrop is separated into three distinct boundaries of responsibility:
-
-<div className="mt-8 grid gap-6 sm:grid-cols-3">
-  <div className="flex flex-col border-2 border-slate-900 bg-white p-6 shadow-[4px_4px_0_0_#0f172a] dark:border-slate-700 dark:bg-[#070b14] dark:shadow-[4px_4px_0_0_#000]">
-    <div className="mb-4 inline-flex items-center justify-center border-2 border-slate-900 bg-brand/10 p-2 text-brand dark:border-brand dark:text-brand-light w-10 h-10">
-      <Database className="h-5 w-5" />
-    </div>
-    <h3 className="font-display font-bold text-slate-900 dark:text-slate-100 mt-0">1. The Manifest</h3>
-    <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-      A static, typed JSON definition of all release features, targeting rules, and expiration dates.
-    </p>
-  </div>
-
-  <div className="flex flex-col border-2 border-slate-900 bg-white p-6 shadow-[4px_4px_0_0_#0f172a] dark:border-slate-700 dark:bg-[#070b14] dark:shadow-[4px_4px_0_0_#000]">
-    <div className="mb-4 inline-flex items-center justify-center border-2 border-slate-900 bg-indigo-500/10 p-2 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 w-10 h-10">
-      <Zap className="h-5 w-5" />
-    </div>
-    <h3 className="font-display font-bold text-slate-900 dark:text-slate-100 mt-0">2. The Engine</h3>
-    <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-      The Provider state machine that diffs the user's Storage Adapter history against the active Manifest.
-    </p>
-  </div>
-
-  <div className="flex flex-col border-2 border-slate-900 bg-white p-6 shadow-[4px_4px_0_0_#0f172a] dark:border-slate-700 dark:bg-[#070b14] dark:shadow-[4px_4px_0_0_#000]">
-    <div className="mb-4 inline-flex items-center justify-center border-2 border-slate-900 bg-emerald-500/10 p-2 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 w-10 h-10">
-      <Sparkles className="h-5 w-5" />
-    </div>
-    <h3 className="font-display font-bold text-slate-900 dark:text-slate-100 mt-0">3. The UI</h3>
-    <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-      Drop-in components (Changelogs, Tours) that consume the active engine state and trigger side-effects.
-    </p>
-  </div>
-</div>
-
----
-
-### Understanding the Engine (Context)
-
-When you mount `<FeatureDropProvider />`, it kicks off a specific reconciliation loop:
+## Provider Evaluation Loop
 
 <Steps>
-### Read Storage
-The provider queries your configured `StorageAdapter` to retrieve an array of Feature IDs this specific user has already seen or clicked.
+### Read persistence
+Loads state from your `StorageAdapter`.
 
-### Evaluate Targeting
-The provider takes the arrays of `seen` IDs and maps them against the provided `Manifest`. It evaluates audience targeting arrays, semver versions, and expiration dates (`hideAfter`).
+### Evaluate gates
+Checks audience (`userContext`), semver (`appVersion`), flags, product scope, dependency rules, triggers, and time windows (`publishAt` / `showNewUntil`).
 
-### Broadcast State
-It broadcasts the resulting set of "Active / Unseen" features down to the React Context. The `<NewBadge>` components instantly react to this context and appear active.
+### Publish context state
+Exposes `newFeatures`, `newCount`, `isNew(sidebarKey)`, `dismiss`, `dismissAll`, and orchestration helpers.
 </Steps>
 
-<Callout type="warning">
-**Performance Note:** Because FeatureDrop validates all rules strictly in memory on the client-side, the reconciliation loop takes **less than 1ms**. The bottleneck is strictly limited by how fast your custom `StorageAdapter` can return the user's history payload. 
-</Callout>
+## Headless customization example
 
-### Headless By Default
+```tsx filename="CustomChangelog.tsx"
+import { ChangelogWidget } from 'featuredrop/react'
 
-While `<ChangelogWidget />` and `<Tour />` come with beautiful default CSS, they are internally designed using the **Headless UI render-prop pattern**.
-
-If you pass a function as the `children` to any FeatureDrop component, we strip our CSS entirely and yield the internal state directly to you:
-
-```tsx filename="MyCustomChangelog.tsx"
 <ChangelogWidget>
-  {({ isOpen, toggle, features, count }) => (
-    <div className="my-custom-company-ui">
-       <button onClick={toggle}>
-          Updates <span className="badge">{count}</span>
-       </button>
-       
-       {isOpen && (
-         <ul>
-           {features.map(f => <li key={f.id}>{f.title}</li>)}
-         </ul>
-       )}
+  {({ isOpen, toggle, features, count, dismiss }) => (
+    <div className="my-ui">
+      <button onClick={toggle}>Updates ({count})</button>
+      {isOpen && (
+        <ul>
+          {features.map((f) => (
+            <li key={f.id}>
+              {f.label}
+              <button onClick={() => dismiss(f.id)}>Dismiss</button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )}
 </ChangelogWidget>
 ```
 
-This ensures you are never fighting global CSS overrides just to match your brand's unique design system.
+<Callout type="warning">
+  Keep a single React instance in your workspace. Duplicate React copies cause hook/context errors.
+</Callout>

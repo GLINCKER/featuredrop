@@ -1,6 +1,6 @@
 {
   "name": "featuredrop",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "description": "Lightweight feature discovery system. Show 'New' badges that auto-expire.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -28,6 +28,36 @@
       "require": {
         "types": "./dist/react.d.cts",
         "default": "./dist/react.cjs"
+      }
+    },
+    "./adapters": {
+      "import": {
+        "types": "./dist/adapters.d.ts",
+        "default": "./dist/adapters.js"
+      },
+      "require": {
+        "types": "./dist/adapters.d.cts",
+        "default": "./dist/adapters.cjs"
+      }
+    },
+    "./markdown": {
+      "import": {
+        "types": "./dist/markdown.d.ts",
+        "default": "./dist/markdown.js"
+      },
+      "require": {
+        "types": "./dist/markdown.d.cts",
+        "default": "./dist/markdown.cjs"
+      }
+    },
+    "./rss": {
+      "import": {
+        "types": "./dist/rss.d.ts",
+        "default": "./dist/rss.js"
+      },
+      "require": {
+        "types": "./dist/rss.d.cts",
+        "default": "./dist/rss.cjs"
       }
     },
     "./admin": {
@@ -116,6 +146,16 @@
         "default": "./dist/bridges.cjs"
       }
     },
+    "./cms": {
+      "import": {
+        "types": "./dist/cms.d.ts",
+        "default": "./dist/cms.js"
+      },
+      "require": {
+        "types": "./dist/cms.d.cts",
+        "default": "./dist/cms.cjs"
+      }
+    },
     "./ci": {
       "import": {
         "types": "./dist/ci.d.ts",
@@ -124,6 +164,16 @@
       "require": {
         "types": "./dist/ci.d.cts",
         "default": "./dist/ci.cjs"
+      }
+    },
+    "./renderer": {
+      "import": {
+        "types": "./dist/renderer.d.ts",
+        "default": "./dist/renderer.js"
+      },
+      "require": {
+        "types": "./dist/renderer.d.cts",
+        "default": "./dist/renderer.cjs"
       }
     },
     "./flags": {
@@ -152,6 +202,15 @@
       "react": [
         "./dist/react.d.ts"
       ],
+      "adapters": [
+        "./dist/adapters.d.ts"
+      ],
+      "markdown": [
+        "./dist/markdown.d.ts"
+      ],
+      "rss": [
+        "./dist/rss.d.ts"
+      ],
       "admin": [
         "./dist/admin.d.ts"
       ],
@@ -176,8 +235,14 @@
       "bridges": [
         "./dist/bridges.d.ts"
       ],
+      "cms": [
+        "./dist/cms.d.ts"
+      ],
       "ci": [
         "./dist/ci.d.ts"
+      ],
+      "renderer": [
+        "./dist/renderer.d.ts"
       ],
       "flags": [
         "./dist/flags.d.ts"
@@ -234,7 +299,7 @@
     "type": "git",
     "url": "https://github.com/GLINCKER/featuredrop"
   },
-  "homepage": "https://github.com/GLINCKER/featuredrop#readme",
+  "homepage": "https://featuredrop.dev",
   "bugs": {
     "url": "https://github.com/GLINCKER/featuredrop/issues"
   },
@@ -246,7 +311,8 @@
     "react": ">=18",
     "solid-js": ">=1.8.0",
     "svelte": ">=5.0.0",
-    "vue": ">=3.3"
+    "vue": ">=3.3",
+    "zod": ">=3.22.0"
   },
   "peerDependenciesMeta": {
     "preact": {
@@ -263,10 +329,10 @@
     },
     "svelte": {
       "optional": true
+    },
+    "zod": {
+      "optional": true
     }
-  },
-  "dependencies": {
-    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.0.0",

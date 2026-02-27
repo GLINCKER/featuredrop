@@ -1,0 +1,51 @@
+---
+title: Theming
+---
+
+import { Callout } from 'nextra/components'
+
+# Theming
+
+FeatureDrop supports theme presets and token overrides.
+
+## Apply theme to a subtree
+
+```tsx filename="featuredrop-theme.tsx"
+import { ThemeProvider, ChangelogWidget } from 'featuredrop/react'
+
+<ThemeProvider theme="dark">
+  <ChangelogWidget />
+</ThemeProvider>
+```
+
+Preset options: `light`, `dark`, `minimal`, `vibrant`, `auto`.
+
+## Component-scoped theme
+
+```tsx
+<ChangelogWidget
+  theme={{
+    colors: { primary: '#0ea5e9', background: '#ffffff', text: '#0f172a' },
+    radii: { lg: '16px' }
+  }}
+/>
+```
+
+## Utility APIs
+
+```ts
+import {
+  FEATUREDROP_THEMES,
+  createTheme,
+  resolveTheme,
+  themeToCSSVariables
+} from 'featuredrop'
+
+const custom = createTheme({ colors: { primary: '#0ea5e9' } })
+const resolved = resolveTheme('auto', { prefersDark: true })
+const cssVars = themeToCSSVariables(custom)
+```
+
+<Callout type="info">
+  Theme values become CSS variables, so they can also be merged with your design-system tokens.
+</Callout>

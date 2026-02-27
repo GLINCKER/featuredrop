@@ -2,13 +2,21 @@ import type { FeatureFlagBridge, UserContext } from "./types";
 
 export interface CreateFlagBridgeOptions {
   isEnabled: (flagKey: string, userContext?: UserContext) => boolean;
+  defaultValue?: boolean;
+  onError?: (error: unknown, context: { bridge: "custom"; flagKey: string }) => void;
 }
 
 export function createFlagBridge(options: CreateFlagBridgeOptions): FeatureFlagBridge {
   return {
     isEnabled: (flagKey: string, userContext?: UserContext) => {
-      if (!flagKey) return false;
-      return options.isEnabled(flagKey, userContext);
+      const fallback = options.defaultValue ?? false;
+      if (!flagKey) return fallback;
+      try {
+        return options.isEnabled(flagKey, userContext);
+      } catch (error: unknown) {
+        options.onError?.(error, { bridge: "custom", flagKey });
+        return fallback;
+      }
     },
   };
 }
@@ -20,6 +28,7 @@ export interface LaunchDarklyClientLike {
 export interface LaunchDarklyBridgeOptions {
   userResolver?: (userContext?: UserContext) => Record<string, unknown>;
   defaultValue?: boolean;
+  onError?: (error: unknown, context: { bridge: "launchdarkly"; flagKey: string }) => void;
 }
 
 export class LaunchDarklyBridge implements FeatureFlagBridge {
@@ -32,6 +41,8 @@ export class LaunchDarklyBridge implements FeatureFlagBridge {
   }
 
   isEnabled(flagKey: string, userContext?: UserContext): boolean {
+    const fallback = this.options.defaultValue ?? false;
+    if (!flagKey) return fallback;
     const defaultUser = {
       key: userContext?.traits?.id ?? userContext?.role ?? "anonymous",
       custom: {
@@ -41,8 +52,13 @@ export class LaunchDarklyBridge implements FeatureFlagBridge {
         ...(userContext?.traits ?? {}),
       },
     };
-    const user = this.options.userResolver ? this.options.userResolver(userContext) : defaultUser;
-    return this.client.variation(flagKey, user, this.options.defaultValue ?? false);
+    try {
+      const user = this.options.userResolver ? this.options.userResolver(userContext) : defaultUser;
+      return this.client.variation(flagKey, user, fallback);
+    } catch (error: unknown) {
+      this.options.onError?.(error, { bridge: "launchdarkly", flagKey });
+      return fallback;
+    }
   }
 }
 
@@ -58,6 +74,8 @@ export interface PostHogClientLike {
 export interface PostHogBridgeOptions {
   distinctIdResolver?: (userContext?: UserContext) => string | undefined;
   groupsResolver?: (userContext?: UserContext) => Record<string, string> | undefined;
+  defaultValue?: boolean;
+  onError?: (error: unknown, context: { bridge: "posthog"; flagKey: string }) => void;
 }
 
 export class PostHogBridge implements FeatureFlagBridge {
@@ -70,12 +88,19 @@ export class PostHogBridge implements FeatureFlagBridge {
   }
 
   isEnabled(flagKey: string, userContext?: UserContext): boolean {
-    const distinctId = this.options.distinctIdResolver
-      ? this.options.distinctIdResolver(userContext)
-      : (typeof userContext?.traits?.id === "string" ? userContext.traits.id : undefined);
-    const groups = this.options.groupsResolver
-      ? this.options.groupsResolver(userContext)
-      : undefined;
-    return this.client.isFeatureEnabled(flagKey, distinctId, groups, userContext?.traits);
+    const fallback = this.options.defaultValue ?? false;
+    if (!flagKey) return fallback;
+    try {
+      const distinctId = this.options.distinctIdResolver
+        ? this.options.distinctIdResolver(userContext)
+        : (typeof userContext?.traits?.id === "string" ? userContext.traits.id : undefined);
+      const groups = this.options.groupsResolver
+        ? this.options.groupsResolver(userContext)
+        : undefined;
+      return this.client.isFeatureEnabled(flagKey, distinctId, groups, userContext?.traits);
+    } catch (error: unknown) {
+      this.options.onError?.(error, { bridge: "posthog", flagKey });
+      return fallback;
+    }
   }
 }

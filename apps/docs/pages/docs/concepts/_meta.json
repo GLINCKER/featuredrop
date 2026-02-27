@@ -2,5 +2,9 @@
   "architecture": "Architecture",
   "manifest-model": "Manifest Model",
   "release-lifecycle": "Release Lifecycle",
-  "version-pinning": "Version Pinning"
+  "headless-renderer": "Headless Renderer",
+  "version-pinning": "Version Pinning",
+  "theming": "Theming",
+  "localization": "Localization + RTL",
+  "animation": "Animation"
 }

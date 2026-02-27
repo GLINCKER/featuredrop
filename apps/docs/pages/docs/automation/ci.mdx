@@ -6,11 +6,9 @@ import { Callout } from 'nextra/components'
 
 # CI Utilities
 
-Every FeatureDrop release should pass through a deterministic CI pipeline before reaching production. Broken manifests — duplicate IDs, invalid dates, unresolved dependency cycles — should fail the build, not silently pass.
+FeatureDrop should fail CI on invalid manifests, unsafe content, and bundle regressions.
 
-## Recommended Pipeline Baseline
-
-Add the following step sequence to your CI workflow. The order matters: fail fast on type and security issues before attempting a build.
+## Recommended baseline
 
 ```yaml filename=".github/workflows/ci.yml"
 name: CI
@@ -35,71 +33,45 @@ jobs:
       - run: pnpm docs:build
 ```
 
-<Callout type="info">
-  Run `featuredrop validate` before `featuredrop build`. The validator will catch semantic errors that the build step won't report clearly on its own.
-</Callout>
-
-## Programmatic Manifest Diffing
-
-The `featuredrop/ci` package exposes utilities for scripting manifest comparisons inside Node-based CI steps. This is particularly useful for generating PR comment summaries that tell reviewers exactly what changed.
+## Programmatic manifest diff
 
 ```ts filename="scripts/manifest-diff.ts"
-import { diffManifest, generateChangelogDiff, validateManifestForCI } from 'featuredrop/ci'
+import {
+  diffManifest,
+  generateChangelogDiff,
+  generateChangelogDiffMarkdown,
+  validateManifestForCI
+} from 'featuredrop/ci'
 import { readFileSync } from 'node:fs'
 
 const beforeManifest = JSON.parse(readFileSync('before.manifest.json', 'utf-8'))
 const afterManifest = JSON.parse(readFileSync('featuredrop.manifest.json', 'utf-8'))
 
-// Validate the incoming manifest first
 const validation = validateManifestForCI(afterManifest)
 if (!validation.valid) {
-  console.error('Manifest validation failed:')
+  console.error('Manifest validation failed')
   console.error(validation.errors)
   process.exit(1)
 }
 
-// Compute structural diff
 const diff = diffManifest(beforeManifest, afterManifest)
-
-// Generate a human-readable summary for PR comments
-const summary = generateChangelogDiff(diff, { includeFieldChanges: true })
-console.log(summary)
+console.log(generateChangelogDiff(diff, { includeFieldChanges: true }))
+console.log(generateChangelogDiffMarkdown(diff, {
+  includeFieldChanges: true,
+  maxItemsPerSection: 10
+}))
 ```
 
-### What Each Utility Returns
+## Common failure conditions
 
-| Utility | Output |
-|---|---|
-| `diffManifest(before, after)` | Structured diff object: `added`, `removed`, `changed` arrays |
-| `generateChangelogDiff(diff, opts?)` | Markdown-formatted human-readable release summary |
-| `validateManifestForCI(manifest)` | `{ valid: boolean, errors: string[] }` schema + semantic validation |
-
-## Common Failure Conditions
-
-`featuredrop validate` and `featuredrop doctor` will exit non-zero on:
-
-- Duplicate feature IDs within the same manifest
-- Reversed or invalid date ranges (`hideAfter` before `releaseDate`)
-- Missing required fields like `title` or `releaseDate`
-- Dependency cycles in `dependsOn` arrays
-- Unsafe URL protocols in `url`, `image`, or `cta.url` fields
-- Bundle size regressions beyond the configured budget
-
-## PR Diff Comments
-
-To post manifest diff summaries as PR comments, pipe `generateChangelogDiff(...)` output to your preferred PR comment action (e.g., `marocchino/sticky-pull-request-comment`):
-
-```yaml
-- name: Generate manifest diff
-  run: node scripts/manifest-diff.ts > manifest-diff.md
-
-- name: Post PR comment
-  uses: marocchino/sticky-pull-request-comment@v2
-  with:
-    path: manifest-diff.md
-```
+- Duplicate feature IDs
+- Missing required fields (`id`, `label`, `releasedAt`, `showNewUntil`)
+- Invalid date ordering (`showNewUntil` must be after `releasedAt`)
+- Dependency cycles in `dependsOn`
+- Unsafe URLs in `url`, `image`, `cta.url`
+- Unsafe `meta` keys (`__proto__`, `constructor`, `prototype`)
+- Bundle size budget failures (`pnpm size-check`)
 
 <Callout type="warning">
-  Always build manifests the same way on all branches. Avoid environment-specific transforms or conditionals in manifest generation scripts, as they will produce unpredictable diffs between branches.
+  Build manifests consistently across branches. Environment-specific transforms create noisy diffs.
 </Callout>
-

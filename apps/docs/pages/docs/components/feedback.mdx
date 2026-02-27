@@ -7,24 +7,44 @@ import { FeedbackDemo } from '../../../components/demos/feedback-demo'
 
 # The Feedback Widget
 
-While the Feature Request board is used for long-term roadmap planning, the `<Feedback>` widget is designed for immediate, contextual sentiment capture.
+`<FeedbackWidget>` collects contextual user feedback with optional category, emoji, screenshot, and rate limiting.
 
-It is typically mounted floating in the bottom corner of a page, or embedded directly following a new feature's completion state to ask the user "How did we do?".
+## Usage
 
-## Usage & Strategy
+```tsx filename="feedback-widget.tsx"
+import { FeedbackWidget } from 'featuredrop/react'
 
-The Feedback component is designed to be completely headless regarding *where* the data goes. You provide your own API endpoint or server action, and the component handles the complex UX of gathering the data safely.
+<FeedbackWidget
+  featureId="new-analytics-dashboard"
+  categories={['bug', 'design', 'performance', 'feature-request']}
+  showEmoji
+  showScreenshot
+  rateLimit="1-per-feature"
+  onSubmit={async (payload) => {
+    await fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+  }}
+/>
+```
 
-- **Sentiment Capture**: Ships with built-in CSAT (Customer Satisfaction), NPS (Net Promoter Score), and emoji-based sentiment voting patterns.
-- **Categorization**: Allows users to bucket their feedback (e.g., "Bug Report", "UI Suggestion", "Performance Issue").
-- **Rate Limiting**: Built-in hooks prevent disgruntled users from spamming your API with hundreds of submissions.
+## Key props
 
-<Callout type="tip">
-  **Screenshot Metadata**: If your application is particularly complex, you can configure the `<Feedback>` component to optionally capture a DOM snapshot or metadata payload (like the current URL route and active Feature Flags) alongside the user's text submission to help your engineers debug faster.
+| Prop | Type | Notes |
+| --- | --- | --- |
+| `onSubmit` | `(payload) => Promise<void> \| void` | Required handler |
+| `featureId` | `string` | Attach feedback to feature |
+| `categories` | `string[]` | Category options |
+| `rateLimit` | `'none' \| '1-per-feature' \| '1-per-session'` | Anti-spam guard |
+| `showScreenshot` | `boolean` | Screenshot capture support |
+| `showEmoji` | `boolean` | Emoji sentiment input |
+
+<Callout type="info">
+  Payload includes `url` and `timestamp` so backend triage can reproduce context faster.
 </Callout>
 
 ## Interactive Demo
-
-The demo below shows the multi-step flow of categorizing feedback, writing a message, and submitting it.
 
 <FeedbackDemo />

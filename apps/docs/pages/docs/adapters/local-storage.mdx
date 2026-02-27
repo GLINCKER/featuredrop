@@ -13,7 +13,7 @@ Unlike the `MemoryAdapter` (which resets when the user refreshes the page), stat
 ## Typical Integration
 
 ```ts filename="featuredrop.config.ts"
-import { LocalStorageAdapter } from 'featuredrop'
+import { LocalStorageAdapter } from 'featuredrop/adapters'
 
 // Initializes the adapter using window.localStorage under the hood
 export const storage = new LocalStorageAdapter({

@@ -1,18 +1,164 @@
 import { generateRSS } from "./rss";
 import type { FeatureEntry, FeatureManifest } from "./types";
 
-async function postJson(url: string, payload: unknown, headers?: Record<string, string>): Promise<void> {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(headers ?? {}),
-    },
-    body: JSON.stringify(payload),
-  });
+export interface BridgeRequestOptions {
+  headers?: Record<string, string>;
+  timeoutMs?: number;
+  maxRetries?: number;
+  retryDelayMs?: number;
+  retryOnStatuses?: number[];
+  signal?: AbortSignal;
+}
 
-  if (!response.ok) {
-    throw new Error(`[featuredrop] Bridge request failed (${response.status}) for ${url}`);
+const DEFAULT_RETRY_STATUSES = [408, 429, 500, 502, 503, 504];
+
+class BridgeRequestError extends Error {
+  readonly status?: number;
+  readonly retryable: boolean;
+
+  constructor(message: string, options: { status?: number; retryable?: boolean } = {}) {
+    super(message);
+    this.name = "BridgeRequestError";
+    this.status = options.status;
+    this.retryable = options.retryable ?? false;
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  if (ms <= 0) return Promise.resolve();
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function createAbortSignal(
+  timeoutMs: number | undefined,
+  sourceSignal: AbortSignal | undefined,
+): { signal: AbortSignal | undefined; cleanup: () => void; timedOut: () => boolean } {
+  if (!timeoutMs && !sourceSignal) {
+    return {
+      signal: undefined,
+      cleanup: () => {
+        // noop
+      },
+      timedOut: () => false,
+    };
+  }
+
+  const controller = new AbortController();
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  let timeoutTriggered = false;
+  let onAbort: (() => void) | undefined;
+
+  if (sourceSignal) {
+    if (sourceSignal.aborted) {
+      controller.abort(sourceSignal.reason);
+    } else {
+      onAbort = () => controller.abort(sourceSignal.reason);
+      sourceSignal.addEventListener("abort", onAbort, { once: true });
+    }
+  }
+
+  if (timeoutMs && timeoutMs > 0) {
+    timeoutId = setTimeout(() => {
+      timeoutTriggered = true;
+      controller.abort();
+    }, timeoutMs);
+  }
+
+  return {
+    signal: controller.signal,
+    cleanup: () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (sourceSignal && onAbort) sourceSignal.removeEventListener("abort", onAbort);
+    },
+    timedOut: () => timeoutTriggered,
+  };
+}
+
+async function readResponseText(response: Response): Promise<string> {
+  const hasText =
+    response &&
+    typeof response === "object" &&
+    "text" in response &&
+    typeof response.text === "function";
+  if (!hasText) return "";
+  try {
+    const text = await response.text();
+    return text.trim();
+  } catch {
+    return "";
+  }
+}
+
+async function postJson(
+  url: string,
+  payload: unknown,
+  options: BridgeRequestOptions = {},
+): Promise<void> {
+  const maxRetries = Math.max(0, options.maxRetries ?? 0);
+  const retryDelayMs = Math.max(0, options.retryDelayMs ?? 250);
+  const retryStatuses = new Set(options.retryOnStatuses ?? DEFAULT_RETRY_STATUSES);
+
+  let attempt = 0;
+  for (;;) {
+    const { signal, cleanup, timedOut } = createAbortSignal(options.timeoutMs, options.signal);
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(options.headers ?? {}),
+        },
+        body: JSON.stringify(payload),
+        signal,
+      });
+
+      if (response.ok) return;
+
+      const retryableStatus = retryStatuses.has(response.status);
+      const responseText = await readResponseText(response);
+      const message = responseText
+        ? `[featuredrop] Bridge request failed (${response.status}) for ${url}: ${responseText}`
+        : `[featuredrop] Bridge request failed (${response.status}) for ${url}`;
+
+      if (!retryableStatus || attempt >= maxRetries) {
+        throw new BridgeRequestError(message, {
+          status: response.status,
+          retryable: retryableStatus,
+        });
+      }
+    } catch (error: unknown) {
+      const isBridgeRequestError = error instanceof BridgeRequestError;
+      const isAbortError =
+        error instanceof DOMException
+          ? error.name === "AbortError"
+          : error &&
+              typeof error === "object" &&
+              "name" in error &&
+              (error as { name?: string }).name === "AbortError";
+
+      if (isAbortError && timedOut()) {
+        throw new BridgeRequestError(
+          `[featuredrop] Bridge request timed out after ${options.timeoutMs}ms for ${url}`,
+        );
+      }
+
+      const shouldRetry = isBridgeRequestError
+        ? error.retryable && attempt < maxRetries
+        : attempt < maxRetries;
+
+      if (!shouldRetry) {
+        if (error instanceof Error) throw error;
+        throw new Error(`[featuredrop] Bridge request failed for ${url}`);
+      }
+    } finally {
+      cleanup();
+    }
+
+    attempt += 1;
+    const waitMs = retryDelayMs * 2 ** (attempt - 1);
+    await sleep(waitMs);
   }
 }
 
@@ -25,7 +171,7 @@ function formatFeatureLine(feature: FeatureEntry): string {
   return `${feature.label} (${released})`;
 }
 
-export interface SlackBridgeOptions {
+export interface SlackBridgeOptions extends BridgeRequestOptions {
   webhookUrl: string;
   username?: string;
   iconEmoji?: string;
@@ -52,11 +198,11 @@ export const SlackBridge = {
             },
           ],
         };
-    await postJson(options.webhookUrl, payload);
+    await postJson(options.webhookUrl, payload, options);
   },
 };
 
-export interface DiscordBridgeOptions {
+export interface DiscordBridgeOptions extends BridgeRequestOptions {
   webhookUrl: string;
   username?: string;
   avatarUrl?: string;
@@ -82,13 +228,12 @@ export const DiscordBridge = {
             },
           ],
         };
-    await postJson(options.webhookUrl, payload);
+    await postJson(options.webhookUrl, payload, options);
   },
 };
 
-export interface WebhookBridgeOptions {
+export interface WebhookBridgeOptions extends BridgeRequestOptions {
   url: string;
-  headers?: Record<string, string>;
   event?: string;
   body?: Record<string, unknown>;
 }
@@ -101,7 +246,7 @@ export const WebhookBridge = {
       sentAt: new Date().toISOString(),
       ...(options.body ?? {}),
     };
-    await postJson(options.url, payload, options.headers);
+    await postJson(options.url, payload, options);
   },
 };
 

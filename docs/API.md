@@ -708,20 +708,28 @@ await storage.flushQueue()
 HTTP-backed adapter for manifest/state sync.
 
 ```ts
-import { RemoteAdapter } from 'featuredrop'
+import { RemoteAdapter } from 'featuredrop/adapters'
 
 const storage = new RemoteAdapter({
   url: 'https://api.example.com/api/features',
   userId: currentUser.id,
   headers: { Authorization: `Bearer ${token}` },
+  requestTimeoutMs: 10_000,
   retryAttempts: 3,
   retryBaseDelayMs: 250,
+  retryOnStatuses: [408, 429, 500, 502, 503, 504],
   circuitBreakerThreshold: 5,
   circuitBreakerCooldownMs: 60_000,
+  dismissBatchWindowMs: 150,
+  syncOnOnline: true,
+  syncOnVisibilityChange: true,
+  syncIntervalMs: 60_000,
 })
 
 // Optional monitoring hook
 const healthy = await storage.isHealthy()
+await storage.flushPendingDismisses()
+await storage.destroy()
 ```
 
 ### `PostgresAdapter`

@@ -10,183 +10,12 @@ export {
 
 // Helpers
 export { createManifest, getFeatureById, getNewFeaturesByCategory } from "./helpers";
-export { parseDescription } from "./markdown";
-export { createChangelogRenderer } from "./renderer";
-export {
-  DiscordBridge,
-  EmailDigestGenerator,
-  RSSFeedGenerator,
-  SlackBridge,
-  WebhookBridge,
-} from "./bridges";
-export {
-  diffManifest,
-  generateChangelogDiff,
-  validateManifestForCI,
-} from "./ci";
-export {
-  createFlagBridge,
-  LaunchDarklyBridge,
-  PostHogBridge,
-} from "./flags";
-export {
-  AudienceBuilder,
-  ManifestEditor,
-  PreviewPanel,
-  ScheduleCalendar,
-} from "./admin";
-export {
-  ContentfulAdapter,
-  SanityAdapter,
-  StrapiAdapter,
-  NotionAdapter,
-  MarkdownAdapter,
-} from "./cms";
-export {
-  FEATUREDROP_THEMES,
-  createTheme,
-  resolveTheme,
-  themeToCSSVariables,
-} from "./theme";
-export {
-  FEATUREDROP_TRANSLATIONS,
-  formatDateForLocale,
-  formatRelativeTimeForLocale,
-  getLocaleDirection,
-  resolveLocale,
-  resolveTranslations,
-} from "./i18n";
-export {
-  FEATUREDROP_ANIMATION_PRESETS,
-  getAnimationDurationMs,
-  getEnterAnimation,
-  getExitAnimation,
-  getPulseAnimation,
-  resolveAnimationPreset,
-} from "./animation";
-export type {
-  FeatureDropTheme,
-  FeatureDropThemeInput,
-  FeatureDropThemeOverrides,
-  FeatureDropThemePreset,
-} from "./theme";
-export type { FeatureDropTranslations } from "./i18n";
-export type {
-  ChangelogRenderer,
-  ChangelogRendererActions,
-  ChangelogRendererComputed,
-  ChangelogRendererOptions,
-  ChangelogRendererState,
-} from "./renderer";
-export type {
-  DiscordBridgeOptions,
-  EmailDigestGeneratorOptions,
-  RSSFeedGeneratorOptions,
-  SlackBridgeOptions,
-  WebhookBridgeOptions,
-} from "./bridges";
-export type { ChangelogDiffOptions, ChangedFeature, ManifestDiff } from "./ci";
-export type {
-  CreateFlagBridgeOptions,
-  LaunchDarklyBridgeOptions,
-  LaunchDarklyClientLike,
-  PostHogBridgeOptions,
-  PostHogClientLike,
-} from "./flags";
-export type {
-  AudienceBuilderProps,
-  ManifestEditorProps,
-  PreviewPanelProps,
-  ScheduleCalendarProps,
-} from "./admin";
-export type { CMSAdapter, CMSFieldMapping } from "./cms";
-export { generateRSS } from "./rss";
-export { applyAnnouncementThrottle } from "./throttle";
-export type { ThrottleOptions, ThrottleRuntimeState, ThrottleResult } from "./throttle";
-export {
-  AnalyticsCollector,
-  PostHogAdapter,
-  AmplitudeAdapter,
-  MixpanelAdapter,
-  SegmentAdapter,
-  CustomAdapter,
-  createAdoptionMetrics,
-} from "./analytics";
-export type {
-  AdoptionEvent,
-  AdoptionEventInput,
-  AdoptionEventType,
-  AnalyticsAdapter,
-  AnalyticsCollectorOptions,
-  AdoptionMetrics,
-  FeatureEngagementMetrics,
-} from "./analytics";
-export {
-  resolveDependencyOrder,
-  hasDependencyCycle,
-  sortFeaturesByDependencies,
-} from "./dependencies";
-export { TriggerEngine, isTriggerMatch } from "./triggers";
-export {
-  applyFeatureVariant,
-  applyFeatureVariants,
-  getFeatureVariantName,
-  getOrCreateVariantKey,
-} from "./variants";
-export {
-  computeManifestStats,
-  generateMarkdownChangelog,
-  runDoctor,
-} from "./cli-utils";
-export {
-  featureEntrySchema,
-  featureManifestSchema,
-  featureEntryJsonSchema,
-  featureManifestJsonSchema,
-  validateManifest,
-} from "./schema";
-export type {
-  ValidationIssue,
-  ValidationResult,
-} from "./schema";
 
-// Adapters
-export { LocalStorageAdapter, IndexedDBAdapter, MemoryAdapter } from "./adapters";
-export {
-  RemoteAdapter,
-  PostgresAdapter,
-  RedisAdapter,
-  HybridAdapter,
-  MySQLAdapter,
-  MongoAdapter,
-  SQLiteAdapter,
-  SupabaseAdapter,
-} from "./adapters";
-export type {
-  LocalStorageAdapterOptions,
-  IndexedDBAdapterOptions,
-  RemoteAdapterOptions,
-  PostgresAdapterOptions,
-  PostgresQueryFn,
-  PostgresQueryResult,
-  RedisAdapterOptions,
-  RedisLikeClient,
-  RedisLikePipeline,
-  HybridAdapterOptions,
-  MySQLAdapterOptions,
-  MySQLQueryFn,
-  MySQLQueryResult,
-  MongoAdapterOptions,
-  MongoLikeCollection,
-  SQLiteAdapterOptions,
-  SQLiteQueryFn,
-  SQLiteQueryResult,
-  SupabaseAdapterOptions,
-  SupabaseClientLike,
-  SupabaseRealtimeChannelLike,
-} from "./adapters";
+// Browser adapters (lightweight, no server deps)
+export { LocalStorageAdapter, MemoryAdapter } from "./adapters";
+export type { LocalStorageAdapterOptions } from "./adapters";
 
-// Types
+// Types — all type-only exports are zero-cost (erased at build time)
 export type {
   AudienceMatchFn,
   AudienceRule,
@@ -208,3 +37,23 @@ export type {
   FeatureTrigger,
   TriggerContext,
 } from "./types";
+
+// ────────────────────────────────────────────────────────────────────────────
+// Everything below is available via subpath imports:
+//
+//   import { parseDescription }    from 'featuredrop/markdown'
+//   import { generateRSS }         from 'featuredrop/rss'
+//   import { SlackBridge }         from 'featuredrop/bridges'
+//   import { ContentfulAdapter }   from 'featuredrop/cms'
+//   import { ManifestEditor }      from 'featuredrop/admin'
+//   import { validateManifest }    from 'featuredrop/schema'
+//   import { diffManifest }        from 'featuredrop/ci'
+//   import { createChangelogRenderer } from 'featuredrop/renderer'
+//   import { createFlagBridge }    from 'featuredrop/flags'
+//   import { AnalyticsCollector }  from 'featuredrop/analytics'  — planned
+//   import { PostgresAdapter }     from 'featuredrop/adapters'
+//   import { RemoteAdapter }       from 'featuredrop/adapters'
+//   import { IndexedDBAdapter }    from 'featuredrop/adapters'
+//
+// These are NOT re-exported here to keep the core bundle small (< 5 kB).
+// ────────────────────────────────────────────────────────────────────────────

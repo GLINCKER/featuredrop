@@ -6,8 +6,8 @@ import { join } from "node:path";
 const cwd = process.cwd();
 
 const budgets = [
-  { name: "core", file: "dist/index.js", maxBytes: 36 * 1024 },
-  { name: "react", file: "dist/react.js", maxBytes: 56 * 1024 },
+  { name: "core", file: "dist/index.js", maxBytes: 5 * 1024 },
+  { name: "react", file: "dist/react.js", maxBytes: 55 * 1024 },
   { name: "vue", file: "dist/vue.js", maxBytes: 10 * 1024 },
   { name: "svelte", file: "dist/svelte.js", maxBytes: 5 * 1024 },
 ];

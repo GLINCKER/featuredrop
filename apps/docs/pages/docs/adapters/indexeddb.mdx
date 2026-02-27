@@ -6,34 +6,45 @@ import { Callout } from 'nextra/components'
 
 # IndexedDB Adapter
 
-The `IndexedDBAdapter` is explicitly designed for offline-first mobile web constraints (PWAs) and applications handling unusually large FeatureDrop manifests.
+`IndexedDBAdapter` is an offline-first browser adapter with optional remote reconciliation hooks.
 
-Rather than blocking the main thread parsing a massive `localStorage` JSON blob or waiting for a slow cellular network request, this adapter leverages the browser's asynchronous IndexedDB engine to cache and query state instantly.
-
-## Offline Write Queues
-
-Whenever a user interaction occurs while the device has no internet connection (e.g., they complete Checklist item #1 on an airplane), the adapter appends the event to an internal transaction queue.
-
-Once the `online` event fires or the browser regains visibility, the adapter automatically flushes the queue via `flushQueue()` and reconciles local state with your remote backend.
-
-## Typical Integration
+## Typical integration
 
 ```ts filename="featuredrop.config.ts"
-import { IndexedDBAdapter } from 'featuredrop'
+import { IndexedDBAdapter } from 'featuredrop/adapters'
 
-// Initialize the local-first DB adapter
 export const storage = new IndexedDBAdapter({
-  databaseName: 'featuredrop-client-db',
-  autoSync: true,
-  syncOnOnline: true,           // Automatic recovery when network returns
-  syncOnVisibilityChange: true  // Automatic recovery when tab is aggressively foregrounded
+  prefix: 'featuredrop',
+  dbName: 'featuredrop-client-db',
+  storeName: 'state',
+  flushDebounceMs: 500,
+  autoSyncOnOnline: true,
+  onSyncState: async () => {
+    const res = await fetch('/api/featuredrop/state')
+    return res.json()
+  },
+  onFlushDismissBatch: async (ids) => {
+    await fetch('/api/featuredrop/dismiss-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids })
+    })
+  },
+  onFlushDismissAll: async (watermark) => {
+    await fetch('/api/featuredrop/dismiss-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ watermark })
+    })
+  }
 })
-
-// Optional: manually force a background sync payload
-await storage.flushQueue()
 ```
 
+## Runtime helpers
+
+- `await storage.flushQueue()` to force queued writes
+- `await storage.syncFromRemote()` to pull remote state then flush queue
+
 <Callout type="info">
-  **Best Practices**:
-  If building an internal enterprise application for field workers (like warehouse scanners or delivery tablets), it is highly recommended to expose a manual "Force Sync" button in a debug surface that manually fires `syncFromRemote()` and `flushQueue()`, allowing users to forcefully reconcile state with headquarters if the ServiceWorker stalls.
+  Good fit for offline-capable PWAs and low-connectivity environments.
 </Callout>
