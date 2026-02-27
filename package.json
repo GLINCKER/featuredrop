@@ -1,6 +1,6 @@
 {
   "name": "featuredrop",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Lightweight feature discovery system. Show 'New' badges that auto-expire.",
   "type": "module",
   "main": "./dist/index.cjs",
