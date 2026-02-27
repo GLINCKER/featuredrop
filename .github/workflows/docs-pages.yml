@@ -1,4 +1,4 @@
-name: Docs Pages
+name: Deploy Docs
 
 on:
   push:
@@ -6,24 +6,22 @@ on:
     paths:
       - apps/docs/**
       - docs/**
+      - src/**
       - README.md
       - package.json
       - .github/workflows/docs-pages.yml
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 concurrency:
-  group: docs-pages
+  group: docs-deploy
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build static docs
+  deploy:
+    name: Build & Deploy to Cloudflare Pages
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,9 +37,6 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-
       - name: Install root dependencies
         run: pnpm install --frozen-lockfile
 
@@ -56,22 +51,9 @@ jobs:
           NEXT_PUBLIC_SITE_URL: https://featuredrop.dev
         run: pnpm --dir apps/docs build
 
-      - name: Add nojekyll marker
-        run: touch apps/docs/out/.nojekyll
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
         with:
-          path: apps/docs/out
-
-  deploy:
-    name: Deploy to GitHub Pages
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy artifact
-        id: deployment
-        uses: actions/deploy-pages@v4
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/docs/out --project-name featuredrop --branch main --commit-dirty=true
