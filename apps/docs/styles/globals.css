@@ -896,3 +896,89 @@ button[aria-label="dark"]:hover {
   opacity: 1;
 }
 
+/* ─── Scroll Progress Bar ─── */
+.fd-scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--brand), #8b5cf6, #06b6d4);
+  z-index: 9999;
+  transition: width 0.1s linear;
+  border-radius: 0 2px 2px 0;
+  pointer-events: none;
+}
+
+/* ─── Typewriter Cursor ─── */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.fd-typewriter-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  background: var(--brand);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blink-cursor 0.8s step-end infinite;
+}
+
+/* ─── Mouse-Follow Glow ─── */
+@media (hover: hover) {
+  .fd-glow-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .fd-glow-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    background: radial-gradient(
+      400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      rgba(234, 88, 12, 0.06),
+      transparent 60%
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .fd-glow-card:hover::after {
+    opacity: 1;
+  }
+
+  .dark .fd-glow-card::after {
+    background: radial-gradient(
+      400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      rgba(234, 88, 12, 0.1),
+      transparent 60%
+    );
+  }
+}
+
+/* ─── 3D Tilt Card ─── */
+@media (hover: hover) {
+  .fd-tilt-card {
+    transition: transform 0.2s ease-out;
+    will-change: transform;
+  }
+}
+
+/* ─── Terminal Typing Animation ─── */
+@keyframes terminal-type {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+.fd-terminal-line {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  animation: terminal-type 0.8s steps(25) forwards;
+}
+

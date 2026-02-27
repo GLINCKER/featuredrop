@@ -114,14 +114,21 @@ const valueCards: ValueCard[] = [
 ]
 
 const comparisonRows = [
-  { feature: 'Self-hosted / OSS', featuredrop: true, beamer: false, pendo: false },
-  { feature: 'Changelog widget', featuredrop: true, beamer: true, pendo: true },
-  { feature: 'Tours & checklists', featuredrop: true, beamer: false, pendo: true },
-  { feature: 'Feedback & surveys', featuredrop: true, beamer: true, pendo: true },
-  { feature: 'Feature flags bridge', featuredrop: true, beamer: false, pendo: true },
-  { feature: 'User segmentation', featuredrop: true, beamer: true, pendo: true },
-  { feature: 'Bundle size', fdVal: '< 3 kB', beamerVal: 'N/A (SaaS)', pendoVal: '~300 kB agent' },
-  { feature: 'Price', fdVal: 'Free forever', beamerVal: '$49\u2013249/mo', pendoVal: '$7k+/yr' },
+  { feature: 'Self-hosted / OSS', featuredrop: true, saas: false, enterprise: false },
+  { feature: 'Changelog widget', featuredrop: true, saas: true, enterprise: true },
+  { feature: 'Tours & checklists', featuredrop: true, saas: false, enterprise: true },
+  { feature: 'Feedback & surveys', featuredrop: true, saas: true, enterprise: true },
+  { feature: 'Feature flags bridge', featuredrop: true, saas: false, enterprise: true },
+  { feature: 'User segmentation', featuredrop: true, saas: true, enterprise: true },
+  { feature: 'Bundle size', fdVal: '< 3 kB', saasVal: 'N/A (SaaS)', entVal: '~300 kB agent' },
+  { feature: 'Price', fdVal: 'Free forever', saasVal: '$49\u2013249/mo', entVal: '$7k+/yr' },
+]
+
+const heroTaglines = [
+  'Ship changelogs from your own codebase.',
+  'Drop your SaaS adoption bill to $0.',
+  'Onboard users with guided tours.',
+  '< 3 kB. Zero dependencies.',
 ]
 
 type ShowcaseTab = 'changelog' | 'tour' | 'checklist' | 'banner' | 'feedback'
@@ -175,21 +182,69 @@ function useAnimatedCounter(target: number, duration = 1500) {
 
   useEffect(() => {
     if (!isVisible) return
-    let start = 0
-    const step = Math.ceil(target / (duration / 16))
-    const timer = setInterval(() => {
-      start += step
-      if (start >= target) {
-        setCount(target)
-        clearInterval(timer)
-      } else {
-        setCount(start)
-      }
-    }, 16)
-    return () => clearInterval(timer)
+    if (target === 0) { setCount(0); return }
+    const startTime = performance.now()
+    function easeOutExpo(t: number): number {
+      return t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
+    }
+    let raf: number
+    function animate(now: number) {
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      setCount(Math.round(easeOutExpo(progress) * target))
+      if (progress < 1) raf = requestAnimationFrame(animate)
+    }
+    raf = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(raf)
   }, [isVisible, target, duration])
 
   return { ref, count }
+}
+
+function useTypewriter(phrases: string[], typingSpeed = 50, deletingSpeed = 30, pauseMs = 2500) {
+  const [display, setDisplay] = useState(phrases[0])
+  const phase = useRef<'paused' | 'deleting' | 'typing'>('paused')
+  const idx = useRef(0)
+  const charPos = useRef(phrases[0].length)
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>
+    function tick() {
+      const currentPhrase = phrases[idx.current]
+      if (phase.current === 'paused') {
+        timer = setTimeout(() => {
+          phase.current = 'deleting'
+          tick()
+        }, pauseMs)
+        return
+      }
+      if (phase.current === 'deleting') {
+        charPos.current--
+        setDisplay(currentPhrase.slice(0, charPos.current))
+        if (charPos.current === 0) {
+          idx.current = (idx.current + 1) % phrases.length
+          phase.current = 'typing'
+        }
+        timer = setTimeout(tick, deletingSpeed)
+        return
+      }
+      if (phase.current === 'typing') {
+        const nextPhrase = phrases[idx.current]
+        charPos.current++
+        setDisplay(nextPhrase.slice(0, charPos.current))
+        if (charPos.current === nextPhrase.length) {
+          phase.current = 'paused'
+          timer = setTimeout(tick, pauseMs)
+        } else {
+          timer = setTimeout(tick, typingSpeed)
+        }
+      }
+    }
+    timer = setTimeout(tick, pauseMs)
+    return () => clearTimeout(timer)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return display
 }
 
 // --- Components ---
@@ -211,18 +266,138 @@ function RevealSection({ children, delay = 0, className = '' }: { children: Reac
 }
 
 function SectionHeading({ chip, title, subtitle }: { chip?: string; title: string; subtitle: string }) {
+  const { ref, isVisible } = useIntersectionObserver({ threshold: 0.2 })
+  const words = title.split(' ')
+
   return (
-    <div className="mx-auto max-w-2xl text-center mb-12 md:mb-16">
+    <div
+      // @ts-ignore
+      ref={ref}
+      className="mx-auto max-w-2xl text-center mb-12 md:mb-16"
+    >
       {chip && (
-        <span className="fd-chip mb-4 inline-block">{chip}</span>
+        <span className={`fd-chip mb-4 inline-block transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>{chip}</span>
       )}
       <h2 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white md:text-4xl lg:text-5xl">
-        {title}
+        {words.map((word, i) => (
+          <span
+            key={i}
+            className={`inline-block transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            style={{ transitionDelay: isVisible ? `${i * 80}ms` : '0ms' }}
+          >
+            {word}{i < words.length - 1 ? '\u00A0' : ''}
+          </span>
+        ))}
       </h2>
-      <p className="mt-4 text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
+      <p
+        className={`mt-4 text-lg text-slate-600 dark:text-slate-400 leading-relaxed transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+        style={{ transitionDelay: isVisible ? `${words.length * 80 + 100}ms` : '0ms' }}
+      >
         {subtitle}
       </p>
     </div>
+  )
+}
+
+function ScrollProgressBar() {
+  const [progress, setProgress] = useState(0)
+
+  useEffect(() => {
+    const update = () => {
+      const h = document.documentElement.scrollHeight - window.innerHeight
+      setProgress(h > 0 ? Math.min(window.scrollY / h, 1) : 0)
+    }
+    window.addEventListener('scroll', update, { passive: true })
+    return () => window.removeEventListener('scroll', update)
+  }, [])
+
+  return <div className="fd-scroll-progress" style={{ width: `${progress * 100}%` }} />
+}
+
+function InteractiveCard({ children, className = '', glow = false, tilt = false }: {
+  children: React.ReactNode; className?: string; glow?: boolean; tilt?: boolean
+}) {
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const card = cardRef.current
+    if (!card) return
+    const rect = card.getBoundingClientRect()
+    if (glow) {
+      card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`)
+      card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`)
+    }
+    if (tilt) {
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+      const rotateX = ((y - rect.height / 2) / (rect.height / 2)) * -6
+      const rotateY = ((x - rect.width / 2) / (rect.width / 2)) * 6
+      card.style.transform = `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-2px)`
+    }
+  }, [glow, tilt])
+
+  const handleMouseLeave = useCallback(() => {
+    const card = cardRef.current
+    if (!card) return
+    if (glow) {
+      card.style.removeProperty('--mouse-x')
+      card.style.removeProperty('--mouse-y')
+    }
+    if (tilt) {
+      card.style.transform = ''
+    }
+  }, [glow, tilt])
+
+  return (
+    <div
+      ref={cardRef}
+      className={`${glow ? 'fd-glow-card' : ''} ${tilt ? 'fd-tilt-card' : ''} ${className}`}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      {children}
+    </div>
+  )
+}
+
+function SocialProofStrip() {
+  return (
+    <section className="my-16 md:my-20">
+      <div className="text-center space-y-8">
+        <p className="text-sm font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          Trusted by developers shipping with
+        </p>
+
+        <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
+          <div className="flex items-center gap-2">
+            <Package className="h-4 w-4 text-brand" />
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">500+ npm downloads/week</span>
+          </div>
+          <div className="hidden sm:block h-4 w-px bg-slate-300 dark:bg-slate-700" />
+          <div className="flex items-center gap-2">
+            <Star className="h-4 w-4 text-amber-500" />
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Open source on GitHub</span>
+          </div>
+          <div className="hidden sm:block h-4 w-px bg-slate-300 dark:bg-slate-700" />
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-emerald-500" />
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">374 tests passing</span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4">
+          {frameworks.map((fw) => (
+            <div
+              key={fw.name}
+              className="fd-glass-surface flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 transition-all hover:scale-105"
+            >
+              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: fw.color }} />
+              {fw.name}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -615,64 +790,145 @@ function FeatureShowcaseRight() {
   )
 }
 
-function HowItWorksSection() {
-  const steps = [
-    {
-      num: '01',
-      icon: FileJson,
-      title: 'Define your manifest',
-      body: 'Write a JSON file with feature IDs, titles, publish dates, and expiry. No CMS, no dashboard \u2014 it\u2019s just a file in your repo.',
-      color: 'from-amber-500 to-orange-500',
-    },
-    {
-      num: '02',
-      icon: Box,
-      title: 'Wrap your app',
-      body: 'Add FeatureDropProvider at your app root. It handles storage, audience matching, and state management internally.',
-      color: 'from-blue-500 to-indigo-500',
-    },
-    {
-      num: '03',
-      icon: Sparkles,
-      title: 'Drop components',
-      body: 'NewBadge, ChangelogWidget, Tour, Banner, Toast \u2014 pick what you need. They auto-read from the manifest and auto-expire.',
-      color: 'from-emerald-500 to-teal-500',
-    },
-    {
-      num: '04',
-      icon: Cpu,
-      title: 'Deploy and forget',
-      body: 'CI validates your manifest, security-checks config, and bundle budgets. Features expire on schedule with zero manual cleanup.',
-      color: 'from-purple-500 to-pink-500',
-    },
-  ]
+function HowEasySection() {
+  const step1 = useIntersectionObserver({ threshold: 0.3 })
+  const step2 = useIntersectionObserver({ threshold: 0.3 })
+  const step3 = useIntersectionObserver({ threshold: 0.3 })
 
   return (
     <section className="my-24 md:my-40">
       <SectionHeading
-        chip="How it works"
-        title="From zero to production in four steps"
-        subtitle="No accounts to create, no scripts to embed, no vendor lock-in to accept."
+        chip="How easy it is"
+        title="Three steps. Thirty seconds."
+        subtitle="No accounts. No scripts. No vendor lock-in. Just install, define, ship."
       />
 
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-        {steps.map((step, i) => {
-          const Icon = step.icon
-          return (
-            <RevealSection key={step.num} delay={i * 100}>
-              <div className="fd-glass-surface fd-gradient-border p-6 h-full space-y-4 relative group">
-                <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${step.color} text-white shadow-lg`}>
-                  <Icon className="h-5 w-5" />
+      <div className="space-y-16 lg:space-y-24">
+        {/* Step 1: Install */}
+        <div
+          // @ts-ignore
+          ref={step1.ref}
+          className={`flex flex-col items-center gap-8 lg:flex-row lg:gap-16 transition-all duration-1000 ${step1.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+        >
+          <div className="flex-1 space-y-4">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-500 text-white font-bold text-lg shadow-lg">1</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Install in 30 seconds</span>
+            </div>
+            <h3 className="font-display text-2xl font-bold text-slate-900 dark:text-white">One package. No config files.</h3>
+            <p className="text-slate-600 dark:text-slate-400 leading-relaxed">Install from npm and you&#39;re ready. No accounts, no API keys, no build plugins.</p>
+          </div>
+          <div className="flex-1 w-full max-w-lg">
+            <div className="fd-glass-surface overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200/50 dark:border-white/5 bg-slate-900 dark:bg-black">
+                <div className="flex gap-1.5">
+                  <span className="h-3 w-3 rounded-full bg-red-500/80" />
+                  <span className="h-3 w-3 rounded-full bg-yellow-500/80" />
+                  <span className="h-3 w-3 rounded-full bg-green-500/80" />
                 </div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">
-                  Step {step.num}
-                </div>
-                <h3 className="font-display text-lg font-semibold text-slate-900 dark:text-white">{step.title}</h3>
-                <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">{step.body}</p>
+                <span className="text-xs text-slate-400 font-mono ml-2">terminal</span>
               </div>
-            </RevealSection>
-          )
-        })}
+              <div className="bg-slate-900 dark:bg-black p-5 font-mono text-sm">
+                <div className="text-green-400">
+                  $ <span className={step1.isVisible ? 'fd-terminal-line' : ''}>npm install featuredrop</span>
+                </div>
+                <div
+                  className={`mt-2 text-slate-500 transition-opacity duration-500 ${step1.isVisible ? 'opacity-100' : 'opacity-0'}`}
+                  style={{ transitionDelay: step1.isVisible ? '1.2s' : '0s' }}
+                >
+                  added 1 package in 0.4s
+                </div>
+                <div
+                  className={`text-slate-500 transition-opacity duration-500 ${step1.isVisible ? 'opacity-100' : 'opacity-0'}`}
+                  style={{ transitionDelay: step1.isVisible ? '1.5s' : '0s' }}
+                >
+                  <span className="text-emerald-400">0 vulnerabilities</span> · <span className="text-slate-400">0 dependencies</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Step 2: Define */}
+        <div
+          // @ts-ignore
+          ref={step2.ref}
+          className={`flex flex-col-reverse items-center gap-8 lg:flex-row lg:gap-16 transition-all duration-1000 ${step2.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+        >
+          <div className="flex-1 w-full max-w-lg">
+            <div className="fd-glass-surface fd-gradient-border overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200/50 dark:border-white/5">
+                <FileJson className="h-4 w-4 text-amber-500" />
+                <span className="text-xs font-mono font-medium text-slate-500 dark:text-slate-400">features.json</span>
+              </div>
+              <pre className="p-5 text-[13px] leading-[1.8] overflow-x-auto text-slate-700 dark:text-slate-300">
+                <code>{`[
+  {
+    "id": "dark-mode",
+    "label": "Dark Mode",
+    "description": "Full dark theme support",
+    "releasedAt": "2026-03-01"
+  }
+]`}</code>
+              </pre>
+            </div>
+          </div>
+          <div className="flex-1 space-y-4">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white font-bold text-lg shadow-lg">2</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Add your first feature</span>
+            </div>
+            <h3 className="font-display text-2xl font-bold text-slate-900 dark:text-white">A JSON file. That&#39;s the whole API.</h3>
+            <p className="text-slate-600 dark:text-slate-400 leading-relaxed">Define features with IDs, descriptions, and release dates. No CMS, no dashboard &mdash; it&#39;s a file in your repo.</p>
+          </div>
+        </div>
+
+        {/* Step 3: Ship */}
+        <div
+          // @ts-ignore
+          ref={step3.ref}
+          className={`flex flex-col items-center gap-8 lg:flex-row lg:gap-16 transition-all duration-1000 ${step3.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+        >
+          <div className="flex-1 space-y-4">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 text-white font-bold text-lg shadow-lg">3</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Watch badges appear</span>
+            </div>
+            <h3 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Badges show up. Then auto-expire.</h3>
+            <p className="text-slate-600 dark:text-slate-400 leading-relaxed">Drop NewBadge next to any nav item. It reads from the manifest, marks items as seen, and disappears on schedule.</p>
+          </div>
+          <div className="flex-1 w-full max-w-lg">
+            <div className="fd-glass-surface overflow-hidden p-6">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Dashboard</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Settings</span>
+                  <span
+                    className={`inline-flex items-center rounded-full bg-brand px-2 py-0.5 text-[10px] font-bold text-white transition-all duration-700 ${step3.isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}
+                    style={{ transitionDelay: step3.isVisible ? '0.5s' : '0s' }}
+                  >
+                    NEW
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Analytics</span>
+                  <span
+                    className={`inline-flex items-center rounded-full bg-brand px-2 py-0.5 text-[10px] font-bold text-white transition-all duration-700 ${step3.isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}
+                    style={{ transitionDelay: step3.isVisible ? '0.8s' : '0s' }}
+                  >
+                    NEW
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 opacity-60">
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Profile</span>
+                  <span className="text-[10px] text-slate-400 italic">expired</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   )
@@ -683,7 +939,7 @@ function ComparisonSection() {
     <section className="my-24 md:my-40">
       <SectionHeading
         chip="Honest comparison"
-        title="Why not Beamer or Pendo?"
+        title="Free vs. paid adoption tools"
         subtitle="Same features. No monthly bill. No tracking pixels. You own the code."
       />
 
@@ -697,8 +953,14 @@ function ComparisonSection() {
                   <span className="font-bold text-brand">FeatureDrop</span>
                   <span className="block text-[10px] text-slate-500 mt-0.5">open source</span>
                 </th>
-                <th className="text-center px-4 py-4 font-medium text-slate-500 dark:text-slate-400 w-[20%]">Beamer</th>
-                <th className="text-center px-4 py-4 font-medium text-slate-500 dark:text-slate-400 w-[20%]">Pendo</th>
+                <th className="text-center px-4 py-4 font-medium text-slate-500 dark:text-slate-400 w-[20%]">
+                  Paid SaaS
+                  <span className="block text-[10px] text-slate-400 mt-0.5">$49–249/mo</span>
+                </th>
+                <th className="text-center px-4 py-4 font-medium text-slate-500 dark:text-slate-400 w-[20%]">
+                  Enterprise
+                  <span className="block text-[10px] text-slate-400 mt-0.5">$7k+/yr</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -714,19 +976,19 @@ function ComparisonSection() {
                     }
                   </td>
                   <td className="text-center px-4 py-3.5">
-                    {'beamer' in row
-                      ? row.beamer
+                    {'saas' in row
+                      ? row.saas
                         ? <CheckCircle2 className="inline h-5 w-5 text-slate-400" />
                         : <span className="text-slate-300 dark:text-slate-600">&mdash;</span>
-                      : <span className="text-slate-500 dark:text-slate-400">{row.beamerVal}</span>
+                      : <span className="text-slate-500 dark:text-slate-400">{row.saasVal}</span>
                     }
                   </td>
                   <td className="text-center px-4 py-3.5">
-                    {'pendo' in row
-                      ? row.pendo
+                    {'enterprise' in row
+                      ? row.enterprise
                         ? <CheckCircle2 className="inline h-5 w-5 text-slate-400" />
                         : <span className="text-slate-300 dark:text-slate-600">&mdash;</span>
-                      : <span className="text-slate-500 dark:text-slate-400">{row.pendoVal}</span>
+                      : <span className="text-slate-500 dark:text-slate-400">{row.entVal}</span>
                     }
                   </td>
                 </tr>
@@ -739,35 +1001,55 @@ function ComparisonSection() {
   )
 }
 
-function StatsSection() {
-  const stats = [
-    { label: 'Tests passing', value: 374, suffix: '' },
-    { label: 'React components', value: 15, suffix: '' },
-    { label: 'Framework adapters', value: 8, suffix: '' },
-    { label: 'Core bundle', value: 3, suffix: ' kB', prefix: '<' },
+function ImpactStatsSection() {
+  const impactStats = [
+    { value: 0, prefix: '$', suffix: '/mo', label: 'vs $249/mo paid tools', highlight: 'Save $2,988/yr', icon: DollarSign },
+    { value: 30, prefix: '', suffix: 's', label: 'to first "New" badge', highlight: 'No config needed', icon: Zap },
+    { value: 3, prefix: '', suffix: ' kB', label: 'total footprint', highlight: 'vs 300 kB enterprise agents', icon: Package },
+    { value: 8, prefix: '', suffix: '', label: 'frameworks supported', highlight: 'One library, every stack', icon: Globe },
   ]
 
   return (
     <section className="my-24 md:my-40">
-      <div className="fd-glass p-8 md:p-12 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-brand/5 to-purple-500/5 dark:from-brand/10 dark:to-purple-500/10 pointer-events-none" />
-        <div className="relative z-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => {
-            const { ref, count } = useAnimatedCounter(stat.value)
-            return (
-              <div
-                key={stat.label}
-                // @ts-ignore
-                ref={ref}
-                className="text-center"
-              >
-                <p className="font-display text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                  {stat.prefix || ''}{count}{stat.suffix}
-                </p>
-                <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">{stat.label}</p>
-              </div>
-            )
-          })}
+      <div className="rounded-2xl bg-slate-900 dark:bg-black p-8 md:p-16 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-brand/10 via-transparent to-purple-600/10 pointer-events-none" />
+        <div className="absolute top-0 left-1/4 h-64 w-64 rounded-full bg-brand/5 blur-[100px]" />
+        <div className="absolute bottom-0 right-1/4 h-64 w-64 rounded-full bg-purple-500/5 blur-[100px]" />
+
+        <div className="relative z-10">
+          <div className="text-center mb-12 md:mb-16">
+            <span className="fd-chip !bg-white/10 !border-white/10 !text-white/60 mb-4 inline-block">Impact</span>
+            <h2 className="font-display text-3xl font-bold tracking-tight text-white md:text-4xl lg:text-5xl">
+              The numbers that matter
+            </h2>
+            <p className="mt-4 text-lg text-slate-400 leading-relaxed max-w-2xl mx-auto">
+              Ship faster, spend nothing, keep your bundle lean.
+            </p>
+          </div>
+
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {impactStats.map((stat) => {
+              const { ref, count } = useAnimatedCounter(stat.value)
+              const Icon = stat.icon
+              return (
+                <div
+                  key={stat.label}
+                  // @ts-ignore
+                  ref={ref}
+                  className="text-center space-y-3"
+                >
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 mx-auto">
+                    <Icon className="h-6 w-6 text-brand" />
+                  </div>
+                  <p className="font-display text-4xl md:text-5xl font-extrabold tracking-tight text-white">
+                    {stat.prefix}{count}{stat.suffix}
+                  </p>
+                  <p className="text-sm font-medium text-slate-400">{stat.label}</p>
+                  <p className="text-xs font-semibold text-brand">{stat.highlight}</p>
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
     </section>
@@ -821,13 +1103,13 @@ function BuiltForSection() {
           const Icon = item.icon
           return (
             <RevealSection key={item.title} delay={i * 80}>
-              <div className="fd-glass-surface fd-gradient-border p-6 h-full space-y-4 group">
-                <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-all group-hover:bg-brand group-hover:text-white dark:bg-slate-800 dark:text-slate-300 dark:group-hover:bg-brand">
+              <InteractiveCard glow className="fd-glass-surface fd-gradient-border p-6 h-full space-y-4 group">
+                <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-all group-hover:bg-brand group-hover:text-white dark:bg-slate-800 dark:text-slate-300 dark:group-hover:bg-brand relative z-10">
                   <Icon className="h-5 w-5" />
                 </div>
-                <h3 className="font-display text-lg font-semibold text-slate-900 dark:text-white">{item.title}</h3>
-                <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">{item.body}</p>
-              </div>
+                <h3 className="font-display text-lg font-semibold text-slate-900 dark:text-white relative z-10">{item.title}</h3>
+                <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400 relative z-10">{item.body}</p>
+              </InteractiveCard>
             </RevealSection>
           )
         })}
@@ -877,27 +1159,29 @@ function LaunchSequenceSection() {
           const Icon = step.icon
           return (
             <RevealSection key={step.title} delay={i * 120}>
-              <Link
-                href={step.href}
-                className="fd-glass-surface fd-gradient-border flex flex-col p-8 h-full group transform transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
-                onClick={() => trackDocsEvent('launch_path_clicked', { source: 'launch_paths', destination: step.href, title: step.title })}
-              >
-                <div className="flex items-start gap-5">
-                  <div className={`inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl transition-all duration-300 ${step.color} ${step.hoverColor}`}>
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">Step {i + 1}</span>
+              <InteractiveCard glow tilt className="h-full">
+                <Link
+                  href={step.href}
+                  className="fd-glass-surface fd-gradient-border flex flex-col p-8 h-full group"
+                  onClick={() => trackDocsEvent('launch_path_clicked', { source: 'launch_paths', destination: step.href, title: step.title })}
+                >
+                  <div className="flex items-start gap-5 relative z-10">
+                    <div className={`inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl transition-all duration-300 ${step.color} ${step.hoverColor}`}>
+                      <Icon className="h-6 w-6" />
                     </div>
-                    <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-white group-hover:text-brand transition-colors">{step.title}</h3>
-                    <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">{step.body}</p>
+                    <div className="space-y-2 flex-1">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">Step {i + 1}</span>
+                      </div>
+                      <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-white group-hover:text-brand transition-colors">{step.title}</h3>
+                      <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">{step.body}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="mt-6 flex items-center gap-2 text-sm font-medium text-brand opacity-0 group-hover:opacity-100 transition-opacity">
-                  Get started <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </div>
-              </Link>
+                  <div className="mt-6 flex items-center gap-2 text-sm font-medium text-brand opacity-0 group-hover:opacity-100 transition-opacity relative z-10">
+                    Get started <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </div>
+                </Link>
+              </InteractiveCard>
             </RevealSection>
           )
         })}
@@ -1009,9 +1293,11 @@ function Footer() {
         <div className="grid gap-12 md:grid-cols-12">
           {/* Logo + description */}
           <div className="md:col-span-5 space-y-4">
-            <FeatureDropLogoLockup>
-              <span className="font-display text-xl font-bold text-slate-900 dark:text-white">FeatureDrop</span>
-            </FeatureDropLogoLockup>
+            <Link href="/" className="transition-opacity hover:opacity-80">
+              <FeatureDropLogoLockup>
+                <span className="font-display text-xl font-bold text-slate-900 dark:text-white">FeatureDrop</span>
+              </FeatureDropLogoLockup>
+            </Link>
             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed">
               The open-source product adoption toolkit. Ship changelogs, tours, checklists, and feedback widgets from your own codebase.
             </p>
@@ -1104,6 +1390,7 @@ function Footer() {
 // --- Main Page ---
 export default function HomePage() {
   const isScrolled = useScrollDirection()
+  const typewriterText = useTypewriter(heroTaglines)
 
   // Auto-detect site URL: env var → featuredrop.dev default
   const SITE_URL =
@@ -1296,6 +1583,7 @@ export default function HomePage() {
         />
       </Head>
     <main className="relative min-h-screen overflow-hidden">
+      <ScrollProgressBar />
 
       {/* Ambient background */}
       <div className="pointer-events-none fixed inset-0 z-0 bg-fd-ambient dark:bg-fd-ambient-dark mix-blend-multiply dark:mix-blend-soft-light" />
@@ -1310,7 +1598,7 @@ export default function HomePage() {
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 pt-4 px-4 ${isScrolled ? 'top-2' : ''}`}>
         <div className={`mx-auto max-w-6xl transition-all duration-500 rounded-3xl ${isScrolled ? 'fd-glass border-white/60 bg-white/70 shadow-glass py-3 px-5 dark:border-white/10 dark:bg-slate-900/70' : 'bg-transparent border-transparent py-4 px-2'}`}>
           <div className="flex items-center justify-between">
-            <FeatureDropLogoLockup />
+            <Link href="/" className="transition-opacity hover:opacity-80"><FeatureDropLogoLockup /></Link>
             <nav className="flex items-center gap-3 md:gap-4">
               <Link
                 className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
@@ -1361,16 +1649,16 @@ export default function HomePage() {
         <section className="relative flex min-h-[70vh] flex-col items-center justify-center text-center">
           <div className="animate-fade-in-up space-y-8">
             <div className="inline-flex items-center justify-center transform transition-transform hover:scale-105 duration-300">
-              <span className="fd-chip shadow-[0_0_20px_rgba(99,102,241,0.2)]">Free Beamer + Pendo Alternative</span>
+              <span className="fd-chip shadow-[0_0_20px_rgba(99,102,241,0.2)]">Free &amp; Open Source</span>
             </div>
 
             <h1 className="mx-auto max-w-4xl font-display text-5xl font-extrabold leading-[1.1] tracking-tight text-slate-900 md:text-7xl lg:text-[80px] dark:text-white">
               The open&#8209;source <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-brand bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_200%]">product&nbsp;adoption</span> toolkit.
             </h1>
 
-            <p className="mx-auto max-w-2xl text-lg leading-relaxed text-slate-600 md:text-xl dark:text-slate-300/90">
-              Ship changelogs, tours, checklists, and feedback widgets from your own codebase.
-              3&nbsp;kB core, zero vendor lock&#8209;in, 8&nbsp;framework adapters.
+            <p className="mx-auto max-w-2xl text-lg leading-relaxed text-slate-600 md:text-xl dark:text-slate-300/90 min-h-[3.5rem]">
+              <span aria-hidden="true">{typewriterText}<span className="fd-typewriter-cursor" /></span>
+              <span className="sr-only">Ship changelogs from your own codebase. Drop your SaaS adoption bill to $0. Onboard users with guided tours. Under 3 kB. Zero dependencies.</span>
             </p>
 
             {/* Stats */}
@@ -1412,9 +1700,9 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ──── FRAMEWORKS ──── */}
+        {/* ──── SOCIAL PROOF ──── */}
         <RevealSection delay={0}>
-          <FrameworksSection />
+          <SocialProofStrip />
         </RevealSection>
 
         {/* ──── CODE SNIPPET ──── */}
@@ -1430,13 +1718,13 @@ export default function HomePage() {
                 const Icon = card.icon
                 return (
                   <RevealSection key={card.title} delay={i * 100}>
-                    <div className="fd-glass-surface fd-gradient-border p-8 h-full space-y-4 group">
-                      <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-all group-hover:bg-brand group-hover:text-white dark:bg-slate-800 dark:text-slate-300 dark:group-hover:bg-brand">
+                    <InteractiveCard glow tilt className="fd-glass-surface fd-gradient-border p-8 h-full space-y-4 group">
+                      <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-all group-hover:bg-brand group-hover:text-white dark:bg-slate-800 dark:text-slate-300 dark:group-hover:bg-brand relative z-10">
                         <Icon className="h-5 w-5" />
                       </div>
-                      <h3 className="font-display text-lg font-semibold text-slate-900 dark:text-white">{card.title}</h3>
-                      <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">{card.body}</p>
-                    </div>
+                      <h3 className="font-display text-lg font-semibold text-slate-900 dark:text-white relative z-10">{card.title}</h3>
+                      <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400 relative z-10">{card.body}</p>
+                    </InteractiveCard>
                   </RevealSection>
                 )
               })}
@@ -1458,30 +1746,20 @@ export default function HomePage() {
           <FeatureShowcaseRight />
         </RevealSection>
 
-        {/* ──── HOW IT WORKS ──── */}
-        <RevealSection delay={100}>
-          <HowItWorksSection />
-        </RevealSection>
+        {/* ──── HOW EASY ──── */}
+        <HowEasySection />
 
-        {/* ──── STATS ──── */}
-        <RevealSection delay={100}>
-          <StatsSection />
-        </RevealSection>
+        {/* ──── IMPACT STATS ──── */}
+        <ImpactStatsSection />
 
         {/* ──── COMPARISON ──── */}
-        <RevealSection delay={100}>
-          <ComparisonSection />
-        </RevealSection>
+        <ComparisonSection />
 
         {/* ──── BUILT FOR ──── */}
-        <RevealSection delay={100}>
-          <BuiltForSection />
-        </RevealSection>
+        <BuiltForSection />
 
         {/* ──── LAUNCH SEQUENCE ──── */}
-        <RevealSection delay={100}>
-          <LaunchSequenceSection />
-        </RevealSection>
+        <LaunchSequenceSection />
 
         {/* ──── OSS CTA ──── */}
         <RevealSection delay={100}>
