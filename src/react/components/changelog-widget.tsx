@@ -5,9 +5,20 @@ import {
   useRef,
   type ReactNode,
   type CSSProperties,
+  useMemo,
 } from "react";
+import { parseDescription } from "../../markdown";
+import type { FeatureDropThemeInput } from "../../theme";
 import type { FeatureEntry, AnalyticsCallbacks } from "../../types";
 import { useFeatureDrop } from "../hooks/use-feature-drop";
+import { useThemeVariables } from "../theme";
+import {
+  DEFAULT_REACTIONS,
+  getReactionCounts,
+  getUserReaction,
+  reactToEntry,
+  type ReactionCounts,
+} from "../reactions-store";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -16,6 +27,11 @@ import { useFeatureDrop } from "../hooks/use-feature-drop";
 export interface ChangelogEntryRenderProps {
   feature: FeatureEntry;
   dismiss: () => void;
+  onFeatureClick?: () => void;
+  reactions?: ReactionCounts;
+  userReaction?: string | null;
+  canReact?: boolean;
+  react?: (reaction: string) => void;
 }
 
 export interface ChangelogWidgetRenderProps {
@@ -60,12 +76,20 @@ export interface ChangelogWidgetProps {
   className?: string;
   /** Additional inline styles for the container */
   style?: CSSProperties;
+  /** Optional component-scoped theme preset or overrides */
+  theme?: FeatureDropThemeInput;
   /** Render prop for full customization — receives widget state */
   children?: (props: ChangelogWidgetRenderProps) => ReactNode;
   /** Custom render for each entry — receives feature + dismiss callback */
   renderEntry?: (props: ChangelogEntryRenderProps) => ReactNode;
   /** Custom render for the trigger button */
   renderTrigger?: (props: { count: number; onClick: () => void }) => ReactNode;
+  /** Show reaction controls on each entry. Default: false */
+  showReactions?: boolean;
+  /** Reaction options. Default: 👍 ❤️ 🎉 👀 👎 */
+  reactions?: string[];
+  /** Callback fired when a reaction is persisted */
+  onReaction?: (feature: FeatureEntry, reaction: string, counts: ReactionCounts) => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -261,6 +285,37 @@ const emptyStyles: CSSProperties = {
   color: "var(--featuredrop-empty-color, #9ca3af)",
 };
 
+const reactionsRowStyles: CSSProperties = {
+  display: "flex",
+  gap: "6px",
+  flexWrap: "wrap",
+  marginTop: "8px",
+};
+
+const reactionButtonStyles: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "4px",
+  border: "1px solid var(--featuredrop-border-color, #e5e7eb)",
+  borderRadius: "999px",
+  background: "#fff",
+  padding: "3px 8px",
+  fontSize: "12px",
+  cursor: "pointer",
+};
+
+const srOnlyStyles: CSSProperties = {
+  position: "absolute",
+  width: "1px",
+  height: "1px",
+  padding: 0,
+  margin: "-1px",
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap",
+  border: 0,
+};
+
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
@@ -281,14 +336,47 @@ function formatDate(iso: string): string {
   });
 }
 
+function getFocusableElements(container: HTMLElement): HTMLElement[] {
+  const nodes = container.querySelectorAll<HTMLElement>(
+    [
+      "a[href]",
+      "button:not([disabled])",
+      "textarea:not([disabled])",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "[tabindex]:not([tabindex='-1'])",
+    ].join(","),
+  );
+  return Array.from(nodes).filter(
+    (node) => !node.hasAttribute("disabled") && node.getAttribute("aria-hidden") !== "true",
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /*  Default Entry Renderer                                             */
 /* ------------------------------------------------------------------ */
 
-function DefaultEntry({ feature, dismiss }: ChangelogEntryRenderProps) {
+function DefaultEntry({
+  feature,
+  dismiss,
+  onFeatureClick,
+  reactions,
+  userReaction,
+  canReact,
+  react,
+}: ChangelogEntryRenderProps) {
   const typeStyle = feature.type
     ? TYPE_COLORS[feature.type] ?? TYPE_COLORS.feature
     : null;
+
+  const descriptionHtml = feature.description
+    ? parseDescription(feature.description)
+    : null;
+
+  const versionLabel =
+    typeof feature.version === "string"
+      ? feature.version
+      : feature.version?.introduced ?? feature.version?.showNewUntil ?? null;
 
   return (
     <div data-featuredrop-entry={feature.id} style={entryStyles}>
@@ -302,8 +390,11 @@ function DefaultEntry({ feature, dismiss }: ChangelogEntryRenderProps) {
           &times;
         </button>
       </div>
-      {feature.description && (
-        <p style={entryDescriptionStyles}>{feature.description}</p>
+      {descriptionHtml && (
+        <div
+          style={entryDescriptionStyles}
+          dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+        />
       )}
       {feature.image && (
         <img
@@ -332,7 +423,7 @@ function DefaultEntry({ feature, dismiss }: ChangelogEntryRenderProps) {
           <span>{feature.category}</span>
         )}
         <span>{formatDate(feature.releasedAt)}</span>
-        {feature.version && <span>v{feature.version}</span>}
+        {versionLabel && <span>v{versionLabel}</span>}
       </div>
       {feature.cta && (
         <a
@@ -340,9 +431,31 @@ function DefaultEntry({ feature, dismiss }: ChangelogEntryRenderProps) {
           style={ctaButtonStyles}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={onFeatureClick}
         >
           {feature.cta.label}
         </a>
+      )}
+      {reactions && react && (
+        <div style={reactionsRowStyles}>
+          {Object.entries(reactions).map(([reaction, count]) => (
+            <button
+              key={reaction}
+              type="button"
+              onClick={() => react(reaction)}
+              disabled={!canReact}
+              style={{
+                ...reactionButtonStyles,
+                opacity: !canReact && userReaction !== reaction ? 0.55 : 1,
+                background: userReaction === reaction ? "rgba(17, 24, 39, 0.08)" : "#fff",
+              }}
+              aria-label={`React ${reaction} to ${feature.label}`}
+            >
+              <span>{reaction}</span>
+              <span>{count}</span>
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -377,25 +490,53 @@ function DefaultEntry({ feature, dismiss }: ChangelogEntryRenderProps) {
  */
 export function ChangelogWidget({
   variant = "panel",
-  title = "What's New",
-  triggerLabel = "What's New",
+  title,
+  triggerLabel,
   showCount = true,
-  markAllLabel = "Mark all as read",
+  markAllLabel,
   showMarkAll = true,
-  emptyLabel = "You're all caught up!",
+  emptyLabel,
   maxHeight = "400px",
   analytics,
   className,
   style,
+  theme,
   children,
   renderEntry,
   renderTrigger,
+  showReactions = false,
+  reactions = [...DEFAULT_REACTIONS],
+  onReaction,
 }: ChangelogWidgetProps) {
-  const { newFeaturesSorted, newCount, dismiss, dismissAll } = useFeatureDrop();
+  const {
+    newFeaturesSorted,
+    newCount,
+    dismiss,
+    dismissAll,
+    markFeatureSeen,
+    markFeatureClicked,
+    trackAdoptionEvent,
+    translations,
+  } = useFeatureDrop();
   const [isOpen, setIsOpen] = useState(false);
+  const [, setReactionVersion] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+  const widgetIdRef = useRef(`featuredrop-widget-${Math.random().toString(36).slice(2, 10)}`);
+  const themeVariables = useThemeVariables(theme);
+  const resolvedTitle = title ?? translations.whatsNewTitle;
+  const resolvedTriggerLabel = triggerLabel ?? translations.whatsNewTitle;
+  const resolvedMarkAllLabel = markAllLabel ?? translations.markAllRead;
+  const resolvedEmptyLabel = emptyLabel ?? translations.allCaughtUp;
+  const dialogId = `${widgetIdRef.current}-dialog`;
+  const titleId = `${widgetIdRef.current}-title`;
 
   const open = useCallback(() => {
+    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      lastFocusedElementRef.current = document.activeElement;
+    }
     setIsOpen(true);
     analytics?.onWidgetOpened?.();
   }, [analytics]);
@@ -403,6 +544,16 @@ export function ChangelogWidget({
   const close = useCallback(() => {
     setIsOpen(false);
     analytics?.onWidgetClosed?.();
+    const returnTarget = triggerRef.current ?? lastFocusedElementRef.current;
+    if (returnTarget) {
+      if (typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(() => {
+          returnTarget.focus();
+        });
+      } else {
+        returnTarget.focus();
+      }
+    }
   }, [analytics]);
 
   const toggle = useCallback(() => {
@@ -428,6 +579,31 @@ export function ChangelogWidget({
     await dismissAll();
     analytics?.onAllDismissed?.();
   }, [dismissAll, analytics]);
+
+  const handleFeatureClick = useCallback((feature: FeatureEntry) => {
+    markFeatureClicked(feature.id);
+    trackAdoptionEvent({
+      type: "cta_clicked",
+      featureId: feature.id,
+      metadata: { source: "changelog" },
+    });
+    analytics?.onFeatureClicked?.(feature);
+  }, [analytics, markFeatureClicked, trackAdoptionEvent]);
+
+  const handleReaction = useCallback((feature: FeatureEntry, reaction: string) => {
+    const result = reactToEntry(feature.id, reaction, reactions);
+    if (!result.updated) return;
+    setReactionVersion((value) => value + 1);
+    onReaction?.(feature, reaction, result.counts);
+  }, [onReaction, reactions]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    for (const feature of newFeaturesSorted) {
+      markFeatureSeen(feature.id);
+      analytics?.onFeatureSeen?.(feature);
+    }
+  }, [analytics, isOpen, markFeatureSeen, newFeaturesSorted]);
 
   // Close on click outside (panel/modal)
   useEffect(() => {
@@ -458,6 +634,52 @@ export function ChangelogWidget({
     };
   }, [isOpen, variant, close]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const focusable = getFocusableElements(dialog);
+    const first = focusable[0] ?? dialog;
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => first.focus());
+    } else {
+      first.focus();
+    }
+
+    const handleTab = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const items = getFocusableElements(dialog);
+      if (items.length === 0) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+
+      const firstItem = items[0];
+      const lastItem = items[items.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (event.shiftKey) {
+        if (active === firstItem || active === dialog) {
+          event.preventDefault();
+          lastItem.focus();
+        }
+        return;
+      }
+
+      if (active === lastItem) {
+        event.preventDefault();
+        firstItem.focus();
+      }
+    };
+
+    dialog.addEventListener("keydown", handleTab);
+    return () => {
+      dialog.removeEventListener("keydown", handleTab);
+    };
+  }, [isOpen]);
+
   // Headless render prop mode
   if (children) {
     return (
@@ -476,7 +698,17 @@ export function ChangelogWidget({
     );
   }
 
-  const containerStyles =
+  const widgetRootStyle = useMemo<CSSProperties>(
+    () => ({
+      ...(themeVariables ?? {}),
+      position: "relative",
+      display: "inline-block",
+      ...(style ?? {}),
+    }),
+    [themeVariables, style],
+  );
+
+  const dialogContainerStyles =
     variant === "modal"
       ? modalContainerStyles
       : variant === "popover"
@@ -488,19 +720,23 @@ export function ChangelogWidget({
       ref={containerRef}
       data-featuredrop-widget
       className={className}
-      style={{ position: "relative", display: "inline-block", ...style }}
+      style={widgetRootStyle}
     >
       {/* Trigger */}
       {renderTrigger ? (
         renderTrigger({ count: newCount, onClick: toggle })
       ) : (
         <button
+          ref={triggerRef}
           onClick={toggle}
           style={triggerButtonStyles}
           data-featuredrop-trigger
-          aria-label={`${triggerLabel}${newCount > 0 ? ` — ${newCount} new` : ""}`}
+          aria-label={`${resolvedTriggerLabel}${newCount > 0 ? ` — ${newCount} new` : ""}`}
+          aria-haspopup="dialog"
+          aria-expanded={isOpen}
+          aria-controls={dialogId}
         >
-          {triggerLabel}
+          {resolvedTriggerLabel}
           {showCount && newCount > 0 && (
             <span style={triggerBadgeStyles} data-featuredrop-trigger-badge>
               {newCount}
@@ -508,6 +744,9 @@ export function ChangelogWidget({
           )}
         </button>
       )}
+      <span style={srOnlyStyles} aria-live="polite" aria-atomic="true">
+        {newCount > 0 ? `${newCount} new feature${newCount === 1 ? "" : "s"}` : "No new features"}
+      </span>
 
       {/* Widget body */}
       {isOpen && (
@@ -523,18 +762,22 @@ export function ChangelogWidget({
           )}
 
           <div
-            style={containerStyles}
+            id={dialogId}
+            ref={dialogRef}
+            style={dialogContainerStyles}
             data-featuredrop-container={variant}
             role="dialog"
-            aria-label={title}
+            aria-labelledby={titleId}
+            aria-modal={variant === "popover" ? undefined : true}
+            tabIndex={-1}
           >
             {/* Header */}
             <div style={headerStyles} data-featuredrop-header>
-              <h2 style={titleStyles}>{title}</h2>
+              <h2 id={titleId} style={titleStyles}>{resolvedTitle}</h2>
               <button
                 onClick={close}
                 style={closeButtonStyles}
-                aria-label="Close"
+                aria-label={translations.close}
               >
                 &times;
               </button>
@@ -544,22 +787,43 @@ export function ChangelogWidget({
             <div style={{ ...feedStyles, maxHeight }} data-featuredrop-feed>
               {newFeaturesSorted.length === 0 ? (
                 <div style={emptyStyles} data-featuredrop-empty>
-                  {emptyLabel}
+                  {resolvedEmptyLabel}
                 </div>
               ) : (
                 newFeaturesSorted.map((feature) =>
                   renderEntry ? (
                     <div key={feature.id}>
-                      {renderEntry({
-                        feature,
-                        dismiss: () => handleDismiss(feature.id),
-                      })}
+                      {(() => {
+                        const counts = showReactions
+                          ? getReactionCounts(feature.id, reactions)
+                          : undefined;
+                        const userReaction = showReactions
+                          ? getUserReaction(feature.id)
+                          : null;
+                        const canReact = showReactions
+                          ? !userReaction
+                          : false;
+                        return renderEntry({
+                          feature,
+                          dismiss: () => handleDismiss(feature.id),
+                          onFeatureClick: () => handleFeatureClick(feature),
+                          reactions: counts,
+                          userReaction,
+                          canReact,
+                          react: (reaction) => handleReaction(feature, reaction),
+                        });
+                      })()}
                     </div>
                   ) : (
                     <DefaultEntry
                       key={feature.id}
                       feature={feature}
                       dismiss={() => handleDismiss(feature.id)}
+                      onFeatureClick={() => handleFeatureClick(feature)}
+                      reactions={showReactions ? getReactionCounts(feature.id, reactions) : undefined}
+                      userReaction={showReactions ? getUserReaction(feature.id) : null}
+                      canReact={showReactions ? !getUserReaction(feature.id) : undefined}
+                      react={(reaction) => handleReaction(feature, reaction)}
                     />
                   ),
                 )
@@ -574,7 +838,7 @@ export function ChangelogWidget({
                   style={markAllButtonStyles}
                   data-featuredrop-mark-all
                 >
-                  {markAllLabel}
+                  {resolvedMarkAllLabel}
                 </button>
               </div>
             )}

@@ -26,6 +26,10 @@ Thumbs.db
 
 # Internal docs (not published)
 docs-local/
+AGENTS.md
+agent.md
+CLAUDE.md
+claude.md
 
 # Debug
 *.log

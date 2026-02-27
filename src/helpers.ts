@@ -1,4 +1,10 @@
-import type { FeatureEntry, FeatureManifest, StorageAdapter } from "./types";
+import type {
+  AudienceMatchFn,
+  FeatureEntry,
+  FeatureManifest,
+  StorageAdapter,
+  UserContext,
+} from "./types";
 import { isNew } from "./core";
 
 /**
@@ -30,10 +36,15 @@ export function getNewFeaturesByCategory(
   category: string,
   storage: StorageAdapter,
   now: Date = new Date(),
+  userContext?: UserContext,
+  matchAudience?: AudienceMatchFn,
+  appVersion?: string,
 ): FeatureEntry[] {
   const watermark = storage.getWatermark();
   const dismissedIds = storage.getDismissedIds();
   return manifest.filter(
-    (f) => f.category === category && isNew(f, watermark, dismissedIds, now),
+    (f) =>
+      f.category === category &&
+      isNew(f, watermark, dismissedIds, now, userContext, matchAudience, appVersion),
   );
 }

@@ -12,6 +12,120 @@ export interface FeatureCTA {
   url: string;
 }
 
+/** Variant-level overrides for A/B announcement testing */
+export interface FeatureVariant {
+  /** Optional variant-specific label override */
+  label?: string;
+  /** Optional variant-specific description override */
+  description?: string;
+  /** Optional variant-specific image override */
+  image?: string;
+  /** Optional variant-specific CTA override */
+  cta?: FeatureCTA;
+  /** Optional variant-specific metadata overrides */
+  meta?: Record<string, unknown>;
+}
+
+/** Audience targeting rule — determines which user segments see a feature */
+export interface AudienceRule {
+  /** Plans that should see this feature (e.g. ["pro", "enterprise"]) */
+  plan?: string[];
+  /** Roles that should see this feature (e.g. ["admin", "editor"]) */
+  role?: string[];
+  /** Regions that should see this feature (e.g. ["us", "eu"]) */
+  region?: string[];
+  /** Arbitrary key-value pairs for custom matching logic */
+  custom?: Record<string, unknown>;
+}
+
+/** User context for audience targeting */
+export interface UserContext {
+  /** Current user's plan (e.g. "pro", "free") */
+  plan?: string;
+  /** Current user's role (e.g. "admin", "viewer") */
+  role?: string;
+  /** Current user's region (e.g. "us", "eu") */
+  region?: string;
+  /** Arbitrary traits for custom matching logic */
+  traits?: Record<string, unknown>;
+}
+
+/** Custom audience matcher function */
+export type AudienceMatchFn = (
+  audience: AudienceRule,
+  userContext: UserContext,
+) => boolean;
+
+/** Dependency gates for progressive feature discovery */
+export interface FeatureDependencies {
+  /** Features the user must have seen before this one can surface */
+  seen?: string[];
+  /** Features the user must have clicked before this one can surface */
+  clicked?: string[];
+  /** Features the user must have dismissed before this one can surface */
+  dismissed?: string[];
+}
+
+/** Runtime interaction state used to resolve dependency chains */
+export interface FeatureDependencyState {
+  /** IDs marked as seen */
+  seenIds?: ReadonlySet<string>;
+  /** IDs marked as clicked */
+  clickedIds?: ReadonlySet<string>;
+  /** IDs marked as dismissed */
+  dismissedIds?: ReadonlySet<string>;
+}
+
+/** Runtime context used by trigger evaluation */
+export interface TriggerContext {
+  /** Current app route/path */
+  path?: string;
+  /** Named events observed in this session */
+  events?: ReadonlySet<string>;
+  /** Named milestone flags reached in this session */
+  milestones?: ReadonlySet<string>;
+  /** Usage counters keyed by event/pattern name */
+  usage?: Record<string, number>;
+  /** Session elapsed time in milliseconds */
+  elapsedMs?: number;
+  /** Scroll completion percentage (0-100) */
+  scrollPercent?: number;
+  /** Optional additional trigger context */
+  metadata?: Record<string, unknown>;
+}
+
+export type FeatureTrigger =
+  | {
+      type: "page";
+      match: string | RegExp;
+    }
+  | {
+      type: "usage";
+      event: string;
+      minActions?: number;
+    }
+  | {
+      type: "time";
+      minSeconds: number;
+    }
+  | {
+      type: "milestone";
+      event: string;
+    }
+  | {
+      type: "frustration";
+      pattern: string;
+      threshold?: number;
+    }
+  | {
+      type: "scroll";
+      minPercent?: number;
+    }
+  | {
+      type: "custom";
+      evaluate: (context: TriggerContext) => boolean;
+    };
+
 /** A single feature entry in the manifest */
 export interface FeatureEntry {
   /** Unique identifier for the feature */
@@ -20,6 +134,22 @@ export interface FeatureEntry {
   label: string;
   /** Optional longer description (supports markdown in UI components) */
   description?: string;
+  /**
+   * Semantic version targeting.
+   * If provided as an object, requires `appVersion` to be supplied to the provider/helpers.
+   * - introduced: earliest app version that includes this feature
+   * - showNewUntil: stop showing "new" once appVersion reaches this
+   * - deprecatedAt: hide feature for app versions at or above this (optional safety)
+   * - showIn: range string, e.g. ">=2.5.0 <3.0.0"
+   */
+  version?:
+    | string
+    | {
+        introduced?: string;
+        showNewUntil?: string;
+        deprecatedAt?: string;
+        showIn?: string;
+      };
   /** ISO date when this feature was released */
   releasedAt: string;
   /** ISO date after which the "new" badge should stop showing */
@@ -30,8 +160,6 @@ export interface FeatureEntry {
   category?: string;
   /** Optional URL to link to (e.g. docs page, changelog entry) */
   url?: string;
-  /** Optional version string when this feature shipped */
-  version?: string;
   /** Entry type — determines default icon/color in UI components */
   type?: FeatureType;
   /** Priority level — critical entries get special treatment in UI */
@@ -44,6 +172,16 @@ export interface FeatureEntry {
   publishAt?: string;
   /** Optional arbitrary metadata */
   meta?: Record<string, unknown>;
+  /** A/B variants keyed by variant name (e.g. control, treatment_a) */
+  variants?: Record<string, FeatureVariant>;
+  /** Percentage split per variant (same order as variants object keys) */
+  variantSplit?: number[];
+  /** Audience targeting — if set, only matching users see this feature */
+  audience?: AudienceRule;
+  /** Dependency requirements (progressive disclosure sequencing) */
+  dependsOn?: FeatureDependencies;
+  /** Contextual trigger rule */
+  trigger?: FeatureTrigger;
 }
 
 /** The full feature manifest — an array of feature entries */
@@ -65,6 +203,36 @@ export interface StorageAdapter {
   dismiss(id: string): void;
   /** Dismiss all features — sets watermark to `now` and clears dismissals */
   dismissAll(now: Date): Promise<void>;
+}
+
+/** Extended server-side dismissal state */
+export interface DismissalState {
+  /** Server-side watermark */
+  watermark: string | null;
+  /** Dismissed feature IDs */
+  dismissedIds: string[];
+  /** ISO timestamp of last interaction */
+  lastSeen: string;
+  /** Estimated device count contributing to this state */
+  deviceCount: number;
+}
+
+/** Server-capable storage adapter */
+export interface ServerStorageAdapter extends StorageAdapter {
+  /** Current user for this adapter instance */
+  userId: string;
+  /** Pull latest state from the server/database */
+  sync(): Promise<void>;
+  /** Dismiss multiple features at once */
+  dismissBatch(ids: string[]): Promise<void>;
+  /** Reset state for a target user */
+  resetUser(userId: string): Promise<void>;
+  /** Fetch multiple users' state */
+  getBulkState(userIds: string[]): Promise<Map<string, DismissalState>>;
+  /** Health check */
+  isHealthy(): Promise<boolean>;
+  /** Cleanup resources */
+  destroy(): Promise<void>;
 }
 
 /** Analytics event callbacks — pipe to your analytics provider */

@@ -103,10 +103,17 @@ export function NewBadge({
   if (!show) return null;
 
   const handleClick = dismissOnClick && onDismiss ? onDismiss : undefined;
+  const reduceMotion =
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const variantStyles =
     variant === "dot"
-      ? dotStyles
+      ? {
+          ...dotStyles,
+          animation: reduceMotion ? "none" : dotStyles.animation,
+        }
       : variant === "count"
         ? countStyles
         : pillStyles;
@@ -142,6 +149,8 @@ export function NewBadge({
           : undefined
       }
       aria-label={ariaLabel}
+      aria-live={variant === "count" ? "polite" : undefined}
+      aria-atomic={variant === "count" ? true : undefined}
     >
       {content}
     </span>

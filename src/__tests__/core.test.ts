@@ -90,6 +90,125 @@ describe("isNew", () => {
     const dismissed = new Set(["feat-1"]);
     expect(isNew(feature, watermark, dismissed, NOW)).toBe(false);
   });
+
+  it("returns false when appVersion is below introduced version", () => {
+    const feature = makeFeature({
+      version: { introduced: "2.5.0", showNewUntil: "2.6.0" },
+    });
+    expect(isNew(feature, null, new Set(), NOW, undefined, undefined, "2.4.9")).toBe(false);
+  });
+
+  it("returns true when appVersion satisfies introduced and showNewUntil", () => {
+    const feature = makeFeature({
+      version: { introduced: "2.5.0", showNewUntil: "2.6.0" },
+    });
+    expect(isNew(feature, null, new Set(), NOW, undefined, undefined, "2.5.1")).toBe(true);
+  });
+
+  it("returns false when appVersion reaches showNewUntil boundary", () => {
+    const feature = makeFeature({
+      version: { introduced: "2.5.0", showNewUntil: "2.6.0" },
+    });
+    expect(isNew(feature, null, new Set(), NOW, undefined, undefined, "2.6.0")).toBe(false);
+  });
+
+  it("returns false when version range does not match", () => {
+    const feature = makeFeature({
+      version: { showIn: ">=3.0.0 <4.0.0" },
+    });
+    expect(isNew(feature, null, new Set(), NOW, undefined, undefined, "2.9.9")).toBe(false);
+  });
+
+  it("returns false when version constraints exist but appVersion missing", () => {
+    const feature = makeFeature({
+      version: { introduced: "2.5.0" },
+    });
+    expect(isNew(feature, null, new Set(), NOW)).toBe(false);
+  });
+
+  it("returns false when seen dependency is not satisfied", () => {
+    const feature = makeFeature({
+      dependsOn: { seen: ["base-feature"] },
+    });
+    expect(isNew(feature, null, new Set(), NOW)).toBe(false);
+  });
+
+  it("returns true when seen dependency is satisfied", () => {
+    const feature = makeFeature({
+      dependsOn: { seen: ["base-feature"] },
+    });
+    expect(
+      isNew(
+        feature,
+        null,
+        new Set(),
+        NOW,
+        undefined,
+        undefined,
+        undefined,
+        { seenIds: new Set(["base-feature"]) },
+      ),
+    ).toBe(true);
+  });
+
+  it("returns false when clicked dependency is not satisfied", () => {
+    const feature = makeFeature({
+      dependsOn: { clicked: ["base-feature"] },
+    });
+    expect(isNew(feature, null, new Set(), NOW)).toBe(false);
+  });
+
+  it("returns true when dismissed dependency is satisfied", () => {
+    const feature = makeFeature({
+      dependsOn: { dismissed: ["base-feature"] },
+    });
+    expect(isNew(feature, null, new Set(["base-feature"]), NOW)).toBe(true);
+  });
+
+  it("returns false when a contextual trigger exists but context is missing", () => {
+    const feature = makeFeature({
+      trigger: { type: "page", match: "/reports/*" },
+    });
+    expect(isNew(feature, null, new Set(), NOW)).toBe(false);
+  });
+
+  it("returns true when page trigger matches current path", () => {
+    const feature = makeFeature({
+      trigger: { type: "page", match: "/reports/*" },
+    });
+    expect(
+      isNew(
+        feature,
+        null,
+        new Set(),
+        NOW,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        { path: "/reports/summary" },
+      ),
+    ).toBe(true);
+  });
+
+  it("returns false when usage trigger threshold is not met", () => {
+    const feature = makeFeature({
+      trigger: { type: "usage", event: "mouse-heavy-session", minActions: 3 },
+    });
+    expect(
+      isNew(
+        feature,
+        null,
+        new Set(),
+        NOW,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        { usage: { "mouse-heavy-session": 2 } },
+      ),
+    ).toBe(false);
+  });
 });
 
 // ── getNewFeatures ───────────────────────────────────────────────────────────
@@ -141,6 +260,32 @@ describe("getNewFeatures", () => {
     });
     const result = getNewFeatures(manifest, storage, NOW);
     expect(result.map((f) => f.id)).toEqual(["new"]);
+  });
+
+  it("respects dependency chains", () => {
+    const manifest: FeatureManifest = [
+      makeFeature({ id: "base", releasedAt: "2026-02-22T00:00:00Z" }),
+      makeFeature({
+        id: "dependent",
+        releasedAt: "2026-02-23T00:00:00Z",
+        dependsOn: { seen: ["base"] },
+      }),
+    ];
+    const storage = makeStorage();
+
+    const withoutDependencyState = getNewFeatures(manifest, storage, NOW);
+    expect(withoutDependencyState.map((f) => f.id)).toEqual(["base"]);
+
+    const withDependencyState = getNewFeatures(
+      manifest,
+      storage,
+      NOW,
+      undefined,
+      undefined,
+      undefined,
+      { seenIds: new Set(["base"]) },
+    );
+    expect(withDependencyState.map((f) => f.id)).toEqual(["base", "dependent"]);
   });
 });
 

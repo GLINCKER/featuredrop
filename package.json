@@ -6,6 +6,9 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "featuredrop": "./dist/featuredrop.cjs"
+  },
   "exports": {
     ".": {
       "import": {
@@ -26,12 +29,106 @@
         "types": "./dist/react.d.cts",
         "default": "./dist/react.cjs"
       }
+    },
+    "./vue": {
+      "import": {
+        "default": "./dist/vue.js"
+      },
+      "require": {
+        "default": "./dist/vue.cjs"
+      }
+    },
+    "./solid": {
+      "import": {
+        "types": "./dist/solid.d.ts",
+        "default": "./dist/solid.js"
+      },
+      "require": {
+        "types": "./dist/solid.d.cts",
+        "default": "./dist/solid.cjs"
+      }
+    },
+    "./svelte": {
+      "import": {
+        "default": "./dist/svelte.js"
+      },
+      "require": {
+        "default": "./dist/svelte.cjs"
+      }
+    },
+    "./preact": {
+      "import": {
+        "types": "./dist/preact.d.ts",
+        "default": "./dist/preact.js"
+      },
+      "require": {
+        "types": "./dist/preact.d.cts",
+        "default": "./dist/preact.cjs"
+      }
+    },
+    "./web-components": {
+      "import": {
+        "types": "./dist/web-components.d.ts",
+        "default": "./dist/web-components.js"
+      },
+      "require": {
+        "types": "./dist/web-components.d.cts",
+        "default": "./dist/web-components.cjs"
+      }
+    },
+    "./angular": {
+      "import": {
+        "types": "./dist/angular.d.ts",
+        "default": "./dist/angular.js"
+      },
+      "require": {
+        "types": "./dist/angular.d.cts",
+        "default": "./dist/angular.cjs"
+      }
+    },
+    "./schema": {
+      "import": {
+        "types": "./dist/schema.d.ts",
+        "default": "./dist/schema.js"
+      },
+      "require": {
+        "types": "./dist/schema.d.cts",
+        "default": "./dist/schema.cjs"
+      }
+    },
+    "./testing": {
+      "import": {
+        "types": "./dist/testing.d.ts",
+        "default": "./dist/testing.js"
+      },
+      "require": {
+        "types": "./dist/testing.d.cts",
+        "default": "./dist/testing.cjs"
+      }
     }
   },
   "typesVersions": {
     "*": {
       "react": [
         "./dist/react.d.ts"
+      ],
+      "solid": [
+        "./dist/solid.d.ts"
+      ],
+      "preact": [
+        "./dist/preact.d.ts"
+      ],
+      "web-components": [
+        "./dist/web-components.d.ts"
+      ],
+      "angular": [
+        "./dist/angular.d.ts"
+      ],
+      "testing": [
+        "./dist/testing.d.ts"
+      ],
+      "schema": [
+        "./dist/schema.d.ts"
       ]
     }
   },
@@ -47,6 +144,10 @@
   "sideEffects": false,
   "scripts": {
     "build": "tsup",
+    "playground": "pnpm --dir examples/sandbox-react dev",
+    "playground:build": "pnpm --dir examples/sandbox-react build",
+    "featuredrop:build": "node ./dist/featuredrop.cjs build",
+    "featuredrop:validate": "node ./dist/featuredrop.cjs validate",
     "dev": "tsup --watch",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -83,12 +184,31 @@
     "node": ">=18"
   },
   "peerDependencies": {
-    "react": ">=18"
+    "preact": ">=10.0.0",
+    "react": ">=18",
+    "solid-js": ">=1.8.0",
+    "svelte": ">=5.0.0",
+    "vue": ">=3.3"
   },
   "peerDependenciesMeta": {
+    "preact": {
+      "optional": true
+    },
     "react": {
       "optional": true
+    },
+    "solid-js": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    },
+    "svelte": {
+      "optional": true
     }
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.0.0",
@@ -99,12 +219,15 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@vitest/coverage-v8": "^2.1.0",
+    "axe-core": "^4.11.1",
     "husky": "^9.0.0",
     "jsdom": "^25.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "solid-js": "^1.9.10",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
-    "vitest": "^2.1.0"
+    "vitest": "^2.1.0",
+    "vitest-axe": "^0.1.0"
   }
 }

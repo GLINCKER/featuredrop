@@ -1,12 +1,15 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { FeatureDropProvider } from "../react/provider";
 import { useFeatureDrop } from "../react/hooks/use-feature-drop";
 import { useNewFeature } from "../react/hooks/use-new-feature";
 import { useNewCount } from "../react/hooks/use-new-count";
 import { NewBadge } from "../react/components/new-badge";
 import { MemoryAdapter } from "../adapters/memory";
+import { AnalyticsCollector, CustomAdapter } from "../analytics";
+import { getFeatureVariantName } from "../variants";
 import type { FeatureManifest } from "../types";
 
 const NOW = new Date("2026-02-25T12:00:00Z");
@@ -81,6 +84,125 @@ function CountConsumer() {
   return <span data-testid="count">{count}</span>;
 }
 
+function ThrottleConsumer() {
+  const {
+    newCount,
+    totalNewCount,
+    queuedFeatures,
+    quietMode,
+    setQuietMode,
+  } = useFeatureDrop();
+  return (
+    <div>
+      <span data-testid="throttle-visible">{newCount}</span>
+      <span data-testid="throttle-total">{totalNewCount}</span>
+      <span data-testid="throttle-queued">{queuedFeatures.length}</span>
+      <span data-testid="quiet-mode">{quietMode ? "yes" : "no"}</span>
+      <button data-testid="enable-quiet" onClick={() => setQuietMode(true)}>
+        Quiet on
+      </button>
+    </div>
+  );
+}
+
+function DependencyConsumer() {
+  const { newFeatures, markFeatureClicked } = useFeatureDrop();
+  return (
+    <div>
+      <span data-testid="dependency-features">{newFeatures.map((f) => f.id).join(",")}</span>
+      <button data-testid="mark-clicked" onClick={() => markFeatureClicked("base")}>
+        Mark clicked
+      </button>
+    </div>
+  );
+}
+
+function ThrottleRuntimeConsumer() {
+  const {
+    getRemainingToastSlots,
+    markToastsShown,
+    canShowModal,
+    markModalShown,
+    canShowTour,
+    markTourShown,
+    acquireSpotlightSlot,
+    releaseSpotlightSlot,
+    activeSpotlightCount,
+  } = useFeatureDrop();
+  const [acquireA, setAcquireA] = useState("none");
+  const [acquireB, setAcquireB] = useState("none");
+  const [, setRefreshTick] = useState(0);
+
+  return (
+    <div>
+      <span data-testid="toast-slots">{getRemainingToastSlots()}</span>
+      <span data-testid="can-modal">{canShowModal("normal") ? "yes" : "no"}</span>
+      <span data-testid="can-tour">{canShowTour() ? "yes" : "no"}</span>
+      <span data-testid="spotlight-count">{activeSpotlightCount}</span>
+      <span data-testid="acquire-a">{acquireA}</span>
+      <span data-testid="acquire-b">{acquireB}</span>
+      <button data-testid="mark-toast" onClick={() => markToastsShown(["journal"])}>
+        Mark toast
+      </button>
+      <button data-testid="mark-modal" onClick={markModalShown}>
+        Mark modal
+      </button>
+      <button data-testid="mark-tour" onClick={markTourShown}>
+        Mark tour
+      </button>
+      <button data-testid="refresh-throttle" onClick={() => setRefreshTick((value) => value + 1)}>
+        Refresh
+      </button>
+      <button data-testid="acquire-a-btn" onClick={() => setAcquireA(acquireSpotlightSlot("a") ? "yes" : "no")}>
+        Acquire A
+      </button>
+      <button data-testid="acquire-b-btn" onClick={() => setAcquireB(acquireSpotlightSlot("b") ? "yes" : "no")}>
+        Acquire B
+      </button>
+      <button data-testid="release-a-btn" onClick={() => releaseSpotlightSlot("a")}>
+        Release A
+      </button>
+    </div>
+  );
+}
+
+function TriggerConsumer() {
+  const {
+    newFeatures,
+    setTriggerPath,
+    trackUsageEvent,
+    trackMilestone,
+  } = useFeatureDrop();
+  return (
+    <div>
+      <span data-testid="trigger-features">{newFeatures.map((f) => f.id).join(",")}</span>
+      <button data-testid="set-report-path" onClick={() => setTriggerPath("/reports/weekly")}>
+        Set report path
+      </button>
+      <button data-testid="usage-action" onClick={() => trackUsageEvent("mouse-heavy-session")}>
+        Usage action
+      </button>
+      <button data-testid="milestone-action" onClick={() => trackMilestone("first-team-member-invited")}>
+        Milestone action
+      </button>
+    </div>
+  );
+}
+
+function VariantConsumer() {
+  const { newFeatures, markFeatureClicked } = useFeatureDrop();
+  const first = newFeatures[0];
+  return (
+    <div>
+      <span data-testid="variant-description">{first?.description ?? "none"}</span>
+      <span data-testid="variant-name">{first ? getFeatureVariantName(first) : "none"}</span>
+      <button data-testid="variant-clicked" onClick={() => first && markFeatureClicked(first.id)}>
+        Mark variant clicked
+      </button>
+    </div>
+  );
+}
+
 // ── FeatureDropProvider ──────────────────────────────────────────────────────
 
 describe("FeatureDropProvider", () => {
@@ -143,6 +265,258 @@ describe("FeatureDropProvider", () => {
       </FeatureDropProvider>,
     );
     expect(screen.getByTestId("is-new").textContent).toBe("no");
+  });
+
+  it("applies maxSimultaneousBadges throttling and exposes queue counts", () => {
+    const storage = createTestStorage();
+    render(
+      <FeatureDropProvider
+        manifest={TEST_MANIFEST}
+        storage={storage}
+        throttle={{ maxSimultaneousBadges: 1 }}
+      >
+        <ThrottleConsumer />
+      </FeatureDropProvider>,
+    );
+    expect(screen.getByTestId("throttle-visible").textContent).toBe("1");
+    expect(screen.getByTestId("throttle-total").textContent).toBe("2");
+    expect(screen.getByTestId("throttle-queued").textContent).toBe("1");
+  });
+
+  it("respects quiet mode when DND throttling is enabled", async () => {
+    const storage = createTestStorage();
+    const manifest: FeatureManifest = [
+      ...TEST_MANIFEST,
+      {
+        id: "critical-upgrade",
+        label: "Critical upgrade",
+        releasedAt: "2026-02-24T00:00:00Z",
+        showNewUntil: "2026-03-24T00:00:00Z",
+        priority: "critical",
+      },
+    ];
+
+    render(
+      <FeatureDropProvider
+        manifest={manifest}
+        storage={storage}
+        throttle={{ respectDoNotDisturb: true }}
+      >
+        <ThrottleConsumer />
+      </FeatureDropProvider>,
+    );
+
+    expect(screen.getByTestId("throttle-visible").textContent).toBe("3");
+    await userEvent.click(screen.getByTestId("enable-quiet"));
+    expect(screen.getByTestId("quiet-mode").textContent).toBe("yes");
+    expect(screen.getByTestId("throttle-visible").textContent).toBe("1");
+    expect(screen.getByTestId("throttle-queued").textContent).toBe("2");
+  });
+
+  it("holds announcements during session cooldown, then releases them", async () => {
+    const storage = createTestStorage();
+    render(
+      <FeatureDropProvider
+        manifest={TEST_MANIFEST}
+        storage={storage}
+        throttle={{ sessionCooldown: 40 }}
+      >
+        <ThrottleConsumer />
+      </FeatureDropProvider>,
+    );
+
+    expect(screen.getByTestId("throttle-visible").textContent).toBe("0");
+    await waitFor(() => {
+      expect(screen.getByTestId("throttle-visible").textContent).toBe("2");
+    });
+  });
+
+  it("tracks runtime throttle gates for toast, modal, tour, and spotlight limits", async () => {
+    const storage = createTestStorage();
+    render(
+      <FeatureDropProvider
+        manifest={TEST_MANIFEST}
+        storage={storage}
+        throttle={{
+          maxToastsPerSession: 1,
+          minTimeBetweenModals: 200,
+          minTimeBetweenTours: 200,
+          maxSimultaneousSpotlights: 1,
+        }}
+      >
+        <ThrottleRuntimeConsumer />
+      </FeatureDropProvider>,
+    );
+
+    expect(screen.getByTestId("toast-slots").textContent).toBe("1");
+    await userEvent.click(screen.getByTestId("mark-toast"));
+    expect(screen.getByTestId("toast-slots").textContent).toBe("0");
+
+    expect(screen.getByTestId("can-modal").textContent).toBe("yes");
+    await userEvent.click(screen.getByTestId("mark-modal"));
+    await userEvent.click(screen.getByTestId("refresh-throttle"));
+    expect(screen.getByTestId("can-modal").textContent).toBe("no");
+    await new Promise((resolve) => setTimeout(resolve, 220));
+    await userEvent.click(screen.getByTestId("refresh-throttle"));
+    await waitFor(() => {
+      expect(screen.getByTestId("can-modal").textContent).toBe("yes");
+    });
+
+    expect(screen.getByTestId("can-tour").textContent).toBe("yes");
+    await userEvent.click(screen.getByTestId("mark-tour"));
+    await userEvent.click(screen.getByTestId("refresh-throttle"));
+    expect(screen.getByTestId("can-tour").textContent).toBe("no");
+    await new Promise((resolve) => setTimeout(resolve, 220));
+    await userEvent.click(screen.getByTestId("refresh-throttle"));
+    await waitFor(() => {
+      expect(screen.getByTestId("can-tour").textContent).toBe("yes");
+    });
+
+    await userEvent.click(screen.getByTestId("acquire-a-btn"));
+    await userEvent.click(screen.getByTestId("acquire-b-btn"));
+    expect(screen.getByTestId("acquire-a").textContent).toBe("yes");
+    expect(screen.getByTestId("acquire-b").textContent).toBe("no");
+    expect(screen.getByTestId("spotlight-count").textContent).toBe("1");
+
+    await userEvent.click(screen.getByTestId("release-a-btn"));
+    await userEvent.click(screen.getByTestId("acquire-b-btn"));
+    expect(screen.getByTestId("acquire-b").textContent).toBe("yes");
+  });
+
+  it("unlocks dependent features when dependency interactions are satisfied", async () => {
+    const storage = createTestStorage();
+    const manifest: FeatureManifest = [
+      {
+        id: "base",
+        label: "Base feature",
+        releasedAt: "2026-02-22T00:00:00Z",
+        showNewUntil: "2026-03-22T00:00:00Z",
+      },
+      {
+        id: "dependent",
+        label: "Dependent feature",
+        releasedAt: "2026-02-23T00:00:00Z",
+        showNewUntil: "2026-03-23T00:00:00Z",
+        dependsOn: { clicked: ["base"] },
+      },
+    ];
+
+    render(
+      <FeatureDropProvider manifest={manifest} storage={storage}>
+        <DependencyConsumer />
+      </FeatureDropProvider>,
+    );
+
+    expect(screen.getByTestId("dependency-features").textContent).toBe("base");
+    await userEvent.click(screen.getByTestId("mark-clicked"));
+    await waitFor(() => {
+      const ids = (screen.getByTestId("dependency-features").textContent ?? "").split(",").filter(Boolean);
+      expect(ids).toHaveLength(2);
+      expect(ids).toContain("base");
+      expect(ids).toContain("dependent");
+    });
+  });
+
+  it("evaluates contextual triggers for page, usage, and milestone conditions", async () => {
+    const storage = createTestStorage();
+    const manifest: FeatureManifest = [
+      {
+        id: "always",
+        label: "Always",
+        releasedAt: "2026-02-22T00:00:00Z",
+        showNewUntil: "2026-03-22T00:00:00Z",
+      },
+      {
+        id: "reports-only",
+        label: "Reports only",
+        releasedAt: "2026-02-22T00:00:00Z",
+        showNewUntil: "2026-03-22T00:00:00Z",
+        trigger: { type: "page", match: "/reports/*" },
+      },
+      {
+        id: "usage-gated",
+        label: "Usage gated",
+        releasedAt: "2026-02-22T00:00:00Z",
+        showNewUntil: "2026-03-22T00:00:00Z",
+        trigger: { type: "usage", event: "mouse-heavy-session", minActions: 2 },
+      },
+      {
+        id: "milestone-gated",
+        label: "Milestone gated",
+        releasedAt: "2026-02-22T00:00:00Z",
+        showNewUntil: "2026-03-22T00:00:00Z",
+        trigger: { type: "milestone", event: "first-team-member-invited" },
+      },
+    ];
+
+    render(
+      <FeatureDropProvider manifest={manifest} storage={storage}>
+        <TriggerConsumer />
+      </FeatureDropProvider>,
+    );
+
+    expect(screen.getByTestId("trigger-features").textContent).toBe("always");
+
+    await userEvent.click(screen.getByTestId("set-report-path"));
+    expect(screen.getByTestId("trigger-features").textContent).toContain("reports-only");
+
+    await userEvent.click(screen.getByTestId("usage-action"));
+    expect(screen.getByTestId("trigger-features").textContent).not.toContain("usage-gated");
+    await userEvent.click(screen.getByTestId("usage-action"));
+    expect(screen.getByTestId("trigger-features").textContent).toContain("usage-gated");
+
+    await userEvent.click(screen.getByTestId("milestone-action"));
+    expect(screen.getByTestId("trigger-features").textContent).toContain("milestone-gated");
+  });
+
+  it("applies variant overrides and emits variant in analytics events", async () => {
+    const trackSpy = vi.fn();
+    const collector = new AnalyticsCollector({
+      adapter: new CustomAdapter(trackSpy),
+      batchSize: 1,
+      flushInterval: 0,
+    });
+    const storage = createTestStorage();
+    const manifest: FeatureManifest = [
+      {
+        id: "ai-journal",
+        label: "AI Journal",
+        description: "Base copy",
+        releasedAt: "2026-02-22T00:00:00Z",
+        showNewUntil: "2026-03-22T00:00:00Z",
+        variants: {
+          control: { description: "Control copy" },
+          treatment: { description: "Treatment copy" },
+        },
+        variantSplit: [100, 0],
+      },
+    ];
+
+    render(
+      <FeatureDropProvider
+        manifest={manifest}
+        storage={storage}
+        collector={collector}
+        variantKey="user-123"
+      >
+        <VariantConsumer />
+      </FeatureDropProvider>,
+    );
+
+    expect(screen.getByTestId("variant-description").textContent).toBe("Control copy");
+    expect(screen.getByTestId("variant-name").textContent).toBe("control");
+    await userEvent.click(screen.getByTestId("variant-clicked"));
+    await waitFor(() => {
+      expect(trackSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "feature_clicked",
+          featureId: "ai-journal",
+          variant: "control",
+        }),
+      );
+    });
+
+    await collector.destroy();
   });
 });
 
@@ -273,6 +647,13 @@ describe("NewBadge", () => {
   it("has correct aria-label for count variant", () => {
     render(<NewBadge variant="count" count={3} />);
     expect(screen.getByLabelText("3 new features")).toBeDefined();
+  });
+
+  it("announces count changes with polite live region semantics", () => {
+    render(<NewBadge variant="count" count={3} />);
+    const badge = screen.getByLabelText("3 new features");
+    expect(badge.getAttribute("aria-live")).toBe("polite");
+    expect(badge.getAttribute("aria-atomic")).toBe("true");
   });
 
   it("applies className and style", () => {

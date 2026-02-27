@@ -3,12 +3,14 @@ import {
   useEffect,
   useCallback,
   useRef,
+  useMemo,
   type ReactNode,
   type CSSProperties,
   type RefObject,
 } from "react";
 import type { FeatureEntry, AnalyticsCallbacks } from "../../types";
 import { useFeatureDrop } from "../hooks/use-feature-drop";
+import { parseDescription } from "../../markdown";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -135,6 +137,13 @@ function injectKeyframes() {
   document.head.appendChild(style);
 }
 
+function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return false;
+  }
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Spotlight Component                                                */
 /* ------------------------------------------------------------------ */
@@ -170,17 +179,55 @@ export function Spotlight({
   tooltipContent,
   children,
 }: SpotlightProps) {
-  const { newFeatures, dismiss } = useFeatureDrop();
+  const {
+    newFeatures,
+    dismiss,
+    markFeatureSeen,
+    acquireSpotlightSlot,
+    releaseSpotlightSlot,
+    activeSpotlightCount,
+  } = useFeatureDrop();
   const feature = newFeatures.find((f) => f.id === featureId);
   const [isTooltipOpen, setTooltipOpen] = useState(false);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [hasSlot, setHasSlot] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const beaconRef = useRef<HTMLDivElement>(null);
+  const instanceIdRef = useRef(`featuredrop-spotlight-${Math.random().toString(36).slice(2, 10)}`);
+  const reduceMotion = useMemo(() => prefersReducedMotion(), []);
 
   const isActive = !!feature;
+  const tooltipId = `${instanceIdRef.current}-tooltip`;
+  const tooltipTitleId = `${instanceIdRef.current}-title`;
+  const tooltipDescId = `${instanceIdRef.current}-description`;
 
   useEffect(() => {
     injectKeyframes();
   }, []);
+
+  useEffect(() => {
+    if (!isActive) {
+      setHasSlot(false);
+      releaseSpotlightSlot(featureId);
+      return;
+    }
+    if (hasSlot) return;
+    setHasSlot(acquireSpotlightSlot(featureId, feature?.priority));
+  }, [
+    isActive,
+    hasSlot,
+    feature?.priority,
+    featureId,
+    acquireSpotlightSlot,
+    releaseSpotlightSlot,
+    activeSpotlightCount,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      releaseSpotlightSlot(featureId);
+    };
+  }, [featureId, releaseSpotlightSlot]);
 
   // Track target position
   useEffect(() => {
@@ -208,20 +255,31 @@ export function Spotlight({
 
   const openTooltip = useCallback(() => {
     setTooltipOpen(true);
-    if (feature) analytics?.onFeatureSeen?.(feature);
+    if (feature) {
+      markFeatureSeen(feature.id);
+      analytics?.onFeatureSeen?.(feature);
+    }
     if (autoDismiss) {
       timerRef.current = setTimeout(() => {
         dismiss(featureId);
         if (feature) analytics?.onFeatureDismissed?.(feature);
       }, autoDismissDelay);
     }
-  }, [feature, featureId, autoDismiss, autoDismissDelay, dismiss, analytics]);
+  }, [feature, featureId, autoDismiss, autoDismissDelay, dismiss, analytics, markFeatureSeen]);
 
   const closeTooltip = useCallback(() => {
     setTooltipOpen(false);
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
+    }
+    const beacon = beaconRef.current;
+    if (beacon) {
+      if (typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(() => beacon.focus());
+      } else {
+        beacon.focus();
+      }
     }
   }, []);
 
@@ -241,6 +299,19 @@ export function Spotlight({
     };
   }, []);
 
+  useEffect(() => {
+    if (!isTooltipOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeTooltip();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [closeTooltip, isTooltipOpen]);
+
   // Render prop mode
   if (children) {
     return (
@@ -257,7 +328,7 @@ export function Spotlight({
     );
   }
 
-  if (!isActive || !targetRect) return null;
+  if (!isActive || !hasSlot || !targetRect) return null;
 
   // Compute beacon position
   const beaconLeft = targetRect.right - beaconSize / 2;
@@ -283,6 +354,7 @@ export function Spotlight({
     <>
       {/* Beacon */}
       <div
+        ref={beaconRef}
         data-featuredrop-spotlight={featureId}
         className={className}
         style={{
@@ -296,6 +368,9 @@ export function Spotlight({
         onClick={isTooltipOpen ? closeTooltip : openTooltip}
         role="button"
         tabIndex={0}
+        aria-haspopup="dialog"
+        aria-expanded={isTooltipOpen}
+        aria-controls={tooltipId}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
@@ -304,22 +379,37 @@ export function Spotlight({
         }}
         aria-label={`New: ${feature.label}`}
       >
-        <span style={beaconPulseStyles} />
+        <span
+          style={{
+            ...beaconPulseStyles,
+            animation: reduceMotion ? "none" : beaconPulseStyles.animation,
+          }}
+        />
       </div>
 
       {/* Tooltip */}
       {isTooltipOpen && (
         <div
+          id={tooltipId}
           style={{ ...tooltipStyles, position: "fixed", ...tooltipPosition }}
           data-featuredrop-tooltip
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby={tooltipTitleId}
+          aria-describedby={feature.description ? tooltipDescId : undefined}
         >
           {tooltipContent ?? (
             <>
-              <p style={tooltipTitleStyles}>{feature.label}</p>
+              <p id={tooltipTitleId} style={tooltipTitleStyles}>{feature.label}</p>
               {feature.description && (
-                <p style={tooltipDescStyles}>{feature.description}</p>
+                <div
+                  id={tooltipDescId}
+                  style={tooltipDescStyles}
+                  dangerouslySetInnerHTML={{ __html: parseDescription(feature.description) }}
+                />
               )}
               <button
+                type="button"
                 onClick={handleDismiss}
                 style={tooltipDismissStyles}
               >

@@ -1,6 +1,7 @@
 import { useState, useCallback, type ReactNode, type CSSProperties } from "react";
 import type { FeatureEntry, AnalyticsCallbacks } from "../../types";
 import { useFeatureDrop } from "../hooks/use-feature-drop";
+import { parseDescription } from "../../markdown";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -158,7 +159,7 @@ export function Banner({
   style,
   children,
 }: BannerProps) {
-  const { newFeatures, dismiss } = useFeatureDrop();
+  const { newFeatures, dismiss, markFeatureClicked, trackAdoptionEvent } = useFeatureDrop();
   const feature = newFeatures.find((f) => f.id === featureId);
   const [sessionDismissed, setSessionDismissed] = useState(false);
 
@@ -171,8 +172,15 @@ export function Banner({
   }, [featureId, dismiss, feature, analytics]);
 
   const handleCtaClick = useCallback(() => {
-    if (feature) analytics?.onFeatureClicked?.(feature);
-  }, [feature, analytics]);
+    if (!feature) return;
+    markFeatureClicked(feature.id);
+    trackAdoptionEvent({
+      type: "cta_clicked",
+      featureId: feature.id,
+      metadata: { source: "banner" },
+    });
+    analytics?.onFeatureClicked?.(feature);
+  }, [feature, markFeatureClicked, trackAdoptionEvent, analytics]);
 
   // Headless render prop
   if (children) {
@@ -198,6 +206,10 @@ export function Banner({
         ? { position: "sticky", top: 0, zIndex: "var(--featuredrop-z-index, 9999)" as unknown as number }
         : {};
 
+  const descriptionHtml = feature.description
+    ? parseDescription(feature.description)
+    : null;
+
   return (
     <div
       data-featuredrop-banner={variant}
@@ -215,8 +227,11 @@ export function Banner({
       <div style={bannerTextStyles}>
         <span aria-hidden="true">{variantStyle.icon}</span>
         <span style={bannerLabelStyles}>{feature.label}</span>
-        {feature.description && (
-          <span style={bannerDescStyles}>— {feature.description}</span>
+        {descriptionHtml && (
+          <span
+            style={bannerDescStyles}
+            dangerouslySetInnerHTML={{ __html: `— ${descriptionHtml}` }}
+          />
         )}
         {feature.cta && (
           <a

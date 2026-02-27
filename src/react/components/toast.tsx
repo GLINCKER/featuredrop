@@ -2,12 +2,14 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   useRef,
   type ReactNode,
   type CSSProperties,
 } from "react";
 import type { FeatureEntry, AnalyticsCallbacks } from "../../types";
 import { useFeatureDrop } from "../hooks/use-feature-drop";
+import { parseDescription } from "../../markdown";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -150,6 +152,13 @@ function injectToastKeyframes() {
   document.head.appendChild(style);
 }
 
+function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return false;
+  }
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Toast Component                                                    */
 /* ------------------------------------------------------------------ */
@@ -190,9 +199,19 @@ export function Toast({
   children,
   renderToast,
 }: ToastProps) {
-  const { newFeaturesSorted, dismiss } = useFeatureDrop();
+  const {
+    newFeaturesSorted,
+    dismiss,
+    markFeatureSeen,
+    markFeatureClicked,
+    trackAdoptionEvent,
+    getRemainingToastSlots,
+    markToastsShown,
+  } = useFeatureDrop();
   const [localDismissed, setLocalDismissed] = useState<Set<string>>(new Set());
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const shownIdsRef = useRef(new Set<string>());
+  const reduceMotion = useMemo(() => prefersReducedMotion(), []);
 
   useEffect(() => {
     injectToastKeyframes();
@@ -205,7 +224,19 @@ export function Toast({
     return true;
   });
 
-  const visibleToasts = toastFeatures.slice(0, maxVisible);
+  const remainingSlots = getRemainingToastSlots();
+  const baseVisible = toastFeatures.slice(0, maxVisible);
+  const visibleToasts = useMemo(() => {
+    if (!Number.isFinite(remainingSlots)) return baseVisible;
+    let newlyAllowed = 0;
+    const limit = Math.max(0, remainingSlots);
+    return baseVisible.filter((feature) => {
+      if (shownIdsRef.current.has(feature.id)) return true;
+      if (newlyAllowed >= limit) return false;
+      newlyAllowed += 1;
+      return true;
+    });
+  }, [baseVisible, remainingSlots]);
 
   const handleDismiss = useCallback(
     (id: string) => {
@@ -243,10 +274,16 @@ export function Toast({
 
   // Fire onFeatureSeen for visible toasts
   useEffect(() => {
-    for (const f of visibleToasts) {
-      analytics?.onFeatureSeen?.(f);
+    const newlyShownIds: string[] = [];
+    for (const feature of visibleToasts) {
+      if (shownIdsRef.current.has(feature.id)) continue;
+      shownIdsRef.current.add(feature.id);
+      newlyShownIds.push(feature.id);
+      markFeatureSeen(feature.id);
+      analytics?.onFeatureSeen?.(feature);
     }
-  }, [visibleToasts, analytics]);
+    markToastsShown(newlyShownIds);
+  }, [visibleToasts, analytics, markFeatureSeen, markToastsShown]);
 
   // Cleanup timers
   useEffect(() => {
@@ -279,6 +316,10 @@ export function Toast({
     <div
       data-featuredrop-toast-container
       className={className}
+      role="region"
+      aria-label="Feature announcements"
+      aria-live="polite"
+      aria-atomic="false"
       style={{
         ...containerStyles,
         ...posStyles,
@@ -299,11 +340,19 @@ export function Toast({
           ? TYPE_INDICATORS[feature.type] ?? TYPE_INDICATORS.feature
           : null;
 
+        const descriptionHtml = feature.description
+          ? parseDescription(feature.description)
+          : null;
+
         return (
           <div
             key={feature.id}
             data-featuredrop-toast={feature.id}
-            style={toastStyles}
+            style={{
+              ...toastStyles,
+              animation: reduceMotion ? "none" : toastStyles.animation,
+            }}
+            role="status"
           >
             {indicator && (
               <span style={{ fontSize: "20px", lineHeight: 1 }} aria-hidden="true">
@@ -312,8 +361,11 @@ export function Toast({
             )}
             <div style={toastBodyStyles}>
               <p style={toastTitleStyles}>{feature.label}</p>
-              {feature.description && (
-                <p style={toastDescStyles}>{feature.description}</p>
+              {descriptionHtml && (
+                <div
+                  style={toastDescStyles}
+                  dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+                />
               )}
               {feature.cta && (
                 <a
@@ -321,7 +373,15 @@ export function Toast({
                   style={toastCtaStyles}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => analytics?.onFeatureClicked?.(feature)}
+                  onClick={() => {
+                    markFeatureClicked(feature.id);
+                    trackAdoptionEvent({
+                      type: "cta_clicked",
+                      featureId: feature.id,
+                      metadata: { source: "toast" },
+                    });
+                    analytics?.onFeatureClicked?.(feature);
+                  }}
                 >
                   {feature.cta.label} &rarr;
                 </a>

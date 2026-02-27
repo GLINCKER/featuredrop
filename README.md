@@ -87,6 +87,14 @@ export const FEATURES = createManifest([
     priority: 'critical',
     cta: { label: 'Try it', url: '/journal' },
   },
+  {
+    id: 'scheduled-reports',
+    label: 'Scheduled Reports',
+    releasedAt: '2026-02-23T00:00:00Z',
+    showNewUntil: '2026-03-23T00:00:00Z',
+    dependsOn: { clicked: ['ai-journal'] }, // progressive rollout
+    trigger: { type: 'page', match: '/reports/*' }, // contextual trigger
+  },
 ])
 ```
 
@@ -112,6 +120,201 @@ hasNewFeature(FEATURES, '/journal', storage) // true/false
 
 Works with **any framework**. Zero React dependency for vanilla use.
 
+## Adoption Analytics
+
+Pipe structured adoption events to PostHog/Amplitude/Mixpanel/Segment or your own endpoint.
+
+```ts
+import { AnalyticsCollector, PostHogAdapter } from 'featuredrop'
+
+const collector = new AnalyticsCollector({
+  adapter: new PostHogAdapter(posthog),
+  batchSize: 20,
+  flushInterval: 10_000,
+  sampleRate: 1,
+})
+```
+
+```tsx
+<FeatureDropProvider
+  manifest={FEATURES}
+  storage={storage}
+  collector={collector}
+>
+  <App />
+</FeatureDropProvider>
+```
+
+## A/B Announcement Variants
+
+Run deterministic per-user announcement variants with weighted splits.
+
+```ts
+{
+  id: 'ai-journal',
+  label: 'AI Decision Journal',
+  variants: {
+    control: { description: 'Track decisions with AI-powered insights.' },
+    treatment: { description: 'Never second-guess decisions again.' },
+  },
+  variantSplit: [50, 50],
+}
+```
+
+```tsx
+<FeatureDropProvider
+  manifest={FEATURES}
+  storage={storage}
+  variantKey={user.id} // stable key for deterministic assignment
+>
+  <App />
+</FeatureDropProvider>
+```
+
+## Theme Engine
+
+Theme all featuredrop components with CSS variables (no CSS-in-JS runtime).
+
+```tsx
+import { ThemeProvider, ChangelogWidget } from 'featuredrop/react'
+
+<ThemeProvider theme="dark">
+  <ChangelogWidget />
+</ThemeProvider>
+```
+
+```tsx
+import { createTheme } from 'featuredrop'
+import { ThemeProvider, ChangelogPage } from 'featuredrop/react'
+
+const myTheme = createTheme({
+  colors: { primary: '#7c3aed' },
+  radii: { lg: '16px' },
+})
+
+<ThemeProvider theme={myTheme}>
+  <ChangelogPage />
+</ThemeProvider>
+```
+
+Presets: `light`, `dark`, `auto`, `minimal`, `vibrant`.
+You can also pass `theme` directly to `ChangelogWidget` and `ChangelogPage` for component-scoped overrides.
+
+## Internationalization
+
+Use built-in locale packs or supply partial overrides:
+
+```tsx
+<FeatureDropProvider
+  manifest={FEATURES}
+  storage={storage}
+  locale="fr"
+  translations={{
+    submit: 'Envoyer maintenant',
+  }}
+>
+  <App />
+</FeatureDropProvider>
+```
+
+Built-in locales: `en`, `es`, `fr`, `de`, `pt`, `zh-cn`, `ja`, `ko`, `ar`, `hi`.
+
+## Changelog-as-Code
+
+Manage announcements as markdown files in your repo and compile to a manifest:
+
+```bash
+npx featuredrop init --format markdown
+npx featuredrop add --label "AI Journal" --category ai --description "Track decisions with AI."
+npx featuredrop build --pattern "features/**/*.md" --out featuredrop.manifest.json
+npx featuredrop validate --pattern "features/**/*.md"
+npx featuredrop stats --pattern "features/**/*.md"
+npx featuredrop doctor --pattern "features/**/*.md"
+npx featuredrop generate-rss --pattern "features/**/*.md" --out featuredrop.rss.xml
+npx featuredrop generate-changelog --pattern "features/**/*.md" --out CHANGELOG.generated.md
+npx featuredrop migrate --from beamer --input beamer-export.json --out featuredrop.manifest.json
+```
+
+Example feature file:
+
+```md
+---
+id: ai-journal
+label: AI Journal
+type: feature
+category: ai
+releasedAt: 2026-02-15T00:00:00Z
+showNewUntil: 2026-03-15T00:00:00Z
+cta:
+  label: Try it now
+  url: /journal
+---
+Track decisions and outcomes with AI-powered insights.
+```
+
+## Schema Validation
+
+Validate manifest JSON in CI or tooling pipelines.
+
+```ts
+import {
+  featureEntrySchema,
+  featureEntryJsonSchema,
+  validateManifest,
+} from 'featuredrop/schema'
+
+featureEntrySchema.parse({
+  id: 'ai-journal',
+  label: 'AI Journal',
+  releasedAt: '2026-02-15T00:00:00Z',
+  showNewUntil: '2026-03-15T00:00:00Z',
+})
+
+const result = validateManifest(data)
+if (!result.valid) {
+  throw new Error(result.errors.map((e) => `${e.path}: ${e.message}`).join("; "))
+}
+
+console.log(featureEntryJsonSchema.properties.id.type) // "string"
+```
+
+## Testing Utilities
+
+Use `featuredrop/testing` to speed up unit and component tests.
+
+```tsx
+import { render, screen } from '@testing-library/react'
+import { useNewCount } from 'featuredrop/react'
+import { createMockManifest, createMockStorage, createTestProvider } from 'featuredrop/testing'
+
+const manifest = createMockManifest([{ label: 'AI Journal', releasedAt: 'today', showNewUntil: '+14d' }])
+const storage = createMockStorage()
+const Wrapper = createTestProvider({ manifest, storage })
+
+function Count() {
+  return <span>{useNewCount()}</span>
+}
+
+render(<Count />, { wrapper: Wrapper })
+expect(screen.getByText('1')).toBeInTheDocument()
+```
+
+## Playground & Online Demos
+
+Use the lightweight component playground for quick UI iteration:
+
+```bash
+pnpm --dir examples/sandbox-react install
+pnpm playground
+pnpm playground:build
+```
+
+One-click editable demos:
+
+- React sandbox source: `examples/sandbox-react`
+- StackBlitz: https://stackblitz.com/github/GLINCKER/featuredrop/tree/main/examples/sandbox-react
+- CodeSandbox: https://codesandbox.io/p/sandbox/github/GLINCKER/featuredrop/tree/main/examples/sandbox-react
+
 ## Components
 
 Everything you'd expect from Beamer or Headway — but free, self-hosted, and headless-first.
@@ -128,6 +331,9 @@ import { ChangelogWidget } from 'featuredrop/react'
 
 // Or modal / popover variant
 <ChangelogWidget variant="modal" title="Release Notes" />
+
+// Enable emoji reactions on entries
+<ChangelogWidget showReactions />
 
 // Fully headless
 <ChangelogWidget>
@@ -177,6 +383,124 @@ import { Toast } from 'featuredrop/react'
 <Toast featureIds={["ai-journal"]} autoDismissMs={5000} />
 ```
 
+### Product Tours
+
+Guided, multi-step onboarding with keyboard navigation and persistence.
+
+```tsx
+import { Tour, useTour } from 'featuredrop/react'
+
+<Tour id="onboarding" steps={steps} />
+const { startTour, nextStep, skipTour } = useTour('onboarding')
+```
+
+### Onboarding Checklist
+
+Task-based onboarding that can trigger tours, links, or callbacks.
+
+```tsx
+import { Checklist, useChecklist } from 'featuredrop/react'
+
+<Checklist id="getting-started" tasks={tasks} />
+const { completeTask, progress } = useChecklist('getting-started')
+```
+
+### Feedback Widget
+
+Collect lightweight in-app feedback with optional emoji and screenshots.
+
+```tsx
+import { FeedbackWidget } from 'featuredrop/react'
+
+<FeedbackWidget
+  featureId="ai-journal"
+  onSubmit={async (payload) => {
+    await fetch('/api/feedback', { method: 'POST', body: JSON.stringify(payload) })
+  }}
+  showEmoji
+  showScreenshot
+  rateLimit="1-per-feature"
+/>
+```
+
+### Survey (NPS / CSAT / CES / Custom)
+
+Run micro-surveys with trigger rules and imperative controls.
+
+```tsx
+import { Survey, useSurvey } from 'featuredrop/react'
+
+<Survey
+  id="nps-main"
+  type="nps"
+  prompt="How likely are you to recommend us?"
+  triggerRules={{ minDaysSinceSignup: 7, signupAt: user.createdAt }}
+  onSubmit={saveSurvey}
+/>
+
+const { show } = useSurvey('nps-main')
+```
+
+### Feature Request Voting
+
+Capture and rank product requests with local persistence and optional webhook sync.
+
+```tsx
+import { FeatureRequestButton, FeatureRequestForm } from 'featuredrop/react'
+
+<FeatureRequestButton featureId="dark-mode" requestTitle="Dark mode" />
+
+<FeatureRequestForm
+  categories={['UI', 'Performance', 'Integration', 'Other']}
+  onSubmit={async (request) => {
+    await fetch('/api/requests', { method: 'POST', body: JSON.stringify(request) })
+  }}
+/>
+```
+
+### Hotspots & Tooltips
+
+Persistent contextual hints attached to specific UI targets.
+
+```tsx
+import { Hotspot, TooltipGroup } from 'featuredrop/react'
+
+<TooltipGroup maxVisible={1}>
+  <Hotspot id="export-help" target="#export-btn" frequency="once">
+    Export supports CSV, PDF, and Excel.
+  </Hotspot>
+</TooltipGroup>
+```
+
+### Announcement Modal
+
+Priority-based modal announcements with optional slide carousel.
+
+```tsx
+import { AnnouncementModal } from 'featuredrop/react'
+
+<AnnouncementModal
+  feature={criticalFeature}
+  trigger="auto"
+  frequency="once"
+/>
+```
+
+### Spotlight Chain
+
+Lightweight chained spotlights for "here are 3 new things" flows.
+
+```tsx
+import { SpotlightChain } from 'featuredrop/react'
+
+<SpotlightChain
+  steps={[
+    { target: '#sidebar', content: 'New navigation' },
+    { target: '#search', content: 'Global search' },
+  ]}
+/>
+```
+
 ### NewBadge
 
 Headless badge component with variants. Zero CSS framework dependency.
@@ -211,7 +535,27 @@ npm install featuredrop react    # react is an optional peer dep
 ```tsx
 import { FeatureDropProvider } from 'featuredrop/react'
 
-<FeatureDropProvider manifest={FEATURES} storage={storage}>
+<FeatureDropProvider manifest={FEATURES} storage={storage} appVersion="2.5.1">
+  <App />
+</FeatureDropProvider>
+```
+
+**Throttling + quiet mode:**
+
+```tsx
+<FeatureDropProvider
+  manifest={FEATURES}
+  storage={storage}
+  throttle={{
+    maxSimultaneousBadges: 3,
+    maxSimultaneousSpotlights: 1,
+    maxToastsPerSession: 3,
+    minTimeBetweenModals: 30000,
+    minTimeBetweenTours: 86400000,
+    sessionCooldown: 5000,
+    respectDoNotDisturb: true,
+  }}
+>
   <App />
 </FeatureDropProvider>
 ```
@@ -248,11 +592,28 @@ import { ChangelogWidget } from 'featuredrop/react'
 | `useNewFeature(key)` | Single nav item: `{ isNew, feature, dismiss }` |
 | `useNewCount()` | Just the badge count |
 | `useTabNotification()` | Updates browser tab title with count |
+| `useTour(id)` | Imperative tour controls and current step snapshot |
+| `useTourSequencer(sequence)` | Ordered multi-tour orchestration by feature readiness |
+| `useChecklist(id)` | Imperative checklist controls + progress |
+| `useSurvey(id)` | Imperative survey controls (`show`, `hide`, `askLater`) + state |
 | `<NewBadge />` | Headless badge: `pill`, `dot`, or `count` variant |
-| `<ChangelogWidget />` | Full changelog feed with trigger button |
+| `<ChangelogWidget />` | Full changelog feed with trigger button + optional reactions |
+| `<ChangelogPage />` | Full-page changelog with filters/search/pagination |
 | `<Spotlight />` | Pulsing beacon attached to DOM elements |
 | `<Banner />` | Announcement banner with variants |
 | `<Toast />` | Stackable toast notifications |
+| `<Tour />` | Multi-step guided product tour |
+| `<Checklist />` | Onboarding task checklist |
+| `<FeedbackWidget />` | In-app feedback form with category/emoji/screenshot support |
+| `<Survey />` | NPS/CSAT/CES/custom survey engine with trigger rules |
+| `<FeatureRequestButton />` | Per-feature voting button with persisted vote guard |
+| `<FeatureRequestForm />` | Request capture form + sortable request list |
+| `<Hotspot />` / `<TooltipGroup />` | Contextual tooltips with visibility caps |
+| `<AnnouncementModal />` | Priority/frequency-gated modal announcements |
+| `<SpotlightChain />` | Lightweight chained spotlight walkthrough |
+
+`useFeatureDrop()` also exposes queue/throttle controls: `queuedFeatures`, `totalNewCount`, `quietMode`, `setQuietMode`, `markFeatureSeen`, `markFeatureClicked`, toast-slot helpers, modal/tour pacing checks, and spotlight slot controls.
+It also exposes trigger runtime helpers: `trackUsageEvent`, `trackTriggerEvent`, `trackMilestone`, and `setTriggerPath`.
 
 **Analytics integration:**
 
@@ -260,6 +621,7 @@ import { ChangelogWidget } from 'featuredrop/react'
 <FeatureDropProvider
   manifest={FEATURES}
   storage={storage}
+  appVersion="2.5.1" // optional semver for version-pinned features
   analytics={{
     onFeatureSeen: (f) => posthog.capture('feature_seen', { id: f.id }),
     onFeatureDismissed: (f) => posthog.capture('feature_dismissed', { id: f.id }),
@@ -311,7 +673,12 @@ Read the full [Architecture doc](docs/ARCHITECTURE.md) for cross-device sync flo
 | **Price** | **Free** | $59-399/mo | $49-249/mo | $79-299/mo | $79+ |
 | Auto-expiring badges | Yes | - | - | - | - |
 | Changelog widget | Yes | Yes | Yes | Yes | Yes |
+| Product tours | Yes | - | - | - | - |
+| Onboarding checklists | Yes | - | - | - | - |
 | Spotlight/beacon | Yes | - | - | - | - |
+| Hotspot tooltips | Yes | - | - | - | - |
+| Announcement modal | Yes | - | - | - | - |
+| Spotlight chaining | Yes | - | - | - | - |
 | Toast notifications | Yes | - | - | - | - |
 | Announcement banner | Yes | - | - | - | - |
 | Tab title notification | Yes | - | - | - | - |
@@ -334,8 +701,12 @@ Read the full [Architecture doc](docs/ARCHITECTURE.md) for cross-device sync flo
 |-----------|--------|--------|
 | React / Next.js | Stable | `featuredrop/react` |
 | Vanilla JS | Stable | `featuredrop` |
-| Vue 3 | Planned | `featuredrop/vue` |
-| Svelte 5 | Planned | `featuredrop/svelte` |
+| SolidJS | Preview | `featuredrop/solid` |
+| Preact (compat) | Preview | `featuredrop/preact` |
+| Web Components | Preview | `featuredrop/web-components` |
+| Angular | Preview | `featuredrop/angular` |
+| Vue 3 | Preview | `featuredrop/vue` |
+| Svelte 5 | Preview (store bindings) | `featuredrop/svelte` |
 
 ## Documentation
 
@@ -343,6 +714,7 @@ Read the full [Architecture doc](docs/ARCHITECTURE.md) for cross-device sync flo
 - [Architecture](docs/ARCHITECTURE.md) — Three-check algorithm, cross-device sync, custom adapters
 - [Next.js Example](examples/nextjs/) — Full App Router integration
 - [Vanilla Example](examples/vanilla/) — Plain HTML, zero build step
+- [React Sandbox](examples/sandbox-react/) — Interactive local/online playground
 
 ## Contributing
 
