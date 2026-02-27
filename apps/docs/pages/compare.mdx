@@ -1,0 +1,182 @@
+---
+title: "FeatureDrop vs Beamer vs Pendo vs Appcues — Feature Comparison"
+description: "Detailed comparison of FeatureDrop with Beamer, Pendo, and Appcues. Free, open-source alternative for in-app changelogs, tours, checklists, and feedback widgets."
+---
+
+import { Callout, Steps } from 'nextra/components'
+
+# FeatureDrop vs Beamer vs Pendo vs Appcues
+
+Choosing the right product adoption tool? Here's an honest, detailed comparison of FeatureDrop against the three most popular paid alternatives.
+
+<Callout type="info">
+  **TL;DR** — FeatureDrop gives you changelogs, tours, checklists, feedback, A/B testing, and feature flags for **$0/mo** with a **{"<"} 3 kB** core. No vendor lock-in. Self-hosted. MIT licensed.
+</Callout>
+
+---
+
+## Full Feature Matrix
+
+| Feature | FeatureDrop | Beamer | Pendo | Appcues |
+|---|:---:|:---:|:---:|:---:|
+| **Changelog / What's New** | ✅ | ✅ | ~partial | ❌ |
+| **In-app announcements** | ✅ | ✅ | ✅ | ✅ |
+| **Product tours** | ✅ | ❌ | ✅ | ✅ |
+| **Onboarding checklists** | ✅ | ❌ | ✅ | ✅ |
+| **Hotspots / beacons** | ✅ | ❌ | ✅ | ✅ |
+| **Banners & toasts** | ✅ | ✅ | ❌ | ✅ |
+| **Feedback widgets** | ✅ | ✅ | ✅ | ✅ |
+| **Surveys (NPS, CSAT)** | ✅ | ❌ | ✅ | ✅ |
+| **Feature flags bridge** | ✅ | ❌ | ✅ | ~partial |
+| **User segmentation** | ✅ | ✅ | ✅ | ✅ |
+| **A/B testing** | ✅ | ❌ | ✅ | ✅ |
+| **Analytics callbacks** | ✅ | ✅ | ✅ | ✅ |
+| **CLI tooling** | ✅ | ❌ | ❌ | ❌ |
+| **Schema validation** | ✅ | ❌ | ❌ | ❌ |
+| **CI/CD integration** | ✅ | ❌ | ❌ | ❌ |
+| **Offline support** | ✅ | ❌ | ❌ | ❌ |
+| **Custom storage adapters** | ✅ | ❌ | ❌ | ❌ |
+| **Self-hosted / OSS** | ✅ | ❌ | ❌ | ❌ |
+| **React bindings** | ✅ | ❌ | ❌ | ❌ |
+| **Vue / Svelte / Solid** | ✅ | ❌ | ❌ | ❌ |
+| **Web Components** | ✅ | JS snippet | JS snippet | JS snippet |
+| **Managed dashboard** | ❌ | ✅ | ✅ | ✅ |
+| **Email notifications** | ❌ | ✅ | ❌ | ❌ |
+| **Session replay** | ❌ | ❌ | ✅ | ❌ |
+
+✅ = Full support&nbsp;&nbsp;~partial = Limited support&nbsp;&nbsp;❌ = Not available
+
+---
+
+## Pricing Comparison
+
+| | FeatureDrop | Beamer | Pendo | Appcues |
+|---|:---:|:---:|:---:|:---:|
+| **Monthly cost** | **$0** | $49–249 | ~$583+ | $249+ |
+| **Annual cost** | **$0** | $588–2,988 | $7,000+ | $2,988+ |
+| **Cost over 3 years** | **$0** | $1,764–8,964 | $21,000+ | $8,964+ |
+| **Pricing model** | MIT / free forever | Per-MAU tiers | Custom / sales | Per-MAU tiers |
+| **Usage limits** | None | MAU caps per tier | Negotiated | MAU caps per tier |
+| **Self-host option** | ✅ | ❌ | ❌ | ❌ |
+
+---
+
+## FeatureDrop vs Beamer
+
+### What Beamer does well
+- **Managed dashboard** — visual editor, no code needed for changelog posts
+- **Email notifications** — push changelog updates to user inboxes
+- **Standalone widget** — drop a script tag, no framework dependency
+- **Push notifications** — browser push for new announcements
+
+### Where FeatureDrop wins
+- **$0 vs $49–249/mo** — save up to $2,988/year
+- **Self-hosted** — your data stays in your repo, no third-party tracking
+- **Tours, checklists, hotspots** — Beamer only does changelogs and announcements
+- **Feedback & surveys** — built-in NPS/CSAT collection
+- **A/B testing** — variant testing built into the core
+- **Feature flags bridge** — connect to LaunchDarkly, Statsig, etc.
+- **CLI tooling** — generate manifests, validate schemas, run audits from CI
+- **< 3 kB core** — Beamer loads a full SaaS widget externally
+- **8 framework bindings** — React, Vue, Svelte, Solid, Preact, Angular, Web Components, vanilla JS
+
+### Honest trade-offs
+If you need a **managed visual dashboard** where non-technical team members write changelog posts without touching code, Beamer is more accessible. FeatureDrop requires JSON manifests in your repo — great for developers, less friendly for marketing teams without a CMS bridge.
+
+---
+
+## FeatureDrop vs Pendo
+
+### What Pendo does well
+- **Product analytics** — comprehensive usage tracking, session replay, funnels
+- **Enterprise sales support** — dedicated CSMs, SOC 2, SSO
+- **No-code guide builder** — visual editor for tours and tooltips
+- **Retroactive analytics** — auto-captures events without pre-instrumentation
+
+### Where FeatureDrop wins
+- **$0 vs $7k+/year** — significant cost savings for startups and mid-market
+- **< 3 kB vs ~300 kB** — Pendo's agent is 100x heavier on your bundle
+- **Self-hosted** — no data leaving your infrastructure
+- **Changelogs** — Pendo has limited "What's New" compared to FeatureDrop's full changelog widget
+- **CLI + CI/CD** — manifest validation, schema checks, and security audits in your pipeline
+- **Offline support** — works without network connectivity
+- **Custom storage adapters** — bring your own persistence (localStorage, IndexedDB, Redis, Postgres, etc.)
+- **Open source** — audit the code, fork it, extend it
+
+### Honest trade-offs
+If you need **product analytics with session replay and retroactive event capture**, Pendo is purpose-built for that. FeatureDrop focuses on **adoption messaging** (changelogs, tours, checklists) rather than analytics — you pipe events to your existing analytics platform via callbacks.
+
+---
+
+## FeatureDrop vs Appcues
+
+### What Appcues does well
+- **Visual flow builder** — drag-and-drop tour and modal creation
+- **Mature onboarding flows** — purpose-built for user activation
+- **Integrations** — Segment, Amplitude, Mixpanel, HubSpot out of the box
+- **Targeting rules** — URL, user property, and event-based targeting
+
+### Where FeatureDrop wins
+- **$0 vs $249+/mo** — save $2,988+/year
+- **Changelogs** — Appcues has no changelog widget
+- **Feature flags bridge** — connect adoption messaging to your flag system
+- **CLI + schema validation** — developer-first workflow
+- **< 3 kB vs ~200 kB** — dramatically smaller client bundle
+- **Self-hosted, no vendor lock-in** — migrate on your own terms
+- **Custom storage adapters** — offline-first architecture
+- **8 framework bindings** — Appcues uses a JS snippet approach
+
+### Honest trade-offs
+If you need a **visual, no-code flow builder** that marketing and product teams can use without developer involvement, Appcues is purpose-built for that. FeatureDrop is developer-first — you define flows in code and JSON manifests, which gives maximum control but requires engineering effort.
+
+---
+
+## Who Should Use What?
+
+| Your situation | Best tool |
+|---|---|
+| **Developer-led team, cost-sensitive, values ownership** | FeatureDrop |
+| **Non-technical team needs visual editors** | Appcues or Beamer |
+| **Enterprise with $10k+ adoption budget, needs analytics** | Pendo |
+| **Just need changelogs + announcements** | FeatureDrop or Beamer |
+| **Full onboarding suite + tours + checklists** | FeatureDrop or Appcues |
+| **Need self-hosting / data sovereignty** | FeatureDrop |
+| **Offline-capable / custom storage needs** | FeatureDrop |
+| **Bundle size is critical (performance-first)** | FeatureDrop |
+
+---
+
+## Get Started
+
+Ready to replace your paid adoption tool?
+
+<Steps>
+### Install FeatureDrop
+
+```bash
+npm install featuredrop
+```
+
+### Follow the quickstart
+
+Set up your first changelog and "New" badge in about 10 minutes.
+
+[Read the quickstart →](/docs/quickstart)
+
+### Explore the full API
+
+Tours, checklists, hotspots, feedback, surveys, A/B testing, and more.
+
+[Browse the docs →](/docs)
+</Steps>
+
+---
+
+<div style={{ textAlign: 'center', marginTop: '3rem' }}>
+  <a href="https://github.com/GLINCKER/featuredrop" style={{ marginRight: '1rem' }}>
+    Star on GitHub →
+  </a>
+  <a href="/docs/quickstart">
+    Start quickstart →
+  </a>
+</div>

@@ -3,11 +3,11 @@ import Head from 'next/head'
 import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
 import {
-  ArrowRight, ArrowDown, BookOpen, FlaskConical, Github, Rocket, ShieldCheck,
+  ArrowRight, BookOpen, FlaskConical, Github, Rocket, ShieldCheck,
   Workflow, Bell, Navigation, CheckCircle2, TerminalSquare, Zap, Heart,
   DollarSign, Lock, Code2, Package, Users, Palette, BarChart3,
-  MessageSquare, ListChecks, Star, Eye, MousePointerClick, ChevronDown,
-  Sparkles, Layers, Globe, Box, FileJson, Cpu
+  MessageSquare, ListChecks, Star,
+  Sparkles, Layers, Globe, Box, FileJson, Cpu, Target
 } from 'lucide-react'
 import { MemoryAdapter } from 'featuredrop'
 import {
@@ -113,15 +113,28 @@ const valueCards: ValueCard[] = [
   }
 ]
 
-const comparisonRows = [
-  { feature: 'Self-hosted / OSS', featuredrop: true, saas: false, enterprise: false },
-  { feature: 'Changelog widget', featuredrop: true, saas: true, enterprise: true },
-  { feature: 'Tours & checklists', featuredrop: true, saas: false, enterprise: true },
-  { feature: 'Feedback & surveys', featuredrop: true, saas: true, enterprise: true },
-  { feature: 'Feature flags bridge', featuredrop: true, saas: false, enterprise: true },
-  { feature: 'User segmentation', featuredrop: true, saas: true, enterprise: true },
-  { feature: 'Bundle size', fdVal: '< 3 kB', saasVal: 'N/A (SaaS)', entVal: '~300 kB agent' },
-  { feature: 'Price', fdVal: 'Free forever', saasVal: '$49\u2013249/mo', entVal: '$7k+/yr' },
+type ComparisonValue = true | false | 'partial' | string
+type ComparisonRow = {
+  feature: string
+  featuredrop: ComparisonValue
+  beamer: ComparisonValue
+  pendo: ComparisonValue
+  appcues: ComparisonValue
+}
+
+const comparisonRows: ComparisonRow[] = [
+  { feature: 'Self-hosted / OSS', featuredrop: true, beamer: false, pendo: false, appcues: false },
+  { feature: 'Changelog widget', featuredrop: true, beamer: true, pendo: 'partial', appcues: false },
+  { feature: 'Tours & checklists', featuredrop: true, beamer: false, pendo: true, appcues: true },
+  { feature: 'Feedback & surveys', featuredrop: true, beamer: true, pendo: true, appcues: true },
+  { feature: 'Feature flags bridge', featuredrop: true, beamer: false, pendo: true, appcues: 'partial' },
+  { feature: 'User segmentation', featuredrop: true, beamer: true, pendo: true, appcues: true },
+  { feature: 'A/B testing', featuredrop: true, beamer: false, pendo: true, appcues: true },
+  { feature: 'CLI tooling', featuredrop: true, beamer: false, pendo: false, appcues: false },
+  { feature: 'Offline support', featuredrop: true, beamer: false, pendo: false, appcues: false },
+  { feature: 'Custom storage adapters', featuredrop: true, beamer: false, pendo: false, appcues: false },
+  { feature: 'Bundle size', featuredrop: '< 3 kB', beamer: 'N/A (SaaS)', pendo: '~300 kB', appcues: '~200 kB' },
+  { feature: 'Price', featuredrop: 'Free forever', beamer: '$49\u2013249/mo', pendo: '$7k+/yr', appcues: '$249+/mo' },
 ]
 
 const heroTaglines = [
@@ -131,7 +144,7 @@ const heroTaglines = [
   '< 3 kB. Zero dependencies.',
 ]
 
-type ShowcaseTab = 'changelog' | 'tour' | 'checklist' | 'banner' | 'feedback'
+type ShowcaseTab = 'changelog' | 'tour' | 'checklist' | 'banner' | 'feedback' | 'hotspot'
 
 const showcaseTabs: { id: ShowcaseTab; label: string; icon: LucideIcon; desc: string }[] = [
   { id: 'changelog', label: 'Changelog', icon: Bell, desc: 'In-app release notes with reactions and read-state tracking.' },
@@ -139,6 +152,7 @@ const showcaseTabs: { id: ShowcaseTab; label: string; icon: LucideIcon; desc: st
   { id: 'checklist', label: 'Checklist', icon: ListChecks, desc: 'Onboarding checklists with progress persistence.' },
   { id: 'banner', label: 'Banner & Toast', icon: Sparkles, desc: 'Persistent announcements and ephemeral notifications.' },
   { id: 'feedback', label: 'Feedback', icon: MessageSquare, desc: 'Contextual feedback collection with rate limiting.' },
+  { id: 'hotspot', label: 'Hotspot', icon: Target, desc: 'Pulsing beacons that draw attention to new UI elements.' },
 ]
 
 // --- Hooks ---
@@ -255,7 +269,7 @@ function RevealSection({ children, delay = 0, className = '' }: { children: Reac
     <div
       // @ts-ignore
       ref={ref}
-      className={`transition-all duration-1000 ease-out will-change-[opacity,transform] ${
+      className={`transition-[opacity,transform] duration-1000 ease-out ${
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-24'
       } ${className}`}
       style={{ transitionDelay: `${delay}ms` }}
@@ -276,13 +290,13 @@ function SectionHeading({ chip, title, subtitle }: { chip?: string; title: strin
       className="mx-auto max-w-2xl text-center mb-12 md:mb-16"
     >
       {chip && (
-        <span className={`fd-chip mb-4 inline-block transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>{chip}</span>
+        <span className={`fd-chip mb-4 inline-block transition-[opacity,transform] duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>{chip}</span>
       )}
-      <h2 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white md:text-4xl lg:text-5xl">
+      <h2 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white md:text-4xl lg:text-5xl text-balance">
         {words.map((word, i) => (
           <span
             key={i}
-            className={`inline-block transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            className={`inline-block transition-[opacity,transform] duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
             style={{ transitionDelay: isVisible ? `${i * 80}ms` : '0ms' }}
           >
             {word}{i < words.length - 1 ? '\u00A0' : ''}
@@ -290,7 +304,7 @@ function SectionHeading({ chip, title, subtitle }: { chip?: string; title: strin
         ))}
       </h2>
       <p
-        className={`mt-4 text-lg text-slate-600 dark:text-slate-400 leading-relaxed transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+        className={`mt-4 text-lg text-slate-600 dark:text-slate-400 leading-relaxed text-pretty transition-[opacity,transform] duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
         style={{ transitionDelay: isVisible ? `${words.length * 80 + 100}ms` : '0ms' }}
       >
         {subtitle}
@@ -300,18 +314,21 @@ function SectionHeading({ chip, title, subtitle }: { chip?: string; title: strin
 }
 
 function ScrollProgressBar() {
-  const [progress, setProgress] = useState(0)
+  const barRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const update = () => {
       const h = document.documentElement.scrollHeight - window.innerHeight
-      setProgress(h > 0 ? Math.min(window.scrollY / h, 1) : 0)
+      const progress = h > 0 ? Math.min(window.scrollY / h, 1) : 0
+      if (barRef.current) {
+        barRef.current.style.transform = `scaleX(${progress})`
+      }
     }
     window.addEventListener('scroll', update, { passive: true })
     return () => window.removeEventListener('scroll', update)
   }, [])
 
-  return <div className="fd-scroll-progress" style={{ width: `${progress * 100}%` }} />
+  return <div ref={barRef} className="fd-scroll-progress" aria-hidden="true" style={{ transform: 'scaleX(0)' }} />
 }
 
 function InteractiveCard({ children, className = '', glow = false, tilt = false }: {
@@ -360,9 +377,135 @@ function InteractiveCard({ children, className = '', glow = false, tilt = false 
   )
 }
 
+function HeroDemo() {
+  return (
+    <div className="fd-hero-demo relative w-full max-w-md">
+      {/* Glow behind the card */}
+      <div className="absolute -inset-6 rounded-3xl bg-gradient-to-br from-indigo-500/20 via-purple-500/15 to-brand/20 blur-2xl dark:from-indigo-500/15 dark:via-purple-500/10 dark:to-brand/15" />
+
+      {/* Main mock app */}
+      <div className="relative fd-glass-surface overflow-hidden rounded-2xl">
+        {/* Title bar */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200/50 dark:border-white/5 bg-slate-50/80 dark:bg-slate-900/50">
+          <div className="flex gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+            <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
+          </div>
+          <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 ml-2">your-app.com</span>
+          <div className="ml-auto flex items-center gap-1.5">
+            <span className="inline-flex items-center rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-bold text-brand">3 new</span>
+          </div>
+        </div>
+
+        {/* Sidebar + content */}
+        <div className="flex min-h-[320px]">
+          {/* Sidebar */}
+          <div className="w-[140px] shrink-0 border-r border-slate-200/50 dark:border-white/5 p-3 space-y-1.5 bg-slate-50/50 dark:bg-slate-900/30">
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-brand/10 text-brand">
+              <div className="h-1.5 w-1.5 rounded-full bg-brand" />
+              <span className="text-[11px] font-semibold">Dashboard</span>
+            </div>
+            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">
+              <span className="text-[11px]">Analytics</span>
+              <span className="inline-flex items-center rounded-full bg-brand px-1.5 py-[1px] text-[8px] font-bold text-white">NEW</span>
+            </div>
+            <div className="flex items-center px-2.5 py-1.5 rounded-md text-slate-500 dark:text-slate-400">
+              <span className="text-[11px]">Settings</span>
+            </div>
+            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-md text-slate-500 dark:text-slate-400">
+              <span className="text-[11px]">Exports</span>
+              <span className="inline-flex items-center rounded-full bg-brand px-1.5 py-[1px] text-[8px] font-bold text-white">NEW</span>
+            </div>
+            <div className="flex items-center px-2.5 py-1.5 rounded-md text-slate-500 dark:text-slate-400">
+              <span className="text-[11px]">Team</span>
+            </div>
+          </div>
+
+          {/* Content area */}
+          <div className="flex-1 p-4 space-y-3 relative">
+            {/* Mini chart placeholder */}
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">Overview</span>
+              <span className="text-[10px] text-slate-400">Feb 2026</span>
+            </div>
+            <div className="h-16 rounded-lg bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800/50 dark:to-slate-800/30 flex items-end gap-[3px] px-3 pb-2">
+              {[40, 55, 35, 70, 60, 80, 65, 90, 75, 85, 95, 70].map((h, i) => (
+                <div key={i} className="flex-1 rounded-sm bg-brand/30 dark:bg-brand/40 transition-all" style={{ height: `${h}%` }} />
+              ))}
+            </div>
+
+            {/* Floating notifications */}
+            <div className="space-y-2 pt-1">
+              <div className="fd-hero-notif-1 flex items-start gap-2.5 rounded-lg border border-slate-200/70 bg-white/90 p-2.5 shadow-sm dark:border-white/8 dark:bg-slate-800/90">
+                <div className="mt-0.5 h-5 w-5 rounded-md bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center shrink-0">
+                  <Bell className="h-3 w-3 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold text-slate-800 dark:text-slate-100 truncate">Usage Insights Dashboard</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Track activation and retention signals</p>
+                </div>
+                <span className="ml-auto shrink-0 text-[9px] font-semibold text-brand">New</span>
+              </div>
+
+              <div className="fd-hero-notif-2 flex items-start gap-2.5 rounded-lg border border-slate-200/70 bg-white/90 p-2.5 shadow-sm dark:border-white/8 dark:bg-slate-800/90">
+                <div className="mt-0.5 h-5 w-5 rounded-md bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center shrink-0">
+                  <Navigation className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold text-slate-800 dark:text-slate-100 truncate">Guided Rollout Templates</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Ship coordinated flows faster</p>
+                </div>
+                <span className="ml-auto shrink-0 text-[9px] font-semibold text-brand">New</span>
+              </div>
+
+              <div className="fd-hero-notif-3 flex items-start gap-2.5 rounded-lg border border-slate-200/70 bg-white/90 p-2.5 shadow-sm dark:border-white/8 dark:bg-slate-800/90">
+                <div className="mt-0.5 h-5 w-5 rounded-md bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold text-slate-800 dark:text-slate-100 truncate">Security Audit Checks</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">CI checks before release merges</p>
+                </div>
+                <span className="ml-auto shrink-0 text-[9px] font-semibold text-slate-400">Read</span>
+              </div>
+            </div>
+
+            {/* Hotspot beacon */}
+            <div className="absolute top-3 right-3">
+              <span className="relative flex h-4 w-4">
+                <span className="fd-hero-pulse-ring absolute inline-flex h-full w-full rounded-full bg-brand/40" />
+                <span className="relative inline-flex h-4 w-4 rounded-full bg-brand/80" />
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Floating badge — bottom-right */}
+      <div className="absolute -bottom-3 -right-3 fd-glass-surface rounded-xl px-3 py-2 shadow-lg flex items-center gap-2 animate-stagger-3">
+        <Package className="h-4 w-4 text-brand" />
+        <div>
+          <p className="text-[10px] font-bold text-slate-800 dark:text-slate-100">{'<'} 3 kB gzipped</p>
+          <p className="text-[9px] text-slate-500 dark:text-slate-400">zero dependencies</p>
+        </div>
+      </div>
+
+      {/* Floating badge — top-left */}
+      <div className="absolute -top-3 -left-3 fd-glass-surface rounded-xl px-3 py-2 shadow-lg flex items-center gap-2 animate-stagger-2">
+        <DollarSign className="h-4 w-4 text-emerald-500" />
+        <div>
+          <p className="text-[10px] font-bold text-slate-800 dark:text-slate-100">$0/month</p>
+          <p className="text-[9px] text-slate-500 dark:text-slate-400">free forever</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function SocialProofStrip() {
   return (
-    <section className="my-16 md:my-20">
+    <section className="my-10 md:my-14">
       <div className="text-center space-y-8">
         <p className="text-sm font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
           Trusted by developers shipping with
@@ -593,8 +736,10 @@ function FeedbackShowcase() {
                 </div>
               ) : (
                 <div className="fd-glass-surface p-5 space-y-3">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Feedback form</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white" id="feedback-form-title">Feedback form</p>
+                  <label htmlFor="feedback-category" className="sr-only">Feedback category</label>
                   <select
+                    id="feedback-category"
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white"
@@ -603,7 +748,9 @@ function FeedbackShowcase() {
                     <option value="suggestion">Suggestion</option>
                     <option value="praise">Praise</option>
                   </select>
+                  <label htmlFor="feedback-text" className="sr-only">Your feedback</label>
                   <textarea
+                    id="feedback-text"
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     rows={3}
@@ -626,6 +773,46 @@ function FeedbackShowcase() {
   )
 }
 
+function HotspotShowcase() {
+  const [revealed, setRevealed] = useState(false)
+
+  return (
+    <div className="w-full max-w-md mx-auto">
+      <div className="fd-glass-surface p-6 space-y-4">
+        <p className="text-sm font-semibold text-slate-900 dark:text-white">Dashboard Navigation</p>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Overview</span>
+          </div>
+          <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 relative">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Analytics</span>
+            <button
+              type="button"
+              onClick={() => setRevealed(!revealed)}
+              aria-label="Show new feature tooltip"
+              aria-expanded={revealed}
+              className="relative flex h-6 w-6 items-center justify-center"
+            >
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand/40" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-brand" />
+            </button>
+            {revealed && (
+              <div className="absolute right-0 top-full mt-2 z-10 w-56 rounded-lg border border-slate-200 bg-white p-3 shadow-lg dark:border-white/10 dark:bg-slate-900">
+                <p className="text-xs font-semibold text-slate-900 dark:text-white">New: Usage Insights</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Track activation and retention signals in real time.</p>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Settings</span>
+          </div>
+        </div>
+        <p className="text-xs text-slate-400 dark:text-slate-500">Click the pulsing beacon to reveal the tooltip.</p>
+      </div>
+    </div>
+  )
+}
+
 function ComponentShowcase() {
   const [activeTab, setActiveTab] = useState<ShowcaseTab>('changelog')
   const activeInfo = showcaseTabs.find(t => t.id === activeTab)
@@ -638,19 +825,28 @@ function ComponentShowcase() {
         subtitle="These are real FeatureDrop components running live. Click, interact, and see what ships in your app."
       />
 
+      <p className="text-center text-xs font-medium text-slate-400 dark:text-slate-500 mb-4 uppercase tracking-wider">
+        Try it live &mdash; click the tabs
+      </p>
+
       {/* Tab bar */}
-      <div className="flex flex-wrap justify-center gap-2 mb-8">
+      <div className="flex flex-wrap justify-center gap-2 mb-8" role="tablist" aria-label="Component demos">
         {showcaseTabs.map((tab) => {
           const Icon = tab.icon
+          const isActive = activeTab === tab.id
           return (
             <button
               key={tab.id}
               type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`tabpanel-${tab.id}`}
+              id={`tab-${tab.id}`}
               className="fd-showcase-tab flex items-center gap-2"
-              data-active={activeTab === tab.id}
+              data-active={isActive}
               onClick={() => setActiveTab(tab.id)}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-4 w-4" aria-hidden="true" />
               {tab.label}
             </button>
           )
@@ -665,15 +861,21 @@ function ComponentShowcase() {
       )}
 
       {/* Demo area */}
-      <div className="fd-glass p-6 sm:p-10 min-h-[350px] flex items-center justify-center relative overflow-hidden">
+      <div
+        role="tabpanel"
+        id={`tabpanel-${activeTab}`}
+        aria-labelledby={`tab-${activeTab}`}
+        className="fd-glass p-6 sm:p-10 min-h-[350px] flex items-center justify-center relative overflow-hidden"
+      >
         {/* Grid background */}
-        <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:14px_24px]" />
+        <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:14px_24px]" aria-hidden="true" />
         <div className="relative z-10 w-full">
           {activeTab === 'changelog' && <ChangelogShowcase />}
           {activeTab === 'tour' && <TourShowcase />}
           {activeTab === 'checklist' && <ChecklistShowcase />}
           {activeTab === 'banner' && <BannerShowcase />}
           {activeTab === 'feedback' && <FeedbackShowcase />}
+          {activeTab === 'hotspot' && <HotspotShowcase />}
         </div>
       </div>
 
@@ -705,10 +907,10 @@ function FeatureShowcaseLeft() {
           Drop a fully functional changelog into your app. Announce releases, collect reactions, and sync read-states without complex database glue code.
         </p>
         <ul className="space-y-3 pt-4 text-slate-700 dark:text-slate-300">
-          <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-brand" /> Markdown support with syntax highlighting</li>
-          <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-brand" /> Emoji reaction syncing</li>
-          <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-brand" /> Custom badge anchoring and auto-dismiss</li>
-          <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-brand" /> Audience-targeted release notes</li>
+          <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-brand" aria-hidden="true" /> Markdown support with syntax highlighting</li>
+          <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-brand" aria-hidden="true" /> Emoji reaction syncing</li>
+          <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-brand" aria-hidden="true" /> Custom badge anchoring and auto-dismiss</li>
+          <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-brand" aria-hidden="true" /> Audience-targeted release notes</li>
         </ul>
       </div>
 
@@ -718,7 +920,7 @@ function FeatureShowcaseLeft() {
         <div className="relative fd-glass-surface flex flex-col overflow-hidden p-0 h-[480px]">
           <div className="bg-slate-50 border-b border-slate-200/50 p-4 shrink-0 dark:bg-slate-900/50 dark:border-white/5 flex items-center justify-between">
             <span className="font-semibold text-slate-900 dark:text-white">What&#39;s New</span>
-            <span className="text-xs text-slate-500 cursor-pointer hover:text-brand transition-colors">Mark all read</span>
+            <button type="button" className="text-xs text-slate-500 cursor-pointer hover:text-brand transition-colors bg-transparent border-none p-0">Mark all read</button>
           </div>
           <div className="flex-1 p-5 space-y-6 overflow-hidden">
             {/* Entry 1 */}
@@ -780,10 +982,10 @@ function FeatureShowcaseRight() {
           Orchestrate product tours and interactive checklists in your React tree. Smart throttling ensures users aren&#39;t bombarded.
         </p>
         <ul className="space-y-3 pt-4 text-slate-700 dark:text-slate-300">
-          <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-brand" /> Smart popup throttling & Do Not Disturb</li>
-          <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-brand" /> Deep link directly into tour steps</li>
-          <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-brand" /> Progress persistence across devices</li>
-          <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-brand" /> Render prop API for full control</li>
+          <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-brand" aria-hidden="true" /> Smart popup throttling & Do Not Disturb</li>
+          <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-brand" aria-hidden="true" /> Deep link directly into tour steps</li>
+          <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-brand" aria-hidden="true" /> Progress persistence across devices</li>
+          <li className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-brand" aria-hidden="true" /> Render prop API for full control</li>
         </ul>
       </div>
     </div>
@@ -934,68 +1136,69 @@ function HowEasySection() {
   )
 }
 
+function ComparisonCell({ value, isFeaturedrop = false }: { value: ComparisonValue; isFeaturedrop?: boolean }) {
+  if (value === true) return <><CheckCircle2 className={`inline h-5 w-5 ${isFeaturedrop ? 'text-brand' : 'text-emerald-500'}`} aria-hidden="true" /><span className="sr-only">Yes</span></>
+  if (value === false) return <><span className="text-slate-300 dark:text-slate-600" aria-hidden="true">&mdash;</span><span className="sr-only">No</span></>
+  if (value === 'partial') return <><span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-amber-600 text-[10px] font-bold dark:bg-amber-900/30 dark:text-amber-400" aria-hidden="true">~</span><span className="sr-only">Partial</span></>
+  return <span className={`text-xs font-semibold ${isFeaturedrop ? 'text-brand' : 'text-slate-500 dark:text-slate-400'}`}>{value}</span>
+}
+
 function ComparisonSection() {
   return (
     <section className="my-24 md:my-40">
       <SectionHeading
         chip="Honest comparison"
-        title="Free vs. paid adoption tools"
-        subtitle="Same features. No monthly bill. No tracking pixels. You own the code."
+        title="How we stack up"
+        subtitle="Real names, real pricing. See where FeatureDrop wins and where competitors still have the edge."
       />
 
       <div className="fd-glass overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="border-b border-slate-200/50 dark:border-white/5">
-                <th className="text-left px-6 py-4 font-semibold text-slate-900 dark:text-white w-[40%]">Feature</th>
-                <th className="text-center px-4 py-4 w-[20%]">
+                <th className="text-left px-5 py-4 font-semibold text-slate-900 dark:text-white w-[28%]">Feature</th>
+                <th className="text-center px-3 py-4 w-[18%]">
                   <span className="font-bold text-brand">FeatureDrop</span>
                   <span className="block text-[10px] text-slate-500 mt-0.5">open source</span>
                 </th>
-                <th className="text-center px-4 py-4 font-medium text-slate-500 dark:text-slate-400 w-[20%]">
-                  Paid SaaS
+                <th className="text-center px-3 py-4 font-medium text-slate-500 dark:text-slate-400 w-[18%]">
+                  Beamer
                   <span className="block text-[10px] text-slate-400 mt-0.5">$49–249/mo</span>
                 </th>
-                <th className="text-center px-4 py-4 font-medium text-slate-500 dark:text-slate-400 w-[20%]">
-                  Enterprise
+                <th className="text-center px-3 py-4 font-medium text-slate-500 dark:text-slate-400 w-[18%]">
+                  Pendo
                   <span className="block text-[10px] text-slate-400 mt-0.5">$7k+/yr</span>
+                </th>
+                <th className="text-center px-3 py-4 font-medium text-slate-500 dark:text-slate-400 w-[18%]">
+                  Appcues
+                  <span className="block text-[10px] text-slate-400 mt-0.5">$249+/mo</span>
                 </th>
               </tr>
             </thead>
             <tbody>
               {comparisonRows.map((row) => (
                 <tr key={row.feature} className="border-b border-slate-100 dark:border-white/[0.03] last:border-b-0 transition-colors hover:bg-slate-50/50 dark:hover:bg-white/[0.01]">
-                  <td className="px-6 py-3.5 text-slate-700 dark:text-slate-300 font-medium">{row.feature}</td>
-                  <td className="text-center px-4 py-3.5">
-                    {'featuredrop' in row
-                      ? row.featuredrop
-                        ? <CheckCircle2 className="inline h-5 w-5 text-brand" />
-                        : <span className="text-slate-300 dark:text-slate-600">&mdash;</span>
-                      : <span className="font-bold text-brand">{row.fdVal}</span>
-                    }
-                  </td>
-                  <td className="text-center px-4 py-3.5">
-                    {'saas' in row
-                      ? row.saas
-                        ? <CheckCircle2 className="inline h-5 w-5 text-slate-400" />
-                        : <span className="text-slate-300 dark:text-slate-600">&mdash;</span>
-                      : <span className="text-slate-500 dark:text-slate-400">{row.saasVal}</span>
-                    }
-                  </td>
-                  <td className="text-center px-4 py-3.5">
-                    {'enterprise' in row
-                      ? row.enterprise
-                        ? <CheckCircle2 className="inline h-5 w-5 text-slate-400" />
-                        : <span className="text-slate-300 dark:text-slate-600">&mdash;</span>
-                      : <span className="text-slate-500 dark:text-slate-400">{row.entVal}</span>
-                    }
-                  </td>
+                  <td className="px-5 py-3 text-slate-700 dark:text-slate-300 font-medium">{row.feature}</td>
+                  <td className="text-center px-3 py-3"><ComparisonCell value={row.featuredrop} isFeaturedrop /></td>
+                  <td className="text-center px-3 py-3"><ComparisonCell value={row.beamer} /></td>
+                  <td className="text-center px-3 py-3"><ComparisonCell value={row.pendo} /></td>
+                  <td className="text-center px-3 py-3"><ComparisonCell value={row.appcues} /></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="mt-6 text-center">
+        <Link
+          href="/compare"
+          className="inline-flex items-center gap-2 text-sm font-medium text-brand hover:underline underline-offset-4"
+        >
+          Full comparison with 20+ features
+          <ArrowRight className="h-4 w-4" />
+        </Link>
       </div>
     </section>
   )
@@ -1003,9 +1206,9 @@ function ComparisonSection() {
 
 function ImpactStatsSection() {
   const impactStats = [
-    { value: 0, prefix: '$', suffix: '/mo', label: 'vs $249/mo paid tools', highlight: 'Save $2,988/yr', icon: DollarSign },
+    { value: 0, prefix: '$', suffix: '/mo', label: 'vs $249/mo paid tools', highlight: 'Save $2,988/yr vs Beamer', icon: DollarSign },
     { value: 30, prefix: '', suffix: 's', label: 'to first "New" badge', highlight: 'No config needed', icon: Zap },
-    { value: 3, prefix: '', suffix: ' kB', label: 'total footprint', highlight: 'vs 300 kB enterprise agents', icon: Package },
+    { value: 3, prefix: '', suffix: ' kB', label: 'total footprint', highlight: 'vs ~300 kB Pendo agent', icon: Package },
     { value: 8, prefix: '', suffix: '', label: 'frameworks supported', highlight: 'One library, every stack', icon: Globe },
   ]
 
@@ -1019,7 +1222,7 @@ function ImpactStatsSection() {
         <div className="relative z-10">
           <div className="text-center mb-12 md:mb-16">
             <span className="fd-chip !bg-white/10 !border-white/10 !text-white/60 mb-4 inline-block">Impact</span>
-            <h2 className="font-display text-3xl font-bold tracking-tight text-white md:text-4xl lg:text-5xl">
+            <h2 className="font-display text-3xl font-bold tracking-tight text-white md:text-4xl lg:text-5xl text-balance">
               The numbers that matter
             </h2>
             <p className="mt-4 text-lg text-slate-400 leading-relaxed max-w-2xl mx-auto">
@@ -1041,7 +1244,7 @@ function ImpactStatsSection() {
                   <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 mx-auto">
                     <Icon className="h-6 w-6 text-brand" />
                   </div>
-                  <p className="font-display text-4xl md:text-5xl font-extrabold tracking-tight text-white">
+                  <p className="font-display text-4xl md:text-5xl font-extrabold tracking-tight text-white tabular-nums">
                     {stat.prefix}{count}{stat.suffix}
                   </p>
                   <p className="text-sm font-medium text-slate-400">{stat.label}</p>
@@ -1056,49 +1259,104 @@ function ImpactStatsSection() {
   )
 }
 
+function CompareTeaser() {
+  const competitors = [
+    { name: 'FeatureDrop', price: '$0/mo', bundle: '< 3 kB', diff: 'Self-hosted, MIT licensed, zero deps', highlight: true },
+    { name: 'Beamer', price: '$49–249/mo', bundle: 'N/A (SaaS)', diff: 'Managed dashboard, email integration' },
+    { name: 'Pendo', price: '$7k+/yr', bundle: '~300 kB', diff: 'Full analytics suite, session replay' },
+  ]
+
+  return (
+    <section className="my-16 md:my-24">
+      <div className="text-center mb-10">
+        <span className="fd-chip mb-4 inline-block">See how we compare</span>
+        <h2 className="font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-white md:text-3xl text-balance">
+          Pick the right tool for your team
+        </h2>
+      </div>
+
+      <div className="grid gap-5 md:grid-cols-3">
+        {competitors.map((c) => (
+          <div
+            key={c.name}
+            className={`fd-glass-surface p-6 space-y-3 ${c.highlight ? 'ring-2 ring-brand/50 dark:ring-brand/30' : ''}`}
+          >
+            <h3 className={`font-display text-lg font-bold ${c.highlight ? 'text-brand' : 'text-slate-900 dark:text-white'}`}>
+              {c.name}
+            </h3>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-extrabold text-slate-900 dark:text-white">{c.price}</span>
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              Bundle: <span className="font-semibold">{c.bundle}</span>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{c.diff}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-6 text-center">
+        <Link
+          href="/compare"
+          className="inline-flex items-center gap-2 text-sm font-medium text-brand hover:underline underline-offset-4"
+        >
+          Full comparison
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+    </section>
+  )
+}
+
 function BuiltForSection() {
   const useCases = [
     {
       icon: Rocket,
       title: 'SaaS products',
       body: 'Announce features, run onboarding tours, collect feedback \u2014 all from one manifest.',
+      example: 'e.g. Announce dark mode to dashboard users',
     },
     {
       icon: Users,
       title: 'Developer tools',
       body: 'Version-aware badges, CLI-generated manifests, and CI validation out of the box.',
+      example: 'e.g. Guide users through CLI setup',
     },
     {
       icon: Globe,
       title: 'Multi-tenant platforms',
       body: 'Audience segmentation by plan, role, region, or any custom field. Show different features to different users.',
+      example: 'e.g. Roll out billing changes by plan tier',
     },
     {
       icon: Palette,
       title: 'Design systems',
       body: 'Headless components with render prop APIs. Map FeatureDrop primitives to your own design tokens.',
+      example: 'e.g. Themed changelog matching your brand',
     },
     {
       icon: BarChart3,
       title: 'Product analytics',
       body: 'Analytics callbacks for impression, dismissal, and engagement tracking. Pipe data anywhere.',
+      example: 'e.g. Track tour completion rates in Mixpanel',
     },
     {
       icon: Layers,
       title: 'Enterprise apps',
       body: 'Feature flag bridges, schema validation, security audits, and offline-safe storage adapters.',
+      example: 'e.g. Segment rollouts by team or role',
     },
   ]
 
   return (
-    <section className="my-24 md:my-40">
+    <section className="my-16 md:my-24">
       <SectionHeading
         chip="Use cases"
         title="Built for teams that ship"
         subtitle="From indie hackers to enterprise. One toolkit, zero compromise."
       />
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {useCases.map((item, i) => {
           const Icon = item.icon
           return (
@@ -1109,6 +1367,7 @@ function BuiltForSection() {
                 </div>
                 <h3 className="font-display text-lg font-semibold text-slate-900 dark:text-white relative z-10">{item.title}</h3>
                 <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400 relative z-10">{item.body}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 italic relative z-10 pt-1">{item.example}</p>
               </InteractiveCard>
             </RevealSection>
           )
@@ -1147,14 +1406,14 @@ function LaunchSequenceSection() {
   ]
 
   return (
-    <section className="my-24 md:my-40">
+    <section className="my-16 md:my-24">
       <SectionHeading
         chip="Get started"
         title="Your launch sequence"
         subtitle="A practical path to replacing expensive vendor lock-in today."
       />
 
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3">
         {steps.map((step, i) => {
           const Icon = step.icon
           return (
@@ -1192,8 +1451,8 @@ function LaunchSequenceSection() {
 
 function FrameworksSection() {
   return (
-    <section className="my-20">
-      <div className="text-center mb-8">
+    <section className="my-12">
+      <div className="text-center mb-6">
         <p className="text-sm font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
           Works with your stack
         </p>
@@ -1225,10 +1484,10 @@ function OpenSourceCTA() {
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 mx-auto">
             <Heart className="h-8 w-8" />
           </div>
-          <h2 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white md:text-5xl">
+          <h2 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white md:text-5xl text-balance">
             Free forever. <span className="text-brand">Really.</span>
           </h2>
-          <p className="mx-auto max-w-lg text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
+          <p className="mx-auto max-w-lg text-lg text-slate-600 dark:text-slate-400 leading-relaxed text-pretty">
             MIT licensed, no usage limits, no tracking, no enterprise upsell. Built at{' '}
             <a className="font-semibold text-slate-900 hover:text-brand dark:text-white underline-offset-4 hover:underline transition-colors" href="https://glincker.com">GLINR Studios</a>
             {' '}for products that respect their users.
@@ -1392,11 +1651,7 @@ export default function HomePage() {
   const isScrolled = useScrollDirection()
   const typewriterText = useTypewriter(heroTaglines)
 
-  // Auto-detect site URL: env var → featuredrop.dev default
-  const SITE_URL =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (typeof window !== 'undefined' && window.location.origin) ||
-    'https://featuredrop.dev'
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://featuredrop.dev'
 
   const OG_IMAGE = `${SITE_URL}/og/og.png`
 
@@ -1439,7 +1694,6 @@ export default function HomePage() {
           content="Free, open-source React toolkit. Ship changelogs, tours, checklists, hotspots, and feedback widgets from your own codebase. No SaaS fees. < 3 kB core."
         />
         <meta property="og:image" content={OG_IMAGE} />
-        <meta property="og:image:secure_url" content={OG_IMAGE} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:type" content="image/png" />
@@ -1588,18 +1842,18 @@ export default function HomePage() {
       {/* Ambient background */}
       <div className="pointer-events-none fixed inset-0 z-0 bg-fd-ambient dark:bg-fd-ambient-dark mix-blend-multiply dark:mix-blend-soft-light" />
 
-      {/* Floating orbs */}
-      <div className="pointer-events-none fixed left-[10%] top-[20%] z-0 h-[400px] w-[400px] animate-float rounded-full bg-brand-light/40 blur-[120px] dark:bg-brand/30" />
-      <div className="pointer-events-none fixed bottom-[10%] right-[10%] z-0 h-[500px] w-[500px] animate-float-delayed rounded-full bg-indigo-300/30 blur-[150px] dark:bg-indigo-900/40" />
-      <div className="pointer-events-none fixed left-[40%] top-[60%] z-0 h-[300px] w-[300px] animate-float rounded-full bg-acid/20 blur-[100px] dark:bg-acid/10" style={{ animationDuration: '12s' }} />
-      <div className="pointer-events-none fixed right-[40%] top-[10%] z-0 h-[600px] w-[600px] animate-float-delayed rounded-full bg-rose-300/20 blur-[140px] dark:bg-rose-900/20" style={{ animationDuration: '15s' }} />
+      {/* Ambient orbs (static — no animation to avoid GPU waste on decorative elements) */}
+      <div aria-hidden="true" className="pointer-events-none fixed left-[10%] top-[20%] z-0 h-[400px] w-[400px] rounded-full bg-brand-light/40 blur-[120px] dark:bg-brand/30" />
+      <div aria-hidden="true" className="pointer-events-none fixed bottom-[10%] right-[10%] z-0 h-[500px] w-[500px] rounded-full bg-indigo-300/30 blur-[150px] dark:bg-indigo-900/40" />
+      <div aria-hidden="true" className="pointer-events-none fixed left-[40%] top-[60%] z-0 h-[300px] w-[300px] rounded-full bg-acid/20 blur-[100px] dark:bg-acid/10" />
+      <div aria-hidden="true" className="pointer-events-none fixed right-[40%] top-[10%] z-0 h-[600px] w-[600px] rounded-full bg-rose-300/20 blur-[140px] dark:bg-rose-900/20" />
 
       {/* Glass header */}
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 pt-4 px-4 ${isScrolled ? 'top-2' : ''}`}>
         <div className={`mx-auto max-w-6xl transition-all duration-500 rounded-3xl ${isScrolled ? 'fd-glass border-white/60 bg-white/70 shadow-glass py-3 px-5 dark:border-white/10 dark:bg-slate-900/70' : 'bg-transparent border-transparent py-4 px-2'}`}>
           <div className="flex items-center justify-between">
             <Link href="/" className="transition-opacity hover:opacity-80"><FeatureDropLogoLockup /></Link>
-            <nav className="flex items-center gap-3 md:gap-4">
+            <nav className="flex items-center gap-3 md:gap-4" aria-label="Main navigation">
               <Link
                 className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
                 href="/docs"
@@ -1643,60 +1897,157 @@ export default function HomePage() {
         </div>
       </header>
 
-      <div className="relative z-10 mx-auto max-w-6xl px-4 pt-32 pb-16 md:px-8">
+      <div className="relative z-10 mx-auto max-w-6xl px-4 pt-24 pb-16 md:px-8">
 
         {/* ──── HERO ──── */}
-        <section className="relative flex min-h-[70vh] flex-col items-center justify-center text-center">
-          <div className="animate-fade-in-up space-y-8">
-            <div className="inline-flex items-center justify-center transform transition-transform hover:scale-105 duration-300">
-              <span className="fd-chip shadow-[0_0_20px_rgba(99,102,241,0.2)]">Free &amp; Open Source</span>
+        <section className="relative py-8 md:py-14">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center w-full">
+            {/* Left — Copy */}
+            <div className="animate-fade-in-up space-y-5 text-center lg:text-left">
+              <div className="inline-flex items-center justify-center lg:justify-start transform transition-transform hover:scale-105 duration-300">
+                <span className="fd-chip shadow-[0_0_20px_rgba(99,102,241,0.2)]">Free &amp; Open Source</span>
+              </div>
+
+              <h1 className="fd-hero-title font-display text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl md:text-6xl lg:text-[56px] xl:text-[64px] dark:text-white text-balance">
+                The open&#8209;source{' '}
+                <span className="fd-hero-title-gradient inline-block">
+                  <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-brand bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_200%]">
+                    product adoption
+                  </span>
+                </span>{' '}
+                toolkit.
+              </h1>
+
+              <p className="text-lg leading-relaxed text-slate-600 md:text-xl dark:text-slate-300/90 min-h-[3rem] max-w-xl mx-auto lg:mx-0">
+                <span aria-hidden="true">{typewriterText}<span className="fd-typewriter-cursor" /></span>
+                <span className="sr-only">Ship changelogs from your own codebase. Drop your SaaS adoption bill to $0. Onboard users with guided tours. Under 3 kB. Zero dependencies.</span>
+              </p>
+
+              {/* Stats */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-2 text-[13px] text-slate-500 dark:text-slate-400">
+                <span className="font-mono font-semibold text-brand">{'<'} 3 kB core</span>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <span>374 tests</span>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <span>8 frameworks</span>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <span>MIT licensed</span>
+              </div>
+
+              <div className="flex flex-col items-center lg:items-start gap-3 sm:flex-row pt-2">
+                <Link
+                  className="fd-cta group w-full justify-center sm:w-auto text-base px-8 py-3.5"
+                  href="/docs/quickstart"
+                  onClick={() => trackDocsEvent('landing_quickstart_clicked', { source: 'hero' })}
+                >
+                  Start quickstart
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
+                <Link
+                  className="fd-cta-secondary group w-full justify-center sm:w-auto text-base px-8 py-3.5"
+                  href="/playground"
+                  onClick={() => trackDocsEvent('landing_playground_clicked', { source: 'hero' })}
+                >
+                  Open playground
+                  <TerminalSquare className="ml-2 h-4 w-4 text-slate-400 dark:text-slate-500" />
+                </Link>
+              </div>
+
+              {/* Replaces row */}
+              <p className="text-xs text-slate-400 dark:text-slate-500 pt-1">
+                Replaces <span className="line-through">Beamer</span>, <span className="line-through">Pendo</span>, <span className="line-through">Appcues</span> &mdash; for $0.
+              </p>
             </div>
 
-            <h1 className="mx-auto max-w-4xl font-display text-5xl font-extrabold leading-[1.1] tracking-tight text-slate-900 md:text-7xl lg:text-[80px] dark:text-white">
-              The open&#8209;source <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-brand bg-clip-text text-transparent animate-gradient-shift bg-[length:200%_200%]">product&nbsp;adoption</span> toolkit.
-            </h1>
-
-            <p className="mx-auto max-w-2xl text-lg leading-relaxed text-slate-600 md:text-xl dark:text-slate-300/90 min-h-[3.5rem]">
-              <span aria-hidden="true">{typewriterText}<span className="fd-typewriter-cursor" /></span>
-              <span className="sr-only">Ship changelogs from your own codebase. Drop your SaaS adoption bill to $0. Onboard users with guided tours. Under 3 kB. Zero dependencies.</span>
-            </p>
-
-            {/* Stats */}
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-2 text-sm text-slate-500 dark:text-slate-400">
-              <span className="font-mono font-semibold text-brand">{'<'} 3 kB core</span>
-              <span className="hidden sm:inline text-slate-300 dark:text-slate-700">|</span>
-              <span>374 tests</span>
-              <span className="hidden sm:inline text-slate-300 dark:text-slate-700">|</span>
-              <span>15 React components</span>
-              <span className="hidden sm:inline text-slate-300 dark:text-slate-700">|</span>
-              <span>8 frameworks</span>
-              <span className="hidden sm:inline text-slate-300 dark:text-slate-700">|</span>
-              <span>MIT licensed</span>
-            </div>
-
-            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row pt-4">
-              <Link
-                className="fd-cta group w-full justify-center sm:w-auto text-base px-8 py-3.5"
-                href="/docs/quickstart"
-                onClick={() => trackDocsEvent('landing_quickstart_clicked', { source: 'hero' })}
-              >
-                Start quickstart
-                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Link>
-              <Link
-                className="fd-cta-secondary group w-full justify-center sm:w-auto text-base px-8 py-3.5"
-                href="/playground"
-                onClick={() => trackDocsEvent('landing_playground_clicked', { source: 'hero' })}
-              >
-                Open playground
-                <TerminalSquare className="ml-2 h-4 w-4 text-slate-400 dark:text-slate-500" />
-              </Link>
+            {/* Right — Live demo preview */}
+            <div className="flex items-center justify-center lg:justify-end animate-stagger-2">
+              <HeroDemo />
             </div>
           </div>
 
-          {/* Scroll indicator */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-scroll-indicator">
-            <ChevronDown className="h-6 w-6 text-slate-400 dark:text-slate-600" />
+        </section>
+
+        {/* ──── CAPABILITY BENTO GRID ──── */}
+        <section className="mt-6 mb-16 md:mb-24">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            {/* Large card — Changelog */}
+            <div className="col-span-2 row-span-2 fd-glass-surface fd-gradient-border p-6 md:p-8 flex flex-col justify-between group overflow-hidden relative">
+              <div className="relative z-10">
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400 mb-4">
+                  <Bell className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <h3 className="font-display text-xl font-bold text-slate-900 dark:text-white mb-2">Changelog Widget</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed text-pretty">In-app release notes with reactions, read-state, and audience targeting.</p>
+              </div>
+              {/* Mini preview */}
+              <div className="mt-5 space-y-2 relative z-10">
+                <div className="flex items-center gap-2 rounded-lg bg-slate-50 dark:bg-white/5 p-2.5">
+                  <span className="inline-flex items-center rounded-full bg-brand px-1.5 py-[1px] text-[8px] font-bold text-white">NEW</span>
+                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Dark Mode Parity</span>
+                  <span className="ml-auto text-[10px] text-slate-400">Today</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-lg bg-slate-50 dark:bg-white/5 p-2.5 opacity-60">
+                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Performance Boost</span>
+                  <span className="ml-auto text-[10px] text-slate-400">2d ago</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Tours */}
+            <div className="fd-glass-surface fd-gradient-border p-5 flex flex-col group overflow-hidden">
+              <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-600 dark:bg-teal-900/50 dark:text-teal-400 mb-3">
+                <Navigation className="h-4 w-4" aria-hidden="true" />
+              </div>
+              <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white mb-1">Product Tours</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Step-by-step guided walkthroughs with throttling.</p>
+              <div className="mt-auto pt-3 flex gap-1.5">
+                <span className="h-1.5 w-6 rounded-full bg-brand" />
+                <span className="h-1.5 w-6 rounded-full bg-brand/40" />
+                <span className="h-1.5 w-6 rounded-full bg-slate-200 dark:bg-white/10" />
+              </div>
+            </div>
+
+            {/* Checklists */}
+            <div className="fd-glass-surface fd-gradient-border p-5 flex flex-col group overflow-hidden">
+              <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400 mb-3">
+                <ListChecks className="h-4 w-4" aria-hidden="true" />
+              </div>
+              <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white mb-1">Checklists</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Onboarding flows with progress persistence.</p>
+              <div className="mt-auto pt-3 space-y-1">
+                <div className="h-1 rounded-full bg-slate-100 dark:bg-white/10 overflow-hidden">
+                  <div className="h-full w-2/3 rounded-full bg-emerald-500" />
+                </div>
+                <p className="text-[10px] text-slate-400 tabular-nums">2 of 3 complete</p>
+              </div>
+            </div>
+
+            {/* Feedback */}
+            <div className="fd-glass-surface fd-gradient-border p-5 flex flex-col group overflow-hidden">
+              <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-400 mb-3">
+                <MessageSquare className="h-4 w-4" aria-hidden="true" />
+              </div>
+              <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white mb-1">Feedback</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">NPS, CSAT, and contextual feedback widgets.</p>
+              <div className="mt-auto pt-3 flex gap-1">
+                {['😀', '😐', '😟'].map((e) => (
+                  <span key={e} className="h-7 w-7 rounded-md bg-slate-50 dark:bg-white/5 flex items-center justify-center text-sm">{e}</span>
+                ))}
+              </div>
+            </div>
+
+            {/* Feature Flags */}
+            <div className="fd-glass-surface fd-gradient-border p-5 flex flex-col group overflow-hidden">
+              <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400 mb-3">
+                <Workflow className="h-4 w-4" aria-hidden="true" />
+              </div>
+              <h3 className="font-display text-sm font-bold text-slate-900 dark:text-white mb-1">Feature Flags</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Bridge to LaunchDarkly, Statsig, or custom.</p>
+              <div className="mt-auto pt-3 flex items-center gap-2">
+                <span className="h-4 w-8 rounded-full bg-brand relative"><span className="absolute right-0.5 top-0.5 h-3 w-3 rounded-full bg-white" /></span>
+                <span className="text-[10px] font-semibold text-brand">ON</span>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -1751,6 +2102,11 @@ export default function HomePage() {
 
         {/* ──── IMPACT STATS ──── */}
         <ImpactStatsSection />
+
+        {/* ──── COMPARE TEASER ──── */}
+        <RevealSection delay={100}>
+          <CompareTeaser />
+        </RevealSection>
 
         {/* ──── COMPARISON ──── */}
         <ComparisonSection />
