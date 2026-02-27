@@ -18,6 +18,7 @@ Before merging to `main`, ensure the local environment is pristine:
 - [ ] `pnpm lint` yields zero warnings.
 - [ ] `pnpm test` core utility suites are green.
 - [ ] `pnpm docs:build` completes the Next.js static asset export successfully.
+- [ ] `pnpm --dir apps/docs qa:metadata` passes against exported docs pages.
 
 ## 2) Documentation Quality
 
@@ -35,6 +36,7 @@ Test the critical path for a new developer discovering the project:
 - [ ] The Landing Page's primary CTA routes correctly to `/docs/quickstart`.
 - [ ] The Quickstart's trailing CTA routes correctly to the `/playground`.
 - [ ] Ensure Outbound Analytics tracking events (`Plausible` or `Google Analytics`) are firing correctly in the network tab when navigating between pages.
+- [ ] Confirm `page_view` events fire on both initial page load and client-side route transitions.
 
 <Callout type="warning">
   **SEO & Social Validation**: 

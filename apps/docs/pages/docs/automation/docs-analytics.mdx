@@ -5,6 +5,7 @@ title: Docs Analytics
 # Docs Analytics
 
 Docs site events are already emitted from the UI via `trackDocsEvent(...)`.
+Route-level pageviews are also emitted from `_app.tsx` as `page_view`.
 
 This page shows how to wire actual providers so those events land in telemetry.
 
@@ -13,6 +14,7 @@ This page shows how to wire actual providers so those events land in telemetry.
 - Plausible (`window.plausible`)
 - Google Analytics / gtag (`window.gtag`)
 - Generic GTM-style `dataLayer` pushes
+- Optional self-hosted endpoint forwarding (`NEXT_PUBLIC_ANALYTICS_ENDPOINT`)
 
 ## Environment variables
 
@@ -21,12 +23,15 @@ Set one or both:
 ```bash
 NEXT_PUBLIC_PLAUSIBLE_DOMAIN=docs.glincker.com
 NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+NEXT_PUBLIC_ANALYTICS_ENDPOINT=https://your-api.example.com/docs-analytics
 ```
 
 When set, scripts are auto-injected from `apps/docs/theme.config.tsx`.
+When `NEXT_PUBLIC_ANALYTICS_ENDPOINT` is set, docs events/pageviews are forwarded from the client via `sendBeacon` fallbacking to `fetch(..., { keepalive: true })`.
 
 ## Events currently emitted
 
+- `page_view` (on initial load and route changes)
 - `landing_quickstart_clicked`
 - `landing_playground_clicked`
 - `landing_docs_clicked`
@@ -43,6 +48,19 @@ Every event includes:
 
 - `path` (current pathname)
 - source/context fields where relevant (`source`, `destination`, `title`, `target`)
+
+`page_view` includes:
+
+- `page_path`
+- `page_location`
+- `page_title`
+
+Endpoint-forwarded envelope shape:
+
+- `type`: `event` or `page_view`
+- `eventName` for `event` entries
+- `payload`
+- `sentAt` (ISO timestamp)
 
 ## Verify locally
 

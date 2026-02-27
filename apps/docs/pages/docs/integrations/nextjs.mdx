@@ -80,7 +80,36 @@ Expected endpoints:
 - `GET /api/featuredrop`
 - `GET /api/featuredrop/state`
 - `POST /api/featuredrop/dismiss`
+- `POST /api/featuredrop/dismiss-batch` (optional, for burst dismiss traffic)
 - `POST /api/featuredrop/dismiss-all`
+
+Minimal App Router handlers:
+
+```ts filename="app/api/featuredrop/dismiss-batch/route.ts"
+import { NextResponse } from 'next/server'
+
+export async function POST(req: Request) {
+  const body = (await req.json()) as { featureIds?: string[] }
+  const featureIds = Array.isArray(body.featureIds) ? body.featureIds.filter(Boolean) : []
+  if (!featureIds.length) return NextResponse.json({ ok: true })
+
+  // Persist to your DB by user/session.
+  await saveDismissBatch(featureIds)
+  return NextResponse.json({ ok: true })
+}
+```
+
+```ts filename="app/api/featuredrop/dismiss/route.ts"
+import { NextResponse } from 'next/server'
+
+export async function POST(req: Request) {
+  const body = (await req.json()) as { featureId?: string }
+  if (!body.featureId) return NextResponse.json({ error: 'featureId required' }, { status: 400 })
+
+  await saveDismiss(body.featureId)
+  return NextResponse.json({ ok: true })
+}
+```
 
 <Callout type="warning">
   Do not create a new storage adapter instance inside frequently re-rendering leaf components. Keep adapter/provider setup stable at app-shell level.

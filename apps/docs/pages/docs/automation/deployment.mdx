@@ -30,6 +30,7 @@ Optional analytics vars:
 
 - `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`
 - `NEXT_PUBLIC_GA_ID`
+- `NEXT_PUBLIC_ANALYTICS_ENDPOINT` (optional event forwarder target)
 
 ## GitHub Pages notes
 
@@ -57,6 +58,7 @@ Run before pushing:
 pnpm lint
 pnpm --dir apps/docs build
 pnpm --dir apps/docs qa:export
+pnpm --dir apps/docs qa:metadata
 ```
 
 Then verify:

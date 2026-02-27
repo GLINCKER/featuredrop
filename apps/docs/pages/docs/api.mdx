@@ -97,6 +97,8 @@ import {
 
 Use this entrypoint for non-core adapters (remote, hybrid, and server-side database adapters).
 
+`RemoteAdapter` also exposes `flushPendingDismisses()` and `destroy()` for aggressive queue durability and teardown-safe cleanup.
+
 ## React SDK (`featuredrop/react`)
 
 ### Provider
