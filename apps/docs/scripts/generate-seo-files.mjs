@@ -4,7 +4,35 @@ import path from 'node:path'
 const ROOT = process.cwd()
 const DOCS_PAGES_DIR = path.join(ROOT, 'pages', 'docs')
 const PUBLIC_DIR = path.join(ROOT, 'public')
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://featuredrop-docs.vercel.app').replace(/\/+$/, '')
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://featuredrop.dev').replace(/\/+$/, '')
+
+// Priority tiers — higher priority pages get crawled more aggressively
+const PRIORITY_MAP = {
+  '/': { priority: '1.0', changefreq: 'weekly' },
+  '/docs/': { priority: '0.9', changefreq: 'weekly' },
+  '/docs/quickstart/': { priority: '0.9', changefreq: 'monthly' },
+  '/docs/api/': { priority: '0.8', changefreq: 'monthly' },
+  '/docs/components/gallery/': { priority: '0.8', changefreq: 'monthly' },
+  '/docs/migration/': { priority: '0.8', changefreq: 'monthly' },
+  '/playground/': { priority: '0.7', changefreq: 'monthly' },
+}
+
+const SECTION_DEFAULTS = {
+  '/docs/components/': { priority: '0.7', changefreq: 'monthly' },
+  '/docs/frameworks/': { priority: '0.7', changefreq: 'monthly' },
+  '/docs/integrations/': { priority: '0.6', changefreq: 'monthly' },
+  '/docs/adapters/': { priority: '0.6', changefreq: 'monthly' },
+  '/docs/concepts/': { priority: '0.5', changefreq: 'monthly' },
+  '/docs/automation/': { priority: '0.5', changefreq: 'monthly' },
+}
+
+function getRouteMeta(route) {
+  if (PRIORITY_MAP[route]) return PRIORITY_MAP[route]
+  for (const [prefix, meta] of Object.entries(SECTION_DEFAULTS)) {
+    if (route.startsWith(prefix)) return meta
+  }
+  return { priority: '0.5', changefreq: 'monthly' }
+}
 
 async function collectMdxFiles(dir, acc = []) {
   const entries = await readdir(dir, { withFileTypes: true })
@@ -33,19 +61,38 @@ function uniqueSorted(routes) {
 }
 
 function buildSitemapXml(routes) {
+  const today = new Date().toISOString().split('T')[0]
   const lines = [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
+    '        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"',
+    '        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9',
+    '        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">'
   ]
   for (const route of routes) {
-    lines.push(`  <url><loc>${siteUrl}${route}</loc></url>`)
+    const { priority, changefreq } = getRouteMeta(route)
+    lines.push('  <url>')
+    lines.push(`    <loc>${siteUrl}${route}</loc>`)
+    lines.push(`    <lastmod>${today}</lastmod>`)
+    lines.push(`    <changefreq>${changefreq}</changefreq>`)
+    lines.push(`    <priority>${priority}</priority>`)
+    lines.push('  </url>')
   }
   lines.push('</urlset>')
   return `${lines.join('\n')}\n`
 }
 
 function buildRobotsTxt() {
-  return `User-agent: *\nAllow: /\n\nSitemap: ${siteUrl}/sitemap.xml\n`
+  return [
+    'User-agent: *',
+    'Allow: /',
+    '',
+    '# Crawl-delay for polite bots',
+    'Crawl-delay: 1',
+    '',
+    `Sitemap: ${siteUrl}/sitemap.xml`,
+    ''
+  ].join('\n')
 }
 
 async function ensurePublicDir() {
@@ -61,6 +108,8 @@ async function run() {
 
   await writeFile(path.join(PUBLIC_DIR, 'sitemap.xml'), buildSitemapXml(routes), 'utf8')
   await writeFile(path.join(PUBLIC_DIR, 'robots.txt'), buildRobotsTxt(), 'utf8')
+
+  console.log(`[docs-seo] Generated sitemap.xml (${routes.length} URLs) + robots.txt`)
 }
 
 run().catch((error) => {

@@ -1222,6 +1222,59 @@ export default function HomePage() {
           }}
         />
 
+        {/* ── JSON-LD: FAQPage (enables Google FAQ rich results) ── */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'FAQPage',
+              mainEntity: [
+                {
+                  '@type': 'Question',
+                  name: 'What is FeatureDrop?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'FeatureDrop is a free, open-source product adoption toolkit for React. It provides changelog widgets, guided tours, onboarding checklists, hotspots, banners, toasts, feedback widgets, and surveys — all from your own codebase with zero SaaS fees.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'Is FeatureDrop free?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Yes, FeatureDrop is 100% free and open-source under the MIT license. There are no paid tiers, no usage limits, and no tracking. You own your data.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'How does FeatureDrop compare to Beamer and Pendo?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Unlike Beamer ($49–249/mo) and Pendo ($7k+/yr), FeatureDrop is free and self-hosted. The core bundle is under 3 kB gzipped versus Pendo\'s ~300 kB agent. FeatureDrop includes tours, checklists, feedback, and feature flags that Beamer lacks, all without vendor lock-in.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'What frameworks does FeatureDrop support?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'FeatureDrop supports React, Vue 3, Svelte 5, Solid.js, Preact, Angular, Web Components, and vanilla JavaScript. The core engine is framework-agnostic with dedicated bindings for each framework.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'How big is FeatureDrop?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'The core engine is under 3 kB gzipped with zero production dependencies. React bindings add about 12 kB. Everything is tree-shakable via subpath exports so you only ship what you use.',
+                  },
+                },
+              ],
+            }),
+          }}
+        />
+
         {/* ── JSON-LD: WebSite (enables Google Sitelinks Search Box) ── */}
         <script
           type="application/ld+json"
