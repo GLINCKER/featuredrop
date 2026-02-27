@@ -1,0 +1,56 @@
+---
+title: React Router Integration
+---
+
+import { Callout } from 'nextra/components'
+
+# React Router Integration
+
+For SPA apps, put `FeatureDropProvider` above route switching so state survives navigation.
+
+```tsx filename="src/main.tsx"
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { LocalStorageAdapter } from 'featuredrop'
+import { ChangelogWidget, FeatureDropProvider, Tour } from 'featuredrop/react'
+import { manifest } from './featuredrop.manifest'
+
+function AppShell() {
+  return (
+    <FeatureDropProvider
+      manifest={manifest}
+      storage={new LocalStorageAdapter({ prefix: 'featuredrop' })}
+      appVersion={__APP_VERSION__}
+    >
+      <ChangelogWidget />
+      <Tour tourId="first-session-tour" />
+
+      <Routes>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+      </Routes>
+    </FeatureDropProvider>
+  )
+}
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <BrowserRouter>
+    <AppShell />
+  </BrowserRouter>
+)
+```
+
+## Common mistakes
+
+- Mounting provider inside page components (state resets on every route change)
+- Recreating adapter instances on every render
+- Mounting route-crossing tours too low in the tree
+
+## Route-aware triggers
+
+If you use `FeatureEntry.trigger` with route conditions, ensure path updates occur through Router navigation so provider trigger context stays current.
+
+<Callout type="info">
+  Keep one provider per product shell unless you intentionally want isolated state.
+</Callout>

@@ -1,0 +1,76 @@
+---
+title: Troubleshooting Guide
+---
+
+import { Callout } from 'nextra/components'
+
+# Troubleshooting Guide
+
+When integrating a library that handles global React Context, network storage synchronization, and complex DOM placement math, edge cases can arise.
+
+This guide outlines the most common integration pitfalls and how to resolve them immediately.
+
+## Entries Not Showing in the UI
+
+If a `<ChangelogWidget>`, `<Tour>`, or `<NewBadge>` mounts but renders nothing:
+
+- **Time Windows**: Verify the `releaseDate` in your manifest. If the date is in the future, or the `hideAfter` date has already passed, the engine silently discards the entry. This is the most common cause of missing entries in production.
+- **Version Pinning**: If you are using the `version` field, ensure the `appVersion` string passed to `FeatureDropProvider` is `>=` the version declared in the manifest entry.
+- **Audience Targeting**: Confirm that the `audience` arrays match exactly what you are passing as the `audience` prop on the provider. The matching is an intersection check — both arrays must share at least one value.
+- **Dependency Gating**: If you set `dependsOn`, the user must have previously seen all referenced feature IDs. Check the storage adapter state to verify their history.
+
+<Callout type="info">
+  In development, you can bypass all engine rules by temporarily setting `devMode={true}` on the `FeatureDropProvider`. This forces all entries to be visible regardless of targeting or version conditions.
+</Callout>
+
+## Spotlights and Hotspots Floating Incorrectly
+
+If an anchored component like `<Hotspot>` or `<Spotlight>` appears behind your app shell or floating in the wrong position:
+
+- **Z-Index Collisions**: Your navigation bars or modal wrappers likely have a higher `z-index` than FeatureDrop's portal. Increase the z-index via the `--fd-z-index` CSS variable in your global stylesheet.
+- **Missing DOM Target**: Ensure the target selector (e.g., `target="#export-btn"`) exists in the DOM before the FeatureDrop component mounts. Use the `waitForElement` prop to defer rendering until the target node is available.
+- **Scrolled Viewports**: Anchoring positions are computed relative to the viewport at mount time. If the target element is inside a scrollable container, pass `scrollContainer` to let FeatureDrop recompute positioning on scroll.
+
+## Duplicate React Instance Error
+
+If you see an error like `Cannot read properties of null (reading 'useRef')` or `Invalid hook call`:
+
+<Callout type="warning">
+  This almost always means your monorepo or bundler is resolving **two separate instances of React**. FeatureDrop must resolve to the exact same `node_modules/react` path as your host application. Force aliasing in your Webpack or Vite config:
+
+  ```ts filename="vite.config.ts"
+  import path from 'path'
+  export default {
+    resolve: {
+      alias: {
+        react: path.resolve('./node_modules/react')
+      }
+    }
+  }
+  ```
+</Callout>
+
+## Remote Sync Lag or Cross-Device State Mismatch
+
+If users on different devices see different Tour or dismissal states:
+
+- **Circuit Breaker**: Check your network tab. If your backend API is slow or returning 5xx errors, the `RemoteAdapter` circuit breaker halts requests automatically to protect the main thread. Errors will be logged to the console.
+- **Post-Login Sync**: When using `HybridAdapter`, you must manually call `syncFromRemote()` after a successful authentication. The hybrid adapter does not have access to auth lifecycle events.
+- **Race Conditions**: If state is being read immediately after a write, ensure the adapter's `setState()` call has resolved before re-reading. All adapter methods return Promises.
+
+## Build-Time Manifest Errors
+
+Run these commands to diagnose manifest issues before they hit production:
+
+```bash
+# Validate schema and semantic rules
+npx featuredrop validate --pattern "features/**/*.md"
+
+# Run quality diagnostics (duplicate IDs, date ranges, dependency cycles)
+npx featuredrop doctor --pattern "features/**/*.md"
+```
+
+<Callout type="info">
+  If none of these solutions unblock you, open an Issue on GitHub with a minimal, reproducible CodeSandbox environment that demonstrates the problem.
+</Callout>
+

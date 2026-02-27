@@ -1,0 +1,64 @@
+---
+title: The Changelog Components
+---
+
+import { Tabs, Tab, Callout } from 'nextra/components'
+import { ChangelogDemo } from '../../../components/demos/changelog-demo'
+import { ChangelogPageDemo } from '../../../components/demos/changelog-page-demo'
+
+# The Changelog Components
+
+FeatureDrop separates changelogs into two distinct structural concepts: **Contextual Discovery** and **Historical Reference**. 
+
+Instead of forcing you to use a single bulky component that tries to do both, we provide two specific primitives.
+
+<Tabs items={["The Widget (Contextual)", "The Page (Historical)"]}>
+  <Tab>
+    ### ChangelogWidget
+    The `ChangelogWidget` is a compact, floating popover designed for contextual discovery. It typically binds to a notification bell or "What's New" button in your navbar. 
+    
+    It only loads the most recent `N` features, making it incredibly lightweight. When a user clicks a `<NewBadge />`, the widget is the surface that orchestrates the "mark as read" logic.
+  </Tab>
+  <Tab>
+    ### ChangelogPage
+    The `ChangelogPage` is a full-width, long-form component meant to act as a dedicated `/updates` route in your application. 
+    
+    It automatically supports SEO-friendly routing, pagination (or "Load More" logic), and includes built-in semantic search and category filters so users can dig through your launch history.
+  </Tab>
+</Tabs>
+
+<Callout type="info">
+  **The recommended path**: Start by implementing the `<ChangelogWidget>` in your navbar. It will take less than 10 minutes and provide immediate value. Once your feature volume grows and users request searchable history, mount the `<ChangelogPage>` on a dedicated route.
+</Callout>
+
+---
+
+## The Widget Demo
+
+This interactive demo shows the floating Widget. Notice how the internal logic handles the unread Badge counts automatically.
+
+<ChangelogDemo />
+
+---
+
+## The Page Demo
+
+This interactive demo shows the embedded `<ChangelogPage>` component rendering a paginated, filterable feed. You can mount this standalone by wrapping it in the `<FeatureDropProvider>`:
+
+```tsx filename="app/updates/page.tsx"
+import { MemoryAdapter } from 'featuredrop'
+import { FeatureDropProvider, ChangelogPage } from 'featuredrop/react'
+import { manifest } from '../../featuredrop.config'
+
+const storage = new MemoryAdapter()
+
+export default function ChangelogRoute() {
+  return (
+    <FeatureDropProvider manifest={manifest} storage={storage}>
+      <ChangelogPage pageSize={3} showFilters showSearch pagination="load-more" />
+    </FeatureDropProvider>
+  )
+}
+```
+
+<ChangelogPageDemo />

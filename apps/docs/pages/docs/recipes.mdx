@@ -1,0 +1,89 @@
+---
+title: Recipes
+---
+
+import { Tabs } from 'nextra/components'
+
+# Recipes
+
+Recipes are practical implementation patterns optimized for shipping speed.
+
+## Start here
+
+- [Repository recipe guide](https://github.com/GLINCKER/featuredrop/blob/main/docs/RECIPES.md)
+
+## High-value recipes
+
+- Sidebar "What's New" badge + changelog widget
+- Banner -> Tour -> Spotlight launch sequence
+- Feedback + survey collection loop
+- Beamer/Headway migration setup
+- Remote + offline adapter rollout strategy
+
+## Copy-paste starters
+
+<Tabs items={['Launch feed', 'Sequenced onboarding', 'Remote + offline']}>
+  <Tabs.Tab>
+
+```tsx filename="release-feed.tsx"
+import { MemoryAdapter } from 'featuredrop'
+import { FeatureDropProvider, ChangelogWidget, NewBadge } from 'featuredrop/react'
+import { manifest } from './featuredrop.manifest'
+
+export function ReleaseFeed() {
+  return (
+    <FeatureDropProvider manifest={manifest} storage={new MemoryAdapter()}>
+      <nav>
+        Settings <NewBadge featureId="settings-redesign" />
+      </nav>
+      <ChangelogWidget />
+    </FeatureDropProvider>
+  )
+}
+```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```tsx filename="onboarding-flow.tsx"
+import { MemoryAdapter } from 'featuredrop'
+import { FeatureDropProvider, Banner, Tour, Checklist } from 'featuredrop/react'
+import { manifest } from './featuredrop.manifest'
+
+export function OnboardingFlow() {
+  return (
+    <FeatureDropProvider manifest={manifest} storage={new MemoryAdapter()}>
+      <Banner featureId="v2-launch" />
+      <Tour tourId="v2-tour" />
+      <Checklist checklistId="v2-checklist" />
+    </FeatureDropProvider>
+  )
+}
+```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```ts filename="adapter-strategy.ts"
+import { HybridAdapter, IndexedDBAdapter, RemoteAdapter } from 'featuredrop'
+
+const local = new IndexedDBAdapter({ dbName: 'featuredrop' })
+const remote = new RemoteAdapter({ url: '/api/featuredrop/state', fetchInterval: 300_000 })
+
+export const storage = new HybridAdapter({
+  local,
+  remote,
+  syncOnInit: true,
+  syncInterval: 60_000
+})
+```
+
+  </Tabs.Tab>
+</Tabs>
+
+## Recommended workflow
+
+- Copy the nearest recipe
+- Run locally with component demos
+- Add CI checks (`size-check`, `security-check`) before merge
+- Add `npx featuredrop validate` in CI to catch schema drift before deploy

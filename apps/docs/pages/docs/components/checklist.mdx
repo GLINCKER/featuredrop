@@ -1,0 +1,29 @@
+---
+title: The Checklist Component
+---
+
+import { Callout } from 'nextra/components'
+import { ChecklistDemo } from '../../../components/demos/checklist-demo'
+
+# The Checklist Component
+
+When you have a complex onboarding flow that requires the user to accomplish multiple asynchronous tasks (e.g., "Connect your Bank Account," "Invite a Team Member," "Create your first Invoice"), a synchronous Tour is the wrong tool.
+
+Instead, use a `<Checklist>`. Checklists are resilient, task-driven components that persist across sessions and encourage progressive activation.
+
+## Usage & Strategy
+
+Checklists render a fixed, inline UI (like a card on a dashboard) or a floating widget.
+
+- **Persistent State**: The checklist tracks the completion of each sub-task against your `StorageAdapter`. If a user completes step 1 and closes their laptop, the progress bar remains intact when they return tomorrow.
+- **Dependency Gating**: You can configure checklist steps to remain locked until a user has completed prior features defined in your Manifest.
+
+<Callout type="tip">
+  **Best Practices**: Keep checklists short (3-7 tasks maximum). Always put the "Aha! Moment" task near the top so the user experiences the core value proposition of your application immediately.
+</Callout>
+
+## Interactive Demo
+
+The code block below demonstrates how a `<Checklist>` is rendered. Notice how the completion state is passed down to individual `Task` render functions so you can fully customize the presentation of completed vs. pending rows.
+
+<ChecklistDemo />

@@ -1,0 +1,85 @@
+---
+title: Next.js Integration
+---
+
+import { Callout } from 'nextra/components'
+
+# Next.js Integration
+
+Use a client wrapper in App Router, then mount `FeatureDropProvider` once near the root.
+
+## App Router pattern (`app/`)
+
+```tsx filename="app/providers.tsx"
+'use client'
+
+import { LocalStorageAdapter } from 'featuredrop'
+import { FeatureDropProvider } from 'featuredrop/react'
+import type { FeatureManifest } from 'featuredrop'
+
+export function Providers({
+  children,
+  manifest,
+  appVersion
+}: {
+  children: React.ReactNode
+  manifest: FeatureManifest
+  appVersion: string
+}) {
+  return (
+    <FeatureDropProvider
+      manifest={manifest}
+      storage={new LocalStorageAdapter({ prefix: 'featuredrop' })}
+      appVersion={appVersion}
+    >
+      {children}
+    </FeatureDropProvider>
+  )
+}
+```
+
+```tsx filename="app/layout.tsx"
+import { Providers } from './providers'
+import { manifest } from '@/featuredrop.manifest'
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const appVersion = process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0'
+
+  return (
+    <html lang="en">
+      <body>
+        <Providers manifest={manifest} appVersion={appVersion}>
+          {children}
+        </Providers>
+      </body>
+    </html>
+  )
+}
+```
+
+## Where to mount UI components
+
+Mount long-lived UI once (for example in your root layout shell):
+
+- `<ChangelogWidget />`
+- global `<Toast />`
+- `<Tour />` if it should persist across route transitions
+
+## Using remote state in Next.js
+
+If you persist dismissals remotely, use `RemoteAdapter` with an API route:
+
+```ts
+new RemoteAdapter({ url: '/api/featuredrop' })
+```
+
+Expected endpoints:
+
+- `GET /api/featuredrop`
+- `GET /api/featuredrop/state`
+- `POST /api/featuredrop/dismiss`
+- `POST /api/featuredrop/dismiss-all`
+
+<Callout type="warning">
+  Do not create a new storage adapter instance inside frequently re-rendering leaf components. Keep adapter/provider setup stable at app-shell level.
+</Callout>

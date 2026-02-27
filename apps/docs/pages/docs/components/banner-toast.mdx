@@ -1,0 +1,35 @@
+---
+title: The Banner & Toast
+---
+
+import { Callout } from 'nextra/components'
+import { BannerToastDemo } from '../../../components/demos/banner-toast-demo'
+
+# The Banner & Toast Components
+
+While FeatureDrop includes modal takeovers like the Announcement Modal, often you simply need to alert the user to a change without blocking their current workflow. For this, we provide the `<Banner>` and `<Toast>` primitives.
+
+## Usage & Strategy
+
+These two components serve distinct psychological roles in an application interface.
+
+### The Banner
+Use a `<Banner>` for high-importance, persistent updates that should remain continuously visible until the user explicitly acknowledges them. Banners typically mount flush to the top or bottom of your viewport or a specific container. 
+
+*Example: "Our privacy policy is changing next week. Please review."*
+
+### The Toast
+Use a `<Toast>` for lightweight, ephemeral notifications and quick acknowledgements. Toasts typically float in the corner of the screen and automatically dismiss themselves after a few seconds.
+
+*Example: "Dark mode is now available. Try it out!"*
+
+<Callout type="tip">
+  **The Staged Launch Strategy**: 
+  A common best practice is to combine both components during a staged launch. You can mount a persistent `<Banner>` that warns users of an upcoming deadline for 14 days, and then on launch day, hit them with a celebratory `<Toast>`.
+</Callout>
+
+## Interactive Demo
+
+The demo below allows you to trigger both a Banner and a Toast to compare their visual weight and UX flow interactively.
+
+<BannerToastDemo />

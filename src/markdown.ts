@@ -1,4 +1,4 @@
-import { createRequire } from "module";
+import * as moduleApi from "module";
 
 // Lightweight markdown parser with optional `marked` + `shiki` support.
 // The function is synchronous and always returns sanitized HTML.
@@ -19,12 +19,14 @@ type ShikiLike = {
   codeToHtml?: (code: string, options?: { lang?: string; theme?: string }) => string | Promise<string>;
 };
 
-const dynamicRequire = createRequire(import.meta.url);
+const dynamicRequire =
+  typeof moduleApi.createRequire === "function" ? moduleApi.createRequire(import.meta.url) : null;
 
 let cachedMarked: MarkedModule | null | false = null;
 let cachedShiki: ShikiLike | null | false = null;
 
 function optionalRequire<T>(name: string): T | null {
+  if (!dynamicRequire) return null;
   try {
     // Using dynamic require so missing optional peers don't break bundling/runtime.
     return dynamicRequire(name) as T;

@@ -1,0 +1,44 @@
+---
+title: Adapters Overview
+---
+
+import { Cards, Card, Callout } from 'nextra/components'
+
+# Adapters Overview
+
+In FeatureDrop, UI components like `NewBadge` and `Tour` do not manage their own permanent state. Instead, they delegate reading and writing to an abstract **Adapter**.
+
+Adapters define exactly how and where FeatureDrop stores its synchronization state (such as the `watermark`, user dismissals, and interaction history). Because all adapters implement the identical `StorageAdapter` interface, you can swap your entire persistence layer from `localStorage` to `PostgreSQL` without rewriting a single React component.
+
+<Callout type="info">
+  **Selection Strategy**: Pick your adapter based on your application's reliability and latency requirements, not just implementation convenience.
+</Callout>
+
+## The Selection Matrix
+
+<Cards>
+  <Card title="MemoryAdapter" href="/docs/adapters/overview#">
+    Fast local tests, UI playground demos, and ephemeral browsing sessions. State resets on refresh.
+  </Card>
+  <Card title="RemoteAdapter" href="/docs/adapters/remote">
+    Centralized state across devices with built-in retry and health checks.
+  </Card>
+  <Card title="IndexedDBAdapter" href="/docs/adapters/indexeddb">
+    Offline-first browser persistence with queued background synchronization.
+  </Card>
+  <Card title="HybridAdapter" href="/docs/adapters/hybrid">
+    The best of both worlds: Local-first UX speed with eventual remote consistency to a backend.
+  </Card>
+  <Card title="Database Adapters" href="/docs/adapters/databases">
+    Server-side persistence directly to your SQL/NoSQL backends inside standard API routes.
+  </Card>
+</Cards>
+
+## Practical Decision Guide
+
+If you are just starting out, there is a clear upgrade path you should follow as your application matures:
+
+1. **Development**: Start with `MemoryAdapter` in development and component sandbox tests. It requires zero configuration.
+2. **Launch**: Move to `RemoteAdapter` when you release. You'll need state to be shared across a user's mobile phone and their desktop browser so they don't see the same Tour twice.
+3. **Scaling**: Add `IndexedDBAdapter` or `HybridAdapter` if you deploy an offline-capable PWA or operate in unstable connectivity environments (like enterprise field apps).
+4. **Data Ownership**: Use the Database adapters in your Node/Next.js backend if you require strict data ownership and want to easily `JOIN` feature adoption records against your core product analytics tables.

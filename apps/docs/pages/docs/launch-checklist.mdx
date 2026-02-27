@@ -1,0 +1,48 @@
+---
+title: The Launch Checklist
+---
+
+import { Callout } from 'nextra/components'
+
+# The Launch Checklist
+
+FeatureDrop is a critical piece of application infrastructure. If your `FeatureDropProvider` fails to mount, it can block users from interacting with your entire React tree. 
+
+Use this rigorous pre-flight checklist before every major `featuredrop` package bump or docs release to ensure maximum stability.
+
+## 1) Build & Type Safety
+
+Before merging to `main`, ensure the local environment is pristine:
+
+- [ ] `pnpm build` passes without TS errors.
+- [ ] `pnpm lint` yields zero warnings.
+- [ ] `pnpm test` core utility suites are green.
+- [ ] `pnpm docs:build` completes the Next.js static asset export successfully.
+
+## 2) Documentation Quality
+
+The `apps/docs` site is the primary marketing and educational surface:
+
+- [ ] Read through the `/docs/quickstart` sequentially to ensure the copy matches the current API.
+- [ ] Verify at least one interactive live `<Demo />` works for every core component family.
+- [ ] Toggle Dark and Light mode to ensure CSS Custom Properties are overriding correctly without contrast issues.
+- [ ] Ensure footer copyright links (`AskVerdict AI`, `GLINR STUDIOS`, `GLINCKER`) are valid and not dead.
+
+## 3) Funnel & Conversion
+
+Test the critical path for a new developer discovering the project:
+
+- [ ] The Landing Page's primary CTA routes correctly to `/docs/quickstart`.
+- [ ] The Quickstart's trailing CTA routes correctly to the `/playground`.
+- [ ] Ensure Outbound Analytics tracking events (`Plausible` or `Google Analytics`) are firing correctly in the network tab when navigating between pages.
+
+<Callout type="warning">
+  **SEO & Social Validation**: 
+  Always verify that `robots.txt` and `sitemap.xml` are correctly generated during the build. Paste the production deployment URL into the [Twitter Card Validator](https://cards-dev.twitter.com/validator) to ensure the `/og/featuredrop-docs.svg` asset renders perfectly.
+</Callout>
+
+## 4) Release Hygiene
+
+- [ ] Write a new Changelog entry detailing breaking changes for the community.
+- [ ] Bump the `package.json` version using strict SemVer rules.
+- [ ] Verify the GitHub Actions CI pipeline or Vercel deployment succeeded without silent failures.

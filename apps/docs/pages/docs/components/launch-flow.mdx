@@ -1,0 +1,31 @@
+---
+title: Composite Launch Flows
+---
+
+import { Callout } from 'nextra/components'
+import { LaunchFlowDemo } from '../../../components/demos/launch-flow-demo'
+
+# Composite Launch Flows
+
+FeatureDrop components are not designed to be used in isolation. The true power of the engine emerges when you compose multiple primitives together to create a multi-stage **Launch Flow**.
+
+## Strategy & Sequencing
+
+A well-architected Launch Flow gently bridges the gap between simply announcing a feature and actually driving a user to adopt it into their daily workflow.
+
+A typical enterprise rollout might follow this chronological sequence:
+
+1. **Awareness**: A visual `<Banner>` mounts at the top of the dashboard announcing a major workflow migration arriving next week.
+2. **Education**: On launch day, an `<AnnouncementModal>` triggers, explaining the new value proposition.
+3. **Tracking**: A persistent `<Checklist>` appears in the sidebar, outlining the 3 steps the user must take to migrate their old data manually.
+4. **Guidance**: When the user clicks Step 1 on the Checklist, a pulsing `<Hotspot>` appears over the new "Settings" gear, showing them exactly where to click.
+
+<Callout type="info">
+  **State Orchestration**: The FeatureDrop Storage Adapter automatically synchronizes the state across all these components. Completing the Checklist step will automatically unmount the associated Hotspot without any complex React `useEffect` wiring on your end.
+</Callout>
+
+## Interactive Demo
+
+The demo below provides a sandbox showing how heavily composed components execute a cascading narrative flawlessly.
+
+<LaunchFlowDemo />

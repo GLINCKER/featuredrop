@@ -1,0 +1,38 @@
+---
+title: Local Storage Adapter
+---
+
+import { Callout } from 'nextra/components'
+
+# Local Storage Adapter
+
+The `LocalStorageAdapter` provides simple, synchronous persistence using the browser's native `window.localStorage` API. 
+
+Unlike the `MemoryAdapter` (which resets when the user refreshes the page), state saved via `LocalStorageAdapter` will persist across tabs and browser restarts indefinitely.
+
+## Typical Integration
+
+```ts filename="featuredrop.config.ts"
+import { LocalStorageAdapter } from 'featuredrop'
+
+// Initializes the adapter using window.localStorage under the hood
+export const storage = new LocalStorageAdapter({
+  prefix: 'fd_state_', // Optional: namespaces all keys (default is 'featuredrop:')
+})
+```
+
+## When to use this
+
+<Callout type="info">
+  **The Middle Ground**
+  The `LocalStorageAdapter` is best used for B2C SaaS or marketing sites where you do not require a centralized `RemoteAdapter` database, but you still need to remember that a visitor closed the promotional "Hotspot" so it doesn't bother them again tomorrow.
+</Callout>
+
+### Pros
+- Zero setup, backend, or cloud infrastructure needed.
+- Instant, synchronous reads matching the speed of a `MemoryAdapter`.
+- Persists data locally so users do not see tutorials they've already dismissed.
+
+### Cons
+- **Device-Bound**: If a user clears their cookies or switches from their phone to their laptop, they will see the Onboarding Tour again because `localStorage` cannot synchronize across devices.
+- **Storage Limits**: While 5MB is generally huge for FeatureDrop manifests, if you have a massive application, you should prefer the `IndexedDBAdapter` to avoid locking the main UI thread during JSON parsing.

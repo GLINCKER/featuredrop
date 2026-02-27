@@ -1,0 +1,56 @@
+---
+title: Version Pinning
+---
+
+import { Callout } from 'nextra/components'
+
+# Version Pinning
+
+When you deploy a frontend application, you can never guarantee that 100% of your users instantly receive the new bundle. Mobile apps wait in App Store review, and web applications are often cached aggressively by Service Workers or corporate firewalls.
+
+**Version Pinning** solves the "Premature Announcement" problem. It ensures that a user only sees an announcement or tour if their local browser client has *actually* loaded the required code.
+
+## How it works
+
+When you define a feature in the Manifest, you assign it a semantic version:
+
+```json filename="manifest.json"
+{
+  "id": "new-dashboard",
+  "version": "2.4.0",
+  "title": "New Dashboard Analytics"
+}
+```
+
+When you initialize FeatureDrop in your `_app.tsx` or `layout.tsx`, you pass the hardcoded client `appVersion` into the Provider:
+
+```tsx filename="app.tsx"
+import { FeatureDropProvider } from 'featuredrop/react'
+import { manifest } from './featuredrop.config'
+
+// You might pull this from package.json during your build step
+const CURRENT_CLIENT_VERSION = "2.3.0" 
+
+export function App({ children }) {
+  return (
+    <FeatureDropProvider 
+      manifest={manifest} 
+      appVersion={CURRENT_CLIENT_VERSION}
+    >
+      {children}
+    </FeatureDropProvider>
+  )
+}
+```
+
+## The Evaluation Logic
+
+In the scenario above, the user's browser is still running version `2.3.0`. However, the FeatureDrop Manifest states that the `new-dashboard` feature requires version `2.4.0`.
+
+Because `2.3.0` < `2.4.0`, the FeatureDrop rule engine will entirely **suppress** the announcement for this user. 
+
+Once the user reloads the page and receives the `2.4.0` JavaScript bundle, the engine re-evaluates, the version check passes, and the `<NewBadge />` successfully illuminates.
+
+<Callout type="warning">
+  Version Strings must follow strict [Semantic Versioning](https://semver.org) (e.g., `1.0.0`, `0.5.2-alpha`). Simple integers (`1`) or random strings (`v1-final`) will result in parsing errors.
+</Callout>

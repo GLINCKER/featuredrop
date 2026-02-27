@@ -1,0 +1,30 @@
+---
+title: The Survey Component
+---
+
+import { Callout } from 'nextra/components'
+import { SurveyDemo } from '../../../components/demos/survey-demo'
+
+# The Survey Component
+
+The `<Survey>` primitive allows you to aggressively gather qualitative and quantitative telemetry from your users without requiring them to leave your app to fill out a Google Form. 
+
+## Usage & Strategy
+
+Surveys are unique because they are typically gate-kept by prior completion metrics. You should not spam users with Surveys upon login.
+
+Instead, map the `<Survey>` component to trigger *after* a specific, meaningful interaction has successfully completed.
+
+- **Event-Driven Rollouts**: Trigger a Survey immediately after a user successfully exports a CSV using your newly launched Reports Engine.
+- **Short-Form Focus**: In-app surveys must be frictionless. Keep them to 1-2 questions maximum.
+- **Graceful Deferment**: FeatureDrop Survey components include built-in "Ask Me Later" semantics, which map to configurable cooldown windows in your Storage Adapter.
+
+<Callout type="tip">
+  **NPS Campaigns**: The Survey component natively supports 1-10 range inputs for Net Promoter Score (NPS) campaigns or 1-5 star ratings for CSAT scorecards.
+</Callout>
+
+## Interactive Demo
+
+The demo below shows how the Survey component manages complex form state (radio buttons, text areas) while maintaining a minimal visual footprint in the UI.
+
+<SurveyDemo />

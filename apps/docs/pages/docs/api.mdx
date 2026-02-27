@@ -2,24 +2,145 @@
 title: API
 ---
 
-# API map
+# API Reference Map
 
-The complete API docs stay in-repo and versioned with releases.
+This page is the practical index for what to import, when to import it, and what to run in CI.
 
-- Core API: [`docs/API.md`](https://github.com/GLINCKER/featuredrop/blob/main/docs/API.md)
+Full reference with complete signatures:
+
+- Core/API: [`docs/API.md`](https://github.com/GLINCKER/featuredrop/blob/main/docs/API.md)
 - Architecture: [`docs/ARCHITECTURE.md`](https://github.com/GLINCKER/featuredrop/blob/main/docs/ARCHITECTURE.md)
 - Recipes: [`docs/RECIPES.md`](https://github.com/GLINCKER/featuredrop/blob/main/docs/RECIPES.md)
 
-## Common imports
+## 1) Pick the right package entrypoint
+
+| Import path | Use when |
+| --- | --- |
+| `featuredrop` | Core logic, adapters, manifest helpers, parser, analytics primitives |
+| `featuredrop/react` | Provider, hooks, and built-in UI components |
+| `featuredrop/schema` | Runtime validation (`validateManifest`) + Zod/JSON schema exports |
+| `featuredrop/testing` | Mock manifest/storage helpers and React test wrappers |
+| `featuredrop/ci` | Manifest diffing and CI summary generation |
+| `featuredrop/flags` | Feature flag bridges and gating helpers |
+| `featuredrop/bridges` | Slack/Discord/webhook/email/RSS notification bridge utilities |
+| `featuredrop/admin` | Manifest editor + preview/admin UI blocks |
+| `featuredrop/vue` / `featuredrop/svelte` / `featuredrop/solid` / `featuredrop/preact` / `featuredrop/web-components` / `featuredrop/angular` | Framework adapters |
+
+## 2) Core runtime primitives (`featuredrop`)
 
 ```ts
-import { isNew, getNewFeatures, MemoryAdapter } from 'featuredrop'
-import { FeatureDropProvider, ChangelogPage, Tour } from 'featuredrop/react'
+import {
+  isNew,
+  getNewFeatures,
+  getNewFeatureCount,
+  getNewFeaturesSorted,
+  MemoryAdapter
+} from 'featuredrop'
+
+const storage = new MemoryAdapter()
+const entries = getNewFeatures(manifest, storage)
+const count = getNewFeatureCount(manifest, storage)
+const sorted = getNewFeaturesSorted(manifest, storage)
 ```
 
-## CLI checks
+Most common helpers:
+
+- `isNew(...)` -> single-entry eligibility gate
+- `getNewFeatures(...)` -> all currently eligible entries
+- `getNewFeatureCount(...)` -> count for badges/notifications
+- `parseDescription(markdown)` -> markdown to sanitized HTML
+- `generateRSS(manifest, options?)` -> changelog RSS XML
+
+## 3) React SDK (`featuredrop/react`)
+
+```tsx
+import { MemoryAdapter } from 'featuredrop'
+import {
+  FeatureDropProvider,
+  ChangelogWidget,
+  NewBadge,
+  useFeatureDrop
+} from 'featuredrop/react'
+
+function ReleaseActions() {
+  const { dismissAll } = useFeatureDrop()
+  return <button onClick={dismissAll}>Mark all read</button>
+}
+
+export function App() {
+  return (
+    <FeatureDropProvider manifest={manifest} storage={new MemoryAdapter()} appVersion="2.4.0">
+      <NewBadge featureId="new-dashboard" />
+      <ChangelogWidget />
+      <ReleaseActions />
+    </FeatureDropProvider>
+  )
+}
+```
+
+Use component pages for behavior + live demos:
+
+- [Changelog](/docs/components/changelog)
+- [Tours](/docs/components/tours)
+- [Checklist](/docs/components/checklist)
+- [Launch flow](/docs/components/launch-flow)
+
+## 4) Validation and schema (`featuredrop/schema`)
+
+```ts
+import { validateManifest } from 'featuredrop/schema'
+
+const result = validateManifest(manifest)
+if (!result.valid) {
+  console.error(result.errors)
+  process.exit(1)
+}
+```
+
+`validateManifest` checks:
+
+- required fields (`id`, `label`, `releasedAt`, `showNewUntil`)
+- duplicate IDs
+- date ordering (`showNewUntil` after `releasedAt`)
+- dependency cycle safety (`dependsOn`)
+- URL safety (`url`, `image`, `cta.url`)
+- unsafe object keys inside `meta`
+
+## 5) Adapters and delivery surfaces
+
+Storage and source options are documented in:
+
+- [Adapters overview](/docs/adapters/overview)
+- [Remote adapter](/docs/adapters/remote)
+- [IndexedDB adapter](/docs/adapters/indexeddb)
+- [Hybrid adapter](/docs/adapters/hybrid)
+- [Database adapters](/docs/adapters/databases)
+
+## 6) Automation surfaces for production
+
+```ts
+import { diffManifest, generateChangelogDiff, validateManifestForCI } from 'featuredrop/ci'
+import { createFlagBridge } from 'featuredrop/flags'
+```
+
+```ts
+import { createMockManifest, createMockStorage } from 'featuredrop/testing'
+```
+
+```ts
+import { SlackBridge, RSSFeedGenerator } from 'featuredrop/bridges'
+```
+
+## 7) CLI commands you should actually run
 
 ```bash
-pnpm size-check
+# Authoring + build
+npx featuredrop validate --pattern "features/**/*.md"
+npx featuredrop build --pattern "features/**/*.md" --out featuredrop.manifest.json
+
+# Release safety
 pnpm security-check
+pnpm size-check
 ```
+
+Detailed command docs: [CLI guide](/docs/automation/cli) and [CI utilities](/docs/automation/ci).

@@ -1,0 +1,8 @@
+{
+  "overview": "Overview",
+  "remote": "Remote Adapter",
+  "local-storage": "Local Storage Adapter",
+  "indexeddb": "IndexedDB Adapter",
+  "hybrid": "Hybrid Adapter",
+  "databases": "Database Adapters"
+}

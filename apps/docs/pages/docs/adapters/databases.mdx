@@ -1,0 +1,116 @@
+---
+title: Database Adapters
+---
+
+import { Tabs, Tab, Callout } from 'nextra/components'
+
+# Database Adapters
+
+The primary philosophical difference between FeatureDrop and a legacy SaaS adoption tool (like Appcues or Pendo) is **Data Ownership**.
+
+With FeatureDrop, you do not bounce sensitive interaction logs to a third-party server. Instead, you mount a FeatureDrop Database Adapter directly in your own backend (e.g., inside a Next.js `Route Handler` or an Express REST API endpoint) to save state directly into your own infrastructure.
+
+<Callout type="info">
+  **Why host data yourself?**
+  By pointing a `RemoteAdapter` at a `PostgreSQLAdapter` endpoint, your Product Managers can easily author SQL queries that `JOIN` FeatureDrop's "Tour Completed" events directly against your application's actual recurring revenue (`ARR`) tables to prove conversion metrics natively.
+</Callout>
+
+## Backend Implementation
+
+To use a Database Adapter, you need to expose a simple HTTP endpoint that your frontend's `RemoteAdapter` can communicate with.
+
+The following examples demonstrate how to mount various database solutions inside a standard Next.js 14+ API Route (`app/api/featuredrop/route.ts`).
+
+<Tabs items={["PostgreSQL (pg)", "MongoDB", "Supabase", "Redis"]}>
+  <Tab>
+    ```ts filename="app/api/featuredrop/route.ts"
+    import { NextResponse } from 'next/server'
+    import { PostgresAdapter } from 'featuredrop/adapters'
+    import { Pool } from 'pg'
+    
+    // 1. Initialize your DB pool
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+    
+    // 2. Initialize the FeatureDrop Postgres Adapter
+    const storage = new PostgresAdapter(pool, { tableName: 'featuredrop_state' })
+    
+    export async function POST(req: Request) {
+      try {
+        const payload = await req.json()
+        const { userId, event, timestamp } = payload
+        
+        // 3. Let the adapter handle the persistence
+        await storage.markDismissed(userId, event.id, timestamp)
+        
+        return NextResponse.json({ success: true })
+      } catch (error) {
+        return NextResponse.json({ success: false }, { status: 500 })
+      }
+    }
+    ```
+  </Tab>
+  <Tab>
+    ```ts filename="app/api/featuredrop/route.ts"
+    import { NextResponse } from 'next/server'
+    import { MongoAdapter } from 'featuredrop/adapters'
+    import { MongoClient } from 'mongodb'
+    
+    const client = new MongoClient(process.env.MONGODB_URI!)
+    
+    // Provide the collection instance directly
+    const storage = new MongoAdapter(
+      client.db('production').collection('featuredrop_state')
+    )
+    
+    export async function POST(req: Request) {
+      const payload = await req.json()
+      // Call standard storage methods
+      await storage.markDismissed(payload.userId, payload.event.id)
+      return NextResponse.json({ success: true })
+    }
+    ```
+  </Tab>
+  <Tab>
+    ```ts filename="app/api/featuredrop/route.ts"
+    import { NextResponse } from 'next/server'
+    import { SupabaseAdapter } from 'featuredrop/adapters'
+    import { createClient } from '@supabase/supabase-js'
+    
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    
+    // Binds to a "featuredrop_state" schema
+    const storage = new SupabaseAdapter(supabase)
+    
+    export async function POST(req: Request) {
+      const { userId, event } = await req.json()
+      await storage.markDismissed(userId, event.id)
+      return NextResponse.json({ success: true })
+    }
+    ```
+  </Tab>
+  <Tab>
+    ```ts filename="app/api/featuredrop/route.ts"
+    import { NextResponse } from 'next/server'
+    import { RedisAdapter } from 'featuredrop/adapters'
+    import { Redis } from 'ioredis'
+    
+    const redis = new Redis(process.env.REDIS_URL!)
+    
+    // Excellent choice for ephemeral or fast-moving caching wrappers
+    const storage = new RedisAdapter(redis, { keyPrefix: 'fd:' })
+    
+    export async function POST(req: Request) {
+      const { userId, event } = await req.json()
+      await storage.markDismissed(userId, event.id)
+      return NextResponse.json({ success: true })
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## The Universal Contract
+
+All database adapters internally `implements StorageAdapter`, guaranteeing identical behavior signature maps. This means if your engineering team decides to migrate off `MongoDB` and onto `PostgreSQL` next year, you simply change out the import statement on your API route. The React frontend payload requires absolutely zero modifications.

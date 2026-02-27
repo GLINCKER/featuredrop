@@ -1,0 +1,77 @@
+---
+title: Analytics Integration
+---
+
+import { Callout } from 'nextra/components'
+
+# Analytics Integration
+
+FeatureDrop supports two analytics paths:
+
+1. callback hooks (`analytics` prop) for lightweight tracking
+2. `AnalyticsCollector` for buffered/batched delivery
+
+## Option A: callbacks on provider
+
+```tsx filename="app.tsx"
+import { FeatureDropProvider } from 'featuredrop/react'
+
+<FeatureDropProvider
+  manifest={manifest}
+  storage={storage}
+  analytics={{
+    onFeatureSeen: (feature) => analytics.capture('feature_seen', { featureId: feature.id }),
+    onFeatureClicked: (feature) => analytics.capture('feature_clicked', { featureId: feature.id }),
+    onFeatureDismissed: (feature) => analytics.capture('feature_dismissed', { featureId: feature.id })
+  }}
+>
+  {children}
+</FeatureDropProvider>
+```
+
+## Option B: collector (batched)
+
+```ts filename="analytics.ts"
+import { AnalyticsCollector, PostHogAdapter } from 'featuredrop'
+
+export const collector = new AnalyticsCollector({
+  adapter: new PostHogAdapter(posthog),
+  batchSize: 20,
+  flushInterval: 10_000,
+  sampleRate: 1,
+  userId: currentUser.id
+})
+```
+
+```tsx filename="app.tsx"
+import { FeatureDropProvider } from 'featuredrop/react'
+import { collector } from './analytics'
+
+<FeatureDropProvider manifest={manifest} storage={storage} collector={collector}>
+  {children}
+</FeatureDropProvider>
+```
+
+## Event types emitted
+
+Common event names:
+
+- `feature_seen`
+- `feature_clicked`
+- `feature_dismissed`
+- `tour_started` / `tour_completed` / `tour_skipped`
+- `checklist_task_completed` / `checklist_completed`
+- `survey_submitted`
+- `feedback_submitted`
+- `announcement_shown`
+- `cta_clicked`
+
+## Recommended dashboards
+
+- adoption: `feature_seen` -> `feature_clicked`
+- onboarding: `tour_started` -> `tour_completed`
+- retention proxy: repeat `feature_clicked` by user cohort
+
+<Callout type="info">
+  If you need full control, use `CustomAdapter` and map events to your internal telemetry format.
+</Callout>

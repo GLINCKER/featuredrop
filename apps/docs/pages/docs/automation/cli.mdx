@@ -1,0 +1,134 @@
+---
+title: CLI
+---
+
+import { Callout } from 'nextra/components'
+
+# CLI Reference
+
+The CLI is for changelog-as-code workflows: scaffold, add entries, validate, build outputs, and generate feeds.
+
+Run commands with `npx featuredrop ...` from your repo root.
+
+## Command index
+
+| Command | Purpose | Typical output |
+| --- | --- | --- |
+| `featuredrop init` | Scaffold featuredrop files | `features/` or `features.json` |
+| `featuredrop add` | Add one feature entry | new markdown file or updated `features.json` |
+| `featuredrop migrate` | Convert vendor export to manifest | `featuredrop.manifest.json` |
+| `featuredrop validate` | Validate feature files | exit 0/1 only |
+| `featuredrop build` | Compile markdown entries into manifest | `featuredrop.manifest.json` |
+| `featuredrop stats` | Print release stats | console summary |
+| `featuredrop doctor` | Run quality diagnostics | checks + warnings + errors |
+| `featuredrop generate-rss` | Build RSS XML feed | `featuredrop.rss.xml` |
+| `featuredrop generate-changelog` | Build markdown changelog | `CHANGELOG.generated.md` |
+
+## Most common workflow
+
+```bash
+# 1) scaffold once
+npx featuredrop init --format markdown
+
+# 2) add entries as releases ship
+npx featuredrop add --label "Decision Journal" --category ai --type feature --show-days 30
+
+# 3) validate in CI
+npx featuredrop validate --pattern "features/**/*.md"
+
+# 4) compile output for runtime consumption
+npx featuredrop build --pattern "features/**/*.md" --out featuredrop.manifest.json
+```
+
+## Key commands with flags
+
+### `featuredrop init`
+
+```bash
+npx featuredrop init --format markdown --cwd .
+```
+
+Flags:
+
+- `--format markdown|json` (default: `markdown`)
+- `--force` overwrite sample output
+- `--cwd` working directory
+
+### `featuredrop add`
+
+```bash
+npx featuredrop add \
+  --label "New dashboard analytics" \
+  --id new-dashboard-analytics \
+  --type feature \
+  --category analytics \
+  --description "Compare activation metrics by segment." \
+  --url /docs/analytics \
+  --show-days 21
+```
+
+Flags:
+
+- `--label` (required in non-interactive mode)
+- `--id`, `--type`, `--category`, `--description`, `--url`
+- `--releasedAt`, `--showNewUntil`, `--show-days`
+- `--format markdown|json`, `--cwd`
+
+### `featuredrop migrate`
+
+```bash
+npx featuredrop migrate --from beamer --input beamer-export.json --out featuredrop.manifest.json
+```
+
+Supported `--from` values:
+
+- `beamer`
+- `headway`
+- `announcekit`
+- `canny`
+- `launchnotes`
+
+### `featuredrop validate` and `featuredrop build`
+
+```bash
+npx featuredrop validate --pattern "features/**/*.md"
+npx featuredrop build --pattern "features/**/*.md" --out featuredrop.manifest.json
+```
+
+Flags:
+
+- `--pattern` markdown source pattern (default: `features/**/*.md`)
+- `--out` output file for build command
+- `--cwd` working directory
+
+### `featuredrop doctor`
+
+```bash
+npx featuredrop doctor --pattern "features/**/*.md"
+```
+
+`doctor` reports:
+
+- duplicate IDs
+- invalid date formats
+- missing descriptions
+- dependency cycles
+- expiry/scheduled warnings
+
+### Feed and changelog generation
+
+```bash
+npx featuredrop generate-rss --pattern "features/**/*.md" --out featuredrop.rss.xml --title "Product Updates"
+npx featuredrop generate-changelog --pattern "features/**/*.md" --out CHANGELOG.generated.md
+```
+
+## Behavior details that matter in CI
+
+- Exit code is non-zero for command errors and failed validations.
+- `featuredrop add` prompts for label only in interactive TTY mode.
+- In CI/non-interactive shells, always pass `--label` explicitly.
+- Use `--cwd` if your feature files live in a subdirectory/monorepo package.
+
+<Callout type="warning">
+  Do not rely on generated outputs without validation. Run `featuredrop validate` before `featuredrop build` in pipelines.
+</Callout>

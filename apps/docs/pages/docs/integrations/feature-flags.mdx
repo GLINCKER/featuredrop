@@ -1,0 +1,71 @@
+---
+title: Feature Flags
+---
+
+import { Callout } from 'nextra/components'
+
+# Feature Flags Integration
+
+FeatureDrop announces features. Flag providers gate runtime behavior. Use both together so users only see announcements for enabled experiences.
+
+## 1) Add `flagKey` to manifest entries
+
+```ts filename="featuredrop.manifest.ts"
+import type { FeatureManifest } from 'featuredrop'
+
+export const manifest: FeatureManifest = [
+  {
+    id: 'guided-rollouts',
+    label: 'Guided rollout templates',
+    releasedAt: '2026-02-10T00:00:00Z',
+    showNewUntil: '2026-04-01T00:00:00Z',
+    flagKey: 'guided_rollouts_v2'
+  }
+]
+```
+
+## 2) Provide a flag bridge
+
+### Generic bridge
+
+```ts
+import { createFlagBridge } from 'featuredrop/flags'
+
+export const flagBridge = createFlagBridge({
+  isEnabled: (flagKey, userContext) =>
+    myFlagsClient.isEnabled(flagKey, { userId: userContext?.traits?.id as string | undefined })
+})
+```
+
+### LaunchDarkly bridge
+
+```ts
+import { LaunchDarklyBridge } from 'featuredrop/flags'
+
+const flagBridge = new LaunchDarklyBridge(ldClient)
+```
+
+## 3) Pass bridge to provider
+
+```tsx
+import { FeatureDropProvider } from 'featuredrop/react'
+
+<FeatureDropProvider
+  manifest={manifest}
+  storage={storage}
+  flagBridge={flagBridge}
+  userContext={{ plan: 'pro', role: 'admin', traits: { id: user.id } }}
+>
+  {children}
+</FeatureDropProvider>
+```
+
+## Operational guidance
+
+- keep `flagKey` stable while rollout is active
+- remove stale `flagKey` only after full rollout if you no longer need gating
+- test both flag-on and flag-off behavior in preview/staging
+
+<Callout type="warning">
+  Do not announce features behind disabled flags. If users can see announcements but not functionality, trust drops immediately.
+</Callout>

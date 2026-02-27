@@ -2,52 +2,100 @@
 title: Quickstart
 ---
 
+import { Steps, Callout } from 'nextra/components'
+import { trackDocsEvent } from '../../components/docs-analytics'
+
 # Quickstart
 
-Get your first working badge in under 10 minutes.
+Get your first working badge in under 10 minutes. This guide covers the simplest setup using the React SDK and an in-memory storage adapter suitable for local development.
 
-## 1) Install
+<Steps>
+### Install the package
 
-```bash
+Install the base library and its React bindings via your package manager of choice.
+
+```bash filename="Terminal"
 pnpm add featuredrop
 ```
 
-## 2) Define a manifest
+### Define a manifest
 
-```ts
+The manifest is your single source of truth. It defines every feature, announcement, or tour your product will surface — along with their targeting rules and expiration dates. Everything lives in your codebase, under version control.
+
+```ts filename="manifest.ts"
 import type { FeatureManifest } from 'featuredrop'
 
 export const manifest: FeatureManifest = [
   {
     id: 'new-dashboard',
-    title: 'New dashboard',
+    title: 'New Dashboard',
     version: '1.0.0',
-    releaseDate: '2026-02-01',
-    description: 'A faster dashboard with updated charts.'
+    releaseDate: '2026-02-01T00:00:00Z',
+    description: 'A faster dashboard with updated real-time charts and CSV export.'
   }
 ]
 ```
 
-## 3) Wrap your app
+### Wrap your app
 
-```tsx
-import { FeatureDropProvider, ChangelogWidget, NewBadge } from 'featuredrop/react'
+Wrap your React tree with `FeatureDropProvider`. Pass it a manifest and a storage adapter. We use `MemoryAdapter` here for quick local testing — it does not persist state between page reloads.
+
+```tsx filename="App.tsx"
 import { MemoryAdapter } from 'featuredrop'
+import { FeatureDropProvider, ChangelogWidget, NewBadge } from 'featuredrop/react'
 import { manifest } from './manifest'
 
 export function App() {
   return (
     <FeatureDropProvider manifest={manifest} storage={new MemoryAdapter()}>
-      <NewBadge featureId="new-dashboard" />
+      <div className="flex items-center gap-4">
+        <span>Dashboard</span>
+        {/* Renders a pulsing dot next to 'Dashboard' until the user has seen it */}
+        <NewBadge featureId="new-dashboard" />
+      </div>
+
+      {/* Global slide-out changelog panel */}
       <ChangelogWidget />
     </FeatureDropProvider>
   )
 }
 ```
 
-## 4) Add your first production guardrails
+<Callout type="warning">
+  **Do not use `MemoryAdapter` in production.** It stores state in memory only — dismissals are lost on every page reload. Use `LocalStorageAdapter` for SPAs or `RemoteAdapter` / `PostgresAdapter` when state must persist across devices and sessions.
+</Callout>
 
-- Run `pnpm size-check` to keep bundle budgets honest
-- Run `pnpm security-check` to catch unsafe runtime patterns
+### Validate before deploying
 
-Continue with [Examples](/docs/examples) for real integration recipes.
+Run these commands in your CI pipeline to catch manifest errors before they reach users:
+
+```bash
+# Validate schema and semantic rules
+npx featuredrop validate --pattern "features/**/*.md"
+
+# Quick local bundle size check
+pnpm featuredrop size-check
+```
+
+</Steps>
+
+---
+
+## Next Steps
+
+Now that you have a basic implementation working, explore how to swap the in-memory adapter for a real database, or configure the visual theme to match your design system.
+
+- [View Integration Guides](/docs/integrations)
+- [Explore the Component Gallery](/docs/components/gallery)
+- [Adapter Overview](/docs/adapters/overview)
+
+<div className="mt-8">
+  <a
+    href="/playground"
+    className="fd-cta"
+    onClick={() => trackDocsEvent('quickstart_playground_clicked', { source: 'quickstart' })}
+  >
+    Launch Playground
+  </a>
+</div>
+

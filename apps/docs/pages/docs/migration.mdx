@@ -1,0 +1,82 @@
+---
+title: Migration Guide
+---
+
+import { Callout, Steps } from 'nextra/components'
+
+# Migration Guide
+
+Migrating from Beamer, Headway, AnnounceKit, Canny, or LaunchNotes? This guide walks you through the complete transition to FeatureDrop, from exporting your historical data to connecting your first storage adapter.
+
+## Why Migrate
+
+Traditional SaaS adoption tools attach themselves to your application as third-party JavaScript bundles, polling external servers on every page load. They have no concept of your version control workflow, no type safety, and no way to guarantee a rollout announcement is tied to code that the user's browser has actually received.
+
+FeatureDrop solves these problems by living inside your bundle, validated by your TypeScript compiler, and versioned with your git history.
+
+## Export Your Existing Data
+
+The CLI supports direct imports from the most common adoption platforms.
+
+<Steps>
+### Export from your existing tool
+
+Every supported platform has a CSV or JSON export feature. Log into your dashboard and export all historical entries.
+
+### Run the migrate command
+
+```bash
+npx featuredrop migrate \
+  --from beamer \
+  --input beamer-export.json \
+  --out featuredrop.manifest.json
+```
+
+Supported `--from` values: `beamer`, `headway`, `announcekit`, `canny`, `launchnotes`.
+
+### Review the output
+
+Inspect `featuredrop.manifest.json`. The migrator carries over titles, descriptions, dates, and categories. Fields that do not map directly (e.g., proprietary targeting) will be left with commented-out `// TODO` markers for you to fill in.
+
+### Validate before deploying
+
+```bash
+npx featuredrop validate --pattern featuredrop.manifest.json
+```
+
+Fix any schema errors flagged by the validator before wiring the manifest into your application.
+</Steps>
+
+## Wire Up the Provider
+
+Once you have a valid manifest, replace your old third-party script tag with the FeatureDrop provider:
+
+```tsx filename="app/layout.tsx"
+import { FeatureDropProvider } from 'featuredrop/react'
+import { LocalStorageAdapter } from 'featuredrop'
+import { manifest } from '@/featuredrop.manifest'
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <FeatureDropProvider
+          manifest={manifest}
+          storage={new LocalStorageAdapter({ prefix: 'featuredrop' })}
+          appVersion={process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0'}
+        >
+          {children}
+        </FeatureDropProvider>
+      </body>
+    </html>
+  )
+}
+```
+
+<Callout type="warning">
+  **Dismissal State is Not Transferable**: Your old tool's "already seen" state (stored in their cloud) cannot be migrated. On the first deploy of FeatureDrop, all users will be treated as if they have not seen any historical entries. Set `hideAfter` on older entries to avoid resurging stale announcements.
+</Callout>
+
+## Remove the Old Script Tag
+
+After verifying FeatureDrop renders correctly in a staging environment, remove the old third-party `<script>` tag from your `<head>`. This will improve your page load performance by eliminating the external polling request.

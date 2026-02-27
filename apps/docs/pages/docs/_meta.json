@@ -1,6 +1,14 @@
 {
   "index": "Overview",
   "quickstart": "Quickstart",
-  "examples": "Examples",
-  "api": "API"
+  "concepts": "Core Concepts",
+  "components": "Components",
+  "adapters": "Adapters",
+  "automation": "CLI + CI",
+  "integrations": "Integrations",
+  "recipes": "Recipes",
+  "launch-checklist": "Launch Checklist",
+  "migration": "Migration",
+  "troubleshooting": "Troubleshooting",
+  "api": "API Map"
 }

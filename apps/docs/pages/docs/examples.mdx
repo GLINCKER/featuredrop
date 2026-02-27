@@ -2,27 +2,34 @@
 title: Examples
 ---
 
+import { Cards, Card } from 'nextra/components'
+
 # Examples
 
-Use these as copy-paste starting points.
+Use these examples as starting templates based on the outcome you need.
 
-## Sidebar "What's New" button
+<Cards>
+  <Card title="First launch in 10 minutes" href="/docs/quickstart">
+    Provider, manifest, badge, and changelog widget baseline.
+  </Card>
+  <Card title="Component demos" href="/docs/components/gallery">
+    Explore live in-repo demos for each exported component.
+  </Card>
+  <Card title="Launch flow orchestration" href="/docs/components/launch-flow">
+    End-to-end Banner + Tour + Checklist sequence.
+  </Card>
+  <Card title="Adapter strategy" href="/docs/adapters/overview">
+    Compare memory, remote, indexedDB, hybrid, and database options.
+  </Card>
+  <Card title="Release gates checklist" href="/docs/launch-checklist">
+    Pre-ship validation for build health, funnel links, SEO, and deployment QA.
+  </Card>
+</Cards>
 
-- Place `<NewBadge />` beside your nav entry
-- Open `<ChangelogWidget />` from that button click
+## Suggested learning order
 
-## Feature launch sequence
-
-- Start with a banner announcement
-- Follow with a short tour
-- Finish with spotlight for a high-value action
-
-## Adapter strategies
-
-- `MemoryAdapter` for demos/tests
-- `RemoteAdapter` for central manifest control
-- `IndexedDBAdapter` + `HybridAdapter` for offline-first behavior
-
-See the full recipe catalog in the repository docs:
-
-- [docs/RECIPES.md](https://github.com/GLINCKER/featuredrop/blob/main/docs/RECIPES.md)
+1. Quickstart baseline
+2. One component demo matching your launch goal
+3. Adapter decision for production reliability
+4. CI and security checks before rollout
+5. Final release pass with the launch checklist

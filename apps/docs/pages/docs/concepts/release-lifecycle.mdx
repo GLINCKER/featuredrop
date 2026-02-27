@@ -1,0 +1,33 @@
+---
+title: The Release Lifecycle
+---
+
+import { Steps, Callout } from 'nextra/components'
+
+# The Release Lifecycle
+
+FeatureDrop intentionally forces product adoption experiences to live directly alongside the code that actually ships the product. 
+
+When you follow the recommended Release Lifecycle, you stop fighting with standalone marketing dashboards and broken ad-blocker proxies.
+
+<Steps>
+### Draft the feature entry
+When a developer wraps up a new feature PR (e.g., adding CSV Export), they also append a new object to the `featuredrop.config.ts` Manifest. They define the title, description, and audience targeting rules right inside their code editor.
+
+### Validate in CI
+Because the Manifest is a static file, you can validate the entire product marketing payload *before* you ever merge to `main`. Using the FeatureDrop CLI, your CI pipeline checks that images exist, semantic versions are correct, and expiration dates aren't in the past.
+
+### Deploy the host application
+When you deploy your React codebase, the fresh Manifest is bundled into the client build. As soon as the updated Vercel/Netlify host app goes live, the React tree re-hydrates. 
+
+### Observe adoption 
+The instant a user logs in, the `FeatureDropProvider` evaluates the new Manifest against their local storage state. The `<NewBadge />` next to your "Export" button instantly turns red. When the user clicks the badge, an analytics adapter fires off highly-accurate tracking events to Mixpanel, Amplitude, or PostgreSQL.
+
+### Retire and evolve
+Once the `hideAfter` date is reached, or the user clicks "Dismiss" on the Changelog, the rule engine marks the feature as "seen". The state machine automatically unmounts the badges and tours, returning your UI to a clean state.
+</Steps>
+
+<Callout type="info">
+  **Recommended Cadence:**
+  Don't spam your users simply because it's easy. We recommend rolling up minor tweaks into a weekly digest Changelog. Reserve intrusive components like `<Tour>` or `banner="announcement"` strictly for major functional changes.
+</Callout>

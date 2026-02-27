@@ -1,0 +1,30 @@
+---
+title: Feature Request Board
+---
+
+import { Callout } from 'nextra/components'
+import { FeatureRequestDemo } from '../../../components/demos/feature-request-demo'
+
+# The Feature Request Board
+
+FeatureDrop is not just an outbound announcement engine. It's a bidirectional communication loop. 
+
+Use the `<FeatureRequestForm>` and `<FeatureRequestButton>` components to capture inbound product roadmap demand directly inside your application interface, exactly where users experience friction.
+
+## Core Capabilities
+
+By placing a Feature Request board natively inside your app (instead of routing users to an external portal like Canny), conversion rates on feedback skyrocket.
+
+- **Local Capture & Upvoting**: Users can submit new requests and vote on existing requests from other users effortlessly.
+- **Backend Sync**: Out-of-the-box support allows you to easily plug the vote tracking into webhooks, piping the data directly into your Jira or Linear backlog.
+- **Semantic Sorting**: The component handles pagination and algorithmic sorting (e.g., "Trending" vs "Top Voted") natively.
+
+<Callout type="info">
+  **Close the Loop**: The best way to use FeatureDrop is comprehensively. When a user upvotes a request on this board, keep track of their `userId`. Three months later, when you actually ship that feature, use the `Targeting Engine` to send an exclusive `<AnnouncementModal>` directly to just the users who voted for it!
+</Callout>
+
+## Interactive Demo
+
+The demo below shows how the Feature Request board handles submission forms, upvote states, and list rendering out of the box.
+
+<FeatureRequestDemo />

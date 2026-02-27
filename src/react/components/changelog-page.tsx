@@ -87,14 +87,15 @@ const pillStyles: CSSProperties = {
   borderRadius: "999px",
   border: "1px solid var(--featuredrop-border-color, #e5e7eb)",
   cursor: "pointer",
-  background: "#fff",
+  background: "var(--featuredrop-card-bg, #fff)",
+  color: "var(--featuredrop-text, #111827)",
   fontSize: "13px",
 };
 
 const pillActiveStyles: CSSProperties = {
   ...pillStyles,
   background: "var(--featuredrop-pill-active-bg, #111827)",
-  color: "#fff",
+  color: "var(--featuredrop-pill-active-text, #fff)",
   border: "1px solid var(--featuredrop-pill-active-bg, #111827)",
 };
 
@@ -103,7 +104,7 @@ const entryCardStyles: CSSProperties = {
   borderRadius: "12px",
   padding: "16px",
   marginBottom: "16px",
-  background: "#fff",
+  background: "var(--featuredrop-card-bg, #fff)",
   boxShadow: "var(--featuredrop-card-shadow, 0 4px 20px rgba(0,0,0,0.04))",
 };
 
@@ -112,7 +113,7 @@ const metaRowStyles: CSSProperties = {
   gap: "10px",
   flexWrap: "wrap",
   fontSize: "12px",
-  color: "#6b7280",
+  color: "var(--featuredrop-muted, #6b7280)",
   marginTop: "8px",
 };
 
@@ -120,7 +121,8 @@ const loadMoreBtnStyles: CSSProperties = {
   padding: "10px 14px",
   borderRadius: "10px",
   border: "1px solid var(--featuredrop-border-color, #e5e7eb)",
-  background: "#fff",
+  background: "var(--featuredrop-card-bg, #fff)",
+  color: "var(--featuredrop-text, #111827)",
   cursor: "pointer",
   fontWeight: 600,
 };
@@ -135,7 +137,8 @@ const reactionsRowStyles: CSSProperties = {
 const reactionButtonStyles: CSSProperties = {
   border: "1px solid var(--featuredrop-border-color, #e5e7eb)",
   borderRadius: "999px",
-  background: "#fff",
+  background: "var(--featuredrop-card-bg, #fff)",
+  color: "var(--featuredrop-text, #111827)",
   padding: "4px 9px",
   cursor: "pointer",
   fontSize: "12px",
@@ -201,7 +204,8 @@ function EntryCard({
           onClick={handleShare}
           style={{
             border: "1px solid var(--featuredrop-border-color, #e5e7eb)",
-            background: "#fff",
+            background: "var(--featuredrop-card-bg, #fff)",
+            color: "var(--featuredrop-text, #111827)",
             borderRadius: "8px",
             padding: "6px 8px",
             cursor: "pointer",
@@ -240,8 +244,8 @@ function EntryCard({
             padding: "10px 14px",
             borderRadius: "10px",
             fontWeight: 600,
-            color: "#fff",
-            background: "#111827",
+            color: "var(--featuredrop-btn-text, #fff)",
+            background: "var(--featuredrop-btn-bg, #111827)",
             textDecoration: "none",
           }}
           target="_blank"
@@ -261,7 +265,7 @@ function EntryCard({
               style={{
                 ...reactionButtonStyles,
                 opacity: !canReact && userReaction !== reaction ? 0.55 : 1,
-                background: userReaction === reaction ? "rgba(17, 24, 39, 0.08)" : "#fff",
+                background: userReaction === reaction ? "var(--featuredrop-reaction-active, rgba(17, 24, 39, 0.08))" : "var(--featuredrop-card-bg, #fff)",
               }}
               aria-label={`React ${reaction} to ${entry.label}`}
             >

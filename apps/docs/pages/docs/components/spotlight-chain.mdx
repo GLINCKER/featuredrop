@@ -1,0 +1,27 @@
+---
+title: The Spotlight Chain
+---
+
+import { Callout } from 'nextra/components'
+import { SpotlightChainDemo } from '../../../components/demos/spotlight-chain-demo'
+
+# The Spotlight Chain
+
+The `<SpotlightChain>` component takes the isolation mechanics of a standard Spotlight and sequences them together into a guided, multi-step workflow.
+
+## Usage & Strategy
+
+If a massive workflow redesign just launched and you need to show users how three distinct areas of the dashboard now collaborate, a Spotlight Chain is your best tool.
+
+- **Sequential Discovery**: It allows you to highlight `Target A`, and only once the user completes the action (or clicks "Next" in the tooltip), does the overlay shift smoothly to illuminate `Target B`.
+- **Alternative to Tours**: Spotlight Chains are a modern, highly-visual alternative to standard `<Tour>` Modals, requiring far less reading and enforcing much more contextual awareness.
+
+<Callout type="info">
+  **Routing Interoperability**: In complex Enterprise applications, a Spotlight Chain can persist across React Router or Next.js page navigations. For example, Step 1 can highlight an item on `/dashboard`, and when clicked, Step 2 will seamlessly illuminate a different element on the resulting `/settings` page.
+</Callout>
+
+## Interactive Demo
+
+The demo below demonstrates how the Spotlight engine smoothly animates the "hole punch" mask when transitioning focus from one target element to the next.
+
+<SpotlightChainDemo />

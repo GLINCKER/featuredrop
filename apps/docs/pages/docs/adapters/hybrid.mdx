@@ -1,0 +1,33 @@
+---
+title: Hybrid Adapter
+---
+
+import { Callout } from 'nextra/components'
+
+# Hybrid Adapter
+
+The `HybridAdapter` is the ultimate "best of both worlds" architecture. It combines optimistic, local-first interaction speeds with strict, authoritative remote reconciliation.
+
+## Optimistic Updates & Debouncing
+
+When a user closes an Announcement Modal or clicks "Next" on a Tour, the Hybrid Adapter writes the state change into `localStorage` instantly. This allows the React UI to unmount the FeatureDrop component in `< 1ms`, ensuring your app never halts or feels sluggish waiting for an HTTP API to respond.
+
+Behind the scenes, the Hybrid Adapter places the interaction into a queue. It then intentionally waits for a debounced window (`dismissBatchWindowMs`). If the user clicks rapidly through 4 steps of a Tour in 2 seconds, the adapter merges all 4 database operations into a single, highly-efficient HTTP payload instead of spamming your servers.
+
+## Typical Integration
+
+```ts filename="featuredrop.config.ts"
+import { HybridAdapter } from 'featuredrop'
+
+// Initialize the hybrid adapter
+export const storage = new HybridAdapter({
+  dismissBatchWindowMs: 250,    // Debounce writes by 250ms
+  syncIntervalMs: 30000,        // Background sync with server every 30s
+  retryFailedDismisses: true    // Queue writes if the user goes through a tunnel
+})
+```
+
+<Callout type="tip">
+  **When to use this architecture:**
+  Use the Hybrid Adapter when you have strict latency constraints (e.g. Next.js Core Web Vitals) where UI unmounts *must* be instant, but you still require the data to eventually replicate back to your PostgreSQL instance for Analytics dashboards.
+</Callout>

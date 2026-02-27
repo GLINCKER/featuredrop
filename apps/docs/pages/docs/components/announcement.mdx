@@ -1,0 +1,32 @@
+---
+title: The Announcement Modal
+---
+
+import { Callout } from 'nextra/components'
+import { AnnouncementDemo } from '../../../components/demos/announcement-demo'
+
+# The Announcement Modal
+
+The `<AnnouncementModal>` is a high-interruption, central takeover component. It is designed to commanded absolute attention when a user logs in.
+
+Because it completely blocks the underlying application UI, you should use it sparingly. It is meant for major paradigm shifts, not iterative updates.
+
+## Usage & Strategy
+
+Use an Announcement Modal when a release needs a structured narrative and clear, undeniable calls to action. 
+
+<Callout type="warning">
+  **Best Use Cases**:
+  - Major workflow redesigns where old buttons have moved.
+  - New tier, billing, or pricing communication.
+  - Migration windows requiring guided CTA paths (e.g., "Click here to migrate your data securely").
+</Callout>
+
+- **Multi-Slide Sequences**: If one modal isn't enough to explain a complex migration, you can configure the Modal to display a paginated carousel of slides.
+- **Frequency Controls**: By default, an Announcement is dismissed permanently once closed. However, you can configure the `frequency` prop to `every-session` if acknowledging the modal is legally or operationally required.
+
+## Interactive Demo
+
+The demo below shows how the Announcement Modal takes focus, traps the user's keyboard navigation (for accessibility), and presents a clear call to action.
+
+<AnnouncementDemo />

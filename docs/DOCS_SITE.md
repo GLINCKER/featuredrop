@@ -24,6 +24,13 @@ The docs app is configured as a static export (`output: 'export'`), so it can be
 - `/docs/api` API map
 - `/playground` sandbox launch links
 
+## Local demo components
+
+Docs pages can include in-repo interactive demos via React components under `apps/docs/components/demos`.
+
+- Demo wrapper: `apps/docs/components/code-demo-card.tsx`
+- Changelog demo: `apps/docs/components/demos/changelog-demo.tsx`
+
 ## Vercel setup
 
 Recommended:
