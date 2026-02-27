@@ -11,9 +11,10 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/GLINCKER/featuredrop/stargazers"><img src="https://img.shields.io/github/stars/GLINCKER/featuredrop?style=flat&color=f59e0b&label=stars" alt="GitHub stars" /></a>
   <a href="https://www.npmjs.com/package/featuredrop"><img src="https://img.shields.io/npm/v/featuredrop?color=ea580c&label=npm" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/featuredrop"><img src="https://img.shields.io/npm/dm/featuredrop?color=22c55e&label=downloads" alt="npm downloads" /></a>
   <a href="https://bundlephobia.com/package/featuredrop"><img src="https://img.shields.io/bundlephobia/minzip/featuredrop?color=22c55e&label=gzipped" alt="bundle size" /></a>
-  <a href="https://github.com/GLINCKER/featuredrop/actions/workflows/ci.yml"><img src="https://github.com/GLINCKER/featuredrop/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://github.com/GLINCKER/featuredrop/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/featuredrop?color=6366f1&label=license" alt="MIT license" /></a>
   <a href="https://featuredrop.dev"><img src="https://img.shields.io/badge/docs-live-ea580c" alt="Live docs" /></a>
 </p>
@@ -155,23 +156,22 @@ All components are headless-capable via render props. [See live demos →](https
 
 New users see everything (no watermark). Returning users see only features shipped since their last visit. Dismissals are instant (localStorage). "Mark all seen" syncs across devices with one optional server write.
 
-Read the full [Architecture doc](docs/ARCHITECTURE.md) for cross-device sync and custom adapter patterns.
+Read the full [Architecture doc](https://featuredrop.dev/docs/concepts/architecture) for cross-device sync and custom adapter patterns.
 
 ---
 
 ## Storage Adapters
 
-```ts
-import {
-  LocalStorageAdapter, // lightweight browser adapter
-  MemoryAdapter,       // testing and SSR
-} from 'featuredrop'
-import {
-  IndexedDBAdapter, // offline-first with queued sync
-  RemoteAdapter,    // server-backed with retry + circuit-breaker
-  HybridAdapter,    // local + remote with batched flush
-} from 'featuredrop/adapters'
-```
+| Adapter | Import | Best For |
+|---|---|---|
+| `LocalStorageAdapter` | `featuredrop` | Browser apps (default) |
+| `MemoryAdapter` | `featuredrop` | Testing, SSR |
+| `IndexedDBAdapter` | `featuredrop/adapters` | Offline-first PWAs |
+| `RemoteAdapter` | `featuredrop/adapters` | Server-backed with retry + circuit-breaker |
+| `HybridAdapter` | `featuredrop/adapters` | Local + remote with batched flush |
+| Redis / PostgreSQL / DynamoDB | `featuredrop/adapters` | Database-backed server-side apps |
+
+[All adapters →](https://featuredrop.dev/docs/adapters/overview)
 
 ---
 
@@ -278,6 +278,34 @@ Works with PostHog, Mixpanel, Amplitude, Segment, or any custom endpoint.
 
 ---
 
+## User Segmentation
+
+Show the right features to the right users:
+
+```tsx
+<FeatureDropProvider
+  manifest={features}
+  storage={storage}
+  userContext={{ plan: 'pro', role: 'admin', region: 'eu' }}
+>
+  <App />
+</FeatureDropProvider>
+```
+
+Define audience rules per feature in your manifest:
+
+```json
+{
+  "id": "ai-copilot",
+  "label": "AI Copilot",
+  "audience": { "plan": ["pro", "enterprise"], "region": ["us", "eu"] }
+}
+```
+
+Users outside the audience never see the feature. No server calls. No feature flag service needed.
+
+---
+
 ## CI Integration
 
 Validate your manifest in every pull request:
@@ -357,8 +385,9 @@ npx featuredrop migrate --from beamer --input beamer-export.json --out features.
 | [Playground](https://featuredrop.dev/playground) | Local sandbox + hosted templates |
 | [API Reference](https://featuredrop.dev/docs/api) | All functions, hooks, and components |
 | [Migration Guide](https://featuredrop.dev/docs/migration) | Migrate from Beamer, Pendo, Headway |
-| [Architecture](docs/ARCHITECTURE.md) | Three-check algorithm, cross-device sync |
-| [Recipes](docs/RECIPES.md) | Copy-paste integration patterns |
+| [Architecture](https://featuredrop.dev/docs/concepts/architecture) | Three-check algorithm, cross-device sync |
+| [Recipes](https://featuredrop.dev/docs/recipes) | Copy-paste integration patterns |
+| [Frameworks](https://featuredrop.dev/docs/frameworks/vue) | Vue, Svelte, Solid, Angular, Preact, Web Components |
 
 ---
 
