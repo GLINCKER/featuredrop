@@ -9,6 +9,11 @@ import {
   type RefObject,
 } from "react";
 import type { FeatureEntry, AnalyticsCallbacks } from "../../types";
+import {
+  ensureFeatureDropAnimationStyles,
+  getEnterAnimation,
+  getPulseAnimation,
+} from "../../animation";
 import { useFeatureDrop } from "../hooks/use-feature-drop";
 import { parseDescription } from "../../markdown";
 
@@ -74,7 +79,6 @@ const beaconPulseStyles: CSSProperties = {
   borderRadius: "50%",
   border: "2px solid var(--featuredrop-beacon-color, #f59e0b)",
   opacity: 0.6,
-  animation: "featuredrop-spotlight-pulse 2s ease-in-out infinite",
 };
 
 const tooltipStyles: CSSProperties = {
@@ -114,35 +118,6 @@ const tooltipDismissStyles: CSSProperties = {
   backgroundColor: "var(--featuredrop-tooltip-dismiss-bg, #f3f4f6)",
   color: "var(--featuredrop-tooltip-dismiss-color, #374151)",
 };
-
-/* ------------------------------------------------------------------ */
-/*  CSS keyframes injection                                            */
-/* ------------------------------------------------------------------ */
-
-let injectedKeyframes = false;
-function injectKeyframes() {
-  if (injectedKeyframes || typeof document === "undefined") return;
-  injectedKeyframes = true;
-  const style = document.createElement("style");
-  style.textContent = `
-    @keyframes featuredrop-spotlight-pulse {
-      0%, 100% { transform: scale(1); opacity: 0.6; }
-      50% { transform: scale(1.6); opacity: 0; }
-    }
-    @keyframes featuredrop-pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-  `;
-  document.head.appendChild(style);
-}
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-    return false;
-  }
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
 
 /* ------------------------------------------------------------------ */
 /*  Spotlight Component                                                */
@@ -186,6 +161,8 @@ export function Spotlight({
     acquireSpotlightSlot,
     releaseSpotlightSlot,
     activeSpotlightCount,
+    animation,
+    translations,
   } = useFeatureDrop();
   const feature = newFeatures.find((f) => f.id === featureId);
   const [isTooltipOpen, setTooltipOpen] = useState(false);
@@ -194,7 +171,14 @@ export function Spotlight({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const beaconRef = useRef<HTMLDivElement>(null);
   const instanceIdRef = useRef(`featuredrop-spotlight-${Math.random().toString(36).slice(2, 10)}`);
-  const reduceMotion = useMemo(() => prefersReducedMotion(), []);
+  const beaconPulseAnimation = useMemo(
+    () => getPulseAnimation(animation, "beacon"),
+    [animation],
+  );
+  const tooltipEnterAnimation = useMemo(
+    () => getEnterAnimation(animation, "popover"),
+    [animation],
+  );
 
   const isActive = !!feature;
   const tooltipId = `${instanceIdRef.current}-tooltip`;
@@ -202,7 +186,7 @@ export function Spotlight({
   const tooltipDescId = `${instanceIdRef.current}-description`;
 
   useEffect(() => {
-    injectKeyframes();
+    ensureFeatureDropAnimationStyles();
   }, []);
 
   useEffect(() => {
@@ -382,7 +366,7 @@ export function Spotlight({
         <span
           style={{
             ...beaconPulseStyles,
-            animation: reduceMotion ? "none" : beaconPulseStyles.animation,
+            animation: beaconPulseAnimation ?? "none",
           }}
         />
       </div>
@@ -391,7 +375,12 @@ export function Spotlight({
       {isTooltipOpen && (
         <div
           id={tooltipId}
-          style={{ ...tooltipStyles, position: "fixed", ...tooltipPosition }}
+          style={{
+            ...tooltipStyles,
+            position: "fixed",
+            ...tooltipPosition,
+            animation: tooltipEnterAnimation,
+          }}
           data-featuredrop-tooltip
           role="dialog"
           aria-modal="false"
@@ -413,7 +402,7 @@ export function Spotlight({
                 onClick={handleDismiss}
                 style={tooltipDismissStyles}
               >
-                Got it
+                {translations.gotIt}
               </button>
             </>
           )}

@@ -26,35 +26,46 @@ export { useSurvey } from "./hooks/use-survey";
 export type { UseSurveyResult } from "./hooks/use-survey";
 
 // Components
-export { NewBadge } from "./components/new-badge";
+import { withFeatureDropBoundary } from "./error-boundary";
+import { NewBadge as NewBadgeBase } from "./components/new-badge";
 export type { NewBadgeProps, NewBadgeRenderProps } from "./components/new-badge";
+export const NewBadge = withFeatureDropBoundary(NewBadgeBase, "NewBadge");
 
-export { ChangelogWidget } from "./components/changelog-widget";
+import { ChangelogWidget as ChangelogWidgetBase } from "./components/changelog-widget";
 export type {
   ChangelogWidgetProps,
   ChangelogWidgetRenderProps,
   ChangelogEntryRenderProps,
 } from "./components/changelog-widget";
+export const ChangelogWidget = withFeatureDropBoundary(ChangelogWidgetBase, "ChangelogWidget");
 
-export { Spotlight } from "./components/spotlight";
+import { Spotlight as SpotlightBase } from "./components/spotlight";
 export type { SpotlightProps, SpotlightRenderProps } from "./components/spotlight";
+export const Spotlight = withFeatureDropBoundary(SpotlightBase, "Spotlight");
 
-export { Banner } from "./components/banner";
+import { Banner as BannerBase } from "./components/banner";
 export type { BannerProps, BannerRenderProps, BannerVariant } from "./components/banner";
+export const Banner = withFeatureDropBoundary(BannerBase, "Banner");
 
-export { Toast } from "./components/toast";
+import { Toast as ToastBase } from "./components/toast";
 export type { ToastProps, ToastRenderProps } from "./components/toast";
+export const Toast = withFeatureDropBoundary(ToastBase, "Toast");
 
-export { ChangelogPage } from "./components/changelog-page";
+import { ChangelogPage as ChangelogPageBase } from "./components/changelog-page";
 export type { ChangelogPageProps, PaginationMode } from "./components/changelog-page";
+export const ChangelogPage = withFeatureDropBoundary(ChangelogPageBase, "ChangelogPage");
 
-export { Tour } from "./components/tour";
+import { Tour as TourBase } from "./components/tour";
 export type { TourProps, TourStep, TourRenderProps } from "./components/tour";
-export { Checklist } from "./components/checklist";
+export const Tour = withFeatureDropBoundary(TourBase, "Tour");
+import { Checklist as ChecklistBase } from "./components/checklist";
 export type { ChecklistProps, ChecklistTask, ChecklistRenderProps } from "./components/checklist";
-export { Hotspot, TooltipGroup } from "./components/hotspot";
+export const Checklist = withFeatureDropBoundary(ChecklistBase, "Checklist");
+import { Hotspot as HotspotBase, TooltipGroup as TooltipGroupBase } from "./components/hotspot";
 export type { HotspotProps, TooltipGroupProps } from "./components/hotspot";
-export { FeedbackWidget } from "./components/feedback-widget";
+export const Hotspot = withFeatureDropBoundary(HotspotBase, "Hotspot");
+export const TooltipGroup = withFeatureDropBoundary(TooltipGroupBase, "TooltipGroup");
+import { FeedbackWidget as FeedbackWidgetBase } from "./components/feedback-widget";
 export type {
   FeedbackWidgetProps,
   FeedbackWidgetRenderProps,
@@ -62,19 +73,22 @@ export type {
   FeedbackEmoji,
   FeedbackRateLimit,
 } from "./components/feedback-widget";
-export { AnnouncementModal } from "./components/announcement-modal";
+export const FeedbackWidget = withFeatureDropBoundary(FeedbackWidgetBase, "FeedbackWidget");
+import { AnnouncementModal as AnnouncementModalBase } from "./components/announcement-modal";
 export type {
   AnnouncementModalProps,
   AnnouncementModalRenderProps,
   AnnouncementSlide,
 } from "./components/announcement-modal";
-export { SpotlightChain } from "./components/spotlight-chain";
+export const AnnouncementModal = withFeatureDropBoundary(AnnouncementModalBase, "AnnouncementModal");
+import { SpotlightChain as SpotlightChainBase } from "./components/spotlight-chain";
 export type {
   SpotlightChainProps,
   SpotlightChainRenderProps,
   SpotlightChainStep,
 } from "./components/spotlight-chain";
-export { Survey } from "./components/survey";
+export const SpotlightChain = withFeatureDropBoundary(SpotlightChainBase, "SpotlightChain");
+import { Survey as SurveyBase } from "./components/survey";
 export type {
   SurveyProps,
   SurveyType,
@@ -84,14 +98,17 @@ export type {
   SurveyPayload,
   SurveyRenderProps,
 } from "./components/survey";
-export { FeatureRequestButton } from "./components/feature-request-button";
+export const Survey = withFeatureDropBoundary(SurveyBase, "Survey");
+import { FeatureRequestButton as FeatureRequestButtonBase } from "./components/feature-request-button";
 export type {
   FeatureRequestButtonProps,
   FeatureRequestButtonRenderProps,
 } from "./components/feature-request-button";
-export { FeatureRequestForm } from "./components/feature-request-form";
+export const FeatureRequestButton = withFeatureDropBoundary(FeatureRequestButtonBase, "FeatureRequestButton");
+import { FeatureRequestForm as FeatureRequestFormBase } from "./components/feature-request-form";
 export type {
   FeatureRequestFormProps,
   FeatureRequestFormRenderProps,
   FeatureRequestPayload,
 } from "./components/feature-request-form";
+export const FeatureRequestForm = withFeatureDropBoundary(FeatureRequestFormBase, "FeatureRequestForm");

@@ -9,6 +9,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
+import { ensureFeatureDropAnimationStyles, getEnterAnimation } from "../../animation";
 import {
   registerTourController,
   type TourController,
@@ -206,6 +207,10 @@ export function Tour({
   children,
 }: TourProps) {
   const context = useContext(FeatureDropContext);
+  const dialogAnimation = useMemo(
+    () => getEnterAnimation(context?.animation ?? "normal", "popover"),
+    [context?.animation],
+  );
   const [isActive, setIsActive] = useState(false);
   const [stepIndex, setStepIndex] = useState(-1);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
@@ -340,6 +345,10 @@ export function Tour({
     void openStep(next);
     context?.markTourShown();
   }, [context, findValidStep, id, openStep, persistence]);
+
+  useEffect(() => {
+    ensureFeatureDropAnimationStyles();
+  }, []);
 
   useEffect(() => {
     if (!isActive || !step) return;
@@ -507,9 +516,11 @@ export function Tour({
         aria-labelledby={titleId}
         aria-describedby={showProgress ? `${contentId} ${progressId}` : contentId}
         data-featuredrop-tour={id}
+        dir={context?.direction}
         tabIndex={-1}
         style={{
           ...tourBoxStyles,
+          animation: dialogAnimation,
           top: tooltipPos.top,
           left: tooltipPos.left,
         }}

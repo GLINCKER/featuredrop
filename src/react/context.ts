@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import type { FeatureEntry, FeaturePriority } from "../types";
+import type { FeatureDropAnimationPreset, FeatureEntry, FeaturePriority } from "../types";
 import type { AdoptionEventInput } from "../analytics";
 import type { FeatureDropTranslations } from "../i18n";
 
@@ -51,8 +51,17 @@ export interface FeatureDropContextValue {
   activeSpotlightCount: number;
   /** Emit an adoption analytics event (collector-backed when configured) */
   trackAdoptionEvent: (event: AdoptionEventInput) => void;
+  /** Report a component/runtime error to provider-level monitoring hooks */
+  reportError: (
+    error: unknown,
+    context?: { component?: string; componentStack?: string },
+  ) => void;
   /** Active locale code used by built-in UI strings */
   locale: string;
+  /** Text direction derived from locale */
+  direction: "ltr" | "rtl";
+  /** Active motion preset for built-in component transitions */
+  animation: FeatureDropAnimationPreset;
   /** Resolved translation strings for built-in React components */
   translations: FeatureDropTranslations;
   /** Track a named usage event for trigger rules */

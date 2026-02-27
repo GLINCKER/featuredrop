@@ -150,29 +150,30 @@ function makeRemoteMock(userId = "u1"): ServerStorageAdapter {
     deviceCount: 1,
   });
 
-  return {
+  const remote: ServerStorageAdapter = {
     userId,
     getWatermark: () => watermark,
     getDismissedIds: () => dismissed,
-    dismiss: (id: string) => {
+    dismiss: vi.fn((id: string) => {
       dismissed.add(id);
-    },
-    dismissAll: async (now: Date) => {
+    }),
+    dismissAll: vi.fn(async (now: Date) => {
       watermark = now.toISOString();
       dismissed.clear();
-    },
-    sync: async () => {},
-    dismissBatch: async (ids: string[]) => {
+    }),
+    sync: vi.fn(async () => {}),
+    dismissBatch: vi.fn(async (ids: string[]) => {
       for (const id of ids) dismissed.add(id);
-    },
-    resetUser: async () => {
+    }),
+    resetUser: vi.fn(async () => {
       watermark = null;
       dismissed.clear();
-    },
-    getBulkState: async () => bulkState,
-    isHealthy: async () => true,
-    destroy: async () => {},
+    }),
+    getBulkState: vi.fn(async () => bulkState),
+    isHealthy: vi.fn(async () => true),
+    destroy: vi.fn(async () => {}),
   };
+  return remote;
 }
 
 describe("HybridAdapter", () => {
@@ -187,13 +188,72 @@ describe("HybridAdapter", () => {
     expect(ids.has("remote-id")).toBe(true);
   });
 
-  it("writes dismiss to both adapters", () => {
+  it("writes dismiss locally and flushes remote in batch", async () => {
     const local = new MemoryAdapter();
     const remote = makeRemoteMock();
-    const adapter = new HybridAdapter({ local, remote });
+    const adapter = new HybridAdapter({
+      local,
+      remote,
+      dismissBatchWindowMs: 0,
+      syncOnOnline: false,
+      syncOnVisibilityChange: false,
+    });
     adapter.dismiss("feat-2");
     expect(local.getDismissedIds().has("feat-2")).toBe(true);
+    expect(remote.getDismissedIds().has("feat-2")).toBe(false);
+    await adapter.flushPendingDismisses();
     expect(remote.getDismissedIds().has("feat-2")).toBe(true);
+    await adapter.destroy();
+  });
+
+  it("batches rapid dismiss calls into one remote dismissBatch request", async () => {
+    const local = new MemoryAdapter();
+    const remote = makeRemoteMock();
+    const adapter = new HybridAdapter({
+      local,
+      remote,
+      dismissBatchWindowMs: 0,
+      syncOnOnline: false,
+      syncOnVisibilityChange: false,
+    });
+
+    adapter.dismiss("a");
+    adapter.dismiss("b");
+    adapter.dismiss("a");
+    await adapter.flushPendingDismisses();
+
+    expect(remote.dismissBatch).toHaveBeenCalledTimes(1);
+    expect(remote.dismissBatch).toHaveBeenCalledWith(["a", "b"]);
+    await adapter.destroy();
+  });
+
+  it("retries pending dismisses when remote batch fails", async () => {
+    const local = new MemoryAdapter();
+    const remote = makeRemoteMock();
+    const dismissed = remote.getDismissedIds() as Set<string>;
+    let failedOnce = false;
+    remote.dismissBatch = vi.fn(async (ids: string[]) => {
+      if (!failedOnce) {
+        failedOnce = true;
+        throw new Error("offline");
+      }
+      for (const id of ids) dismissed.add(id);
+    });
+    const adapter = new HybridAdapter({
+      local,
+      remote,
+      dismissBatchWindowMs: 0,
+      syncOnOnline: false,
+      syncOnVisibilityChange: false,
+    });
+
+    adapter.dismiss("retry-me");
+    await adapter.flushPendingDismisses();
+    expect(remote.getDismissedIds().has("retry-me")).toBe(false);
+
+    await adapter.flushPendingDismisses();
+    expect(remote.getDismissedIds().has("retry-me")).toBe(true);
+    await adapter.destroy();
   });
 });
 

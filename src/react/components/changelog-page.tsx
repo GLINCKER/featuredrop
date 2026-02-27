@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { FeatureEntry, FeatureManifest } from "../../types";
 import type { FeatureDropThemeInput } from "../../theme";
+import { formatDateForLocale, formatRelativeTimeForLocale } from "../../i18n";
 import { parseDescription } from "../../markdown";
 import { useFeatureDrop } from "../hooks/use-feature-drop";
 import { useThemeVariables } from "../theme";
@@ -32,6 +33,7 @@ export interface ChangelogPageProps {
   emptyState?: ReactNode;
   renderEntry?: (entry: FeatureEntry, index: number) => ReactNode;
   formatDate?: (date: string) => string;
+  dateFormat?: "absolute" | "relative";
   basePath?: string;
   manifest?: FeatureManifest;
   className?: string;
@@ -139,13 +141,8 @@ const reactionButtonStyles: CSSProperties = {
   fontSize: "12px",
 };
 
-function defaultFormatDate(date: string): string {
-  const d = new Date(date);
-  return d.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+function defaultFormatDate(date: string, locale: string): string {
+  return formatDateForLocale(date, locale);
 }
 
 function EntryCard({
@@ -285,7 +282,8 @@ export function ChangelogPage({
   categories,
   emptyState,
   renderEntry,
-  formatDate = defaultFormatDate,
+  formatDate,
+  dateFormat = "absolute",
   basePath,
   manifest: manifestProp,
   className,
@@ -295,7 +293,7 @@ export function ChangelogPage({
   reactions = [...DEFAULT_REACTIONS],
   onReaction,
 }: ChangelogPageProps) {
-  const { manifest: contextManifest, translations } = useFeatureDrop();
+  const { manifest: contextManifest, locale, direction, translations } = useFeatureDrop();
   const themeVariables = useThemeVariables(theme);
   const manifest = useMemo(
     () => manifestProp ?? contextManifest ?? [],
@@ -369,6 +367,15 @@ export function ChangelogPage({
     if (typeof window !== "undefined") return window.location.pathname;
     return "";
   }, [basePath]);
+  const resolvedFormatDate = useMemo(
+    () =>
+      formatDate ??
+      ((value: string) =>
+        dateFormat === "relative"
+          ? formatRelativeTimeForLocale(value, locale)
+          : defaultFormatDate(value, locale)),
+    [dateFormat, formatDate, locale],
+  );
 
   // Deep-link scroll to #entry-id
   useEffect(() => {
@@ -416,7 +423,7 @@ export function ChangelogPage({
         <EntryCard
           key={entry.id}
           entry={entry}
-          formatDate={formatDate}
+          formatDate={resolvedFormatDate}
           basePath={resolvedBasePath}
           showReactions={showReactions}
           shareLabel={translations.share}
@@ -474,7 +481,12 @@ export function ChangelogPage({
   );
 
   return (
-    <div data-featuredrop-changelog-page className={className} style={containerStyles}>
+    <div
+      data-featuredrop-changelog-page
+      className={className}
+      style={containerStyles}
+      dir={direction}
+    >
       <a href={`#${listId}`} style={skipLinkStyles}>
         {translations.skipToEntries}
       </a>

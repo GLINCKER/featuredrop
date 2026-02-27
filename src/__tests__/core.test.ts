@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { isNew, getNewFeatures, getNewFeatureCount, hasNewFeature } from "../core";
+import { createFlagBridge } from "../flags";
 import type { FeatureEntry, FeatureManifest, StorageAdapter } from "../types";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -209,6 +210,39 @@ describe("isNew", () => {
       ),
     ).toBe(false);
   });
+
+  it("returns false when feature has flagKey and no flag bridge is provided", () => {
+    const feature = makeFeature({
+      flagKey: "ai-journal-enabled",
+    });
+    expect(isNew(feature, null, new Set(), NOW)).toBe(false);
+  });
+
+  it("returns true when feature flag resolves to enabled", () => {
+    const feature = makeFeature({
+      flagKey: "ai-journal-enabled",
+    });
+    const bridge = createFlagBridge({
+      isEnabled: (key) => key === "ai-journal-enabled",
+    });
+    expect(
+      isNew(feature, null, new Set(), NOW, undefined, undefined, undefined, undefined, undefined, bridge),
+    ).toBe(true);
+  });
+
+  it("returns false when feature product does not match current scope", () => {
+    const feature = makeFeature({ product: "askverdict" });
+    expect(
+      isNew(feature, null, new Set(), NOW, undefined, undefined, undefined, undefined, undefined, undefined, "other"),
+    ).toBe(false);
+  });
+
+  it("returns true for wildcard product entries", () => {
+    const feature = makeFeature({ product: "*" });
+    expect(
+      isNew(feature, null, new Set(), NOW, undefined, undefined, undefined, undefined, undefined, undefined, "askverdict"),
+    ).toBe(true);
+  });
 });
 
 // ── getNewFeatures ───────────────────────────────────────────────────────────
@@ -286,6 +320,64 @@ describe("getNewFeatures", () => {
       { seenIds: new Set(["base"]) },
     );
     expect(withDependencyState.map((f) => f.id)).toEqual(["base", "dependent"]);
+  });
+
+  it("filters out disabled feature-flag entries", () => {
+    const manifest: FeatureManifest = [
+      makeFeature({ id: "always-on" }),
+      makeFeature({ id: "flagged", flagKey: "flag-enabled" }),
+    ];
+    const storage = makeStorage();
+    const bridge = createFlagBridge({
+      isEnabled: (key) => key === "flag-enabled",
+    });
+    const result = getNewFeatures(
+      manifest,
+      storage,
+      NOW,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      bridge,
+    );
+    expect(result.map((item) => item.id)).toEqual(["always-on", "flagged"]);
+
+    const disabledResult = getNewFeatures(
+      manifest,
+      storage,
+      NOW,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      createFlagBridge({ isEnabled: () => false }),
+    );
+    expect(disabledResult.map((item) => item.id)).toEqual(["always-on"]);
+  });
+
+  it("filters entries by product scope", () => {
+    const manifest: FeatureManifest = [
+      makeFeature({ id: "global", product: "*" }),
+      makeFeature({ id: "askverdict-only", product: "askverdict" }),
+      makeFeature({ id: "other-only", product: "other" }),
+    ];
+    const storage = makeStorage();
+    const result = getNewFeatures(
+      manifest,
+      storage,
+      NOW,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      "askverdict",
+    );
+    expect(result.map((item) => item.id)).toEqual(["global", "askverdict-only"]);
   });
 });
 

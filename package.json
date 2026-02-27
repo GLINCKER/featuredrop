@@ -30,6 +30,16 @@
         "default": "./dist/react.cjs"
       }
     },
+    "./admin": {
+      "import": {
+        "types": "./dist/admin.d.ts",
+        "default": "./dist/admin.js"
+      },
+      "require": {
+        "types": "./dist/admin.d.cts",
+        "default": "./dist/admin.cjs"
+      }
+    },
     "./vue": {
       "import": {
         "default": "./dist/vue.js"
@@ -96,6 +106,36 @@
         "default": "./dist/schema.cjs"
       }
     },
+    "./bridges": {
+      "import": {
+        "types": "./dist/bridges.d.ts",
+        "default": "./dist/bridges.js"
+      },
+      "require": {
+        "types": "./dist/bridges.d.cts",
+        "default": "./dist/bridges.cjs"
+      }
+    },
+    "./ci": {
+      "import": {
+        "types": "./dist/ci.d.ts",
+        "default": "./dist/ci.js"
+      },
+      "require": {
+        "types": "./dist/ci.d.cts",
+        "default": "./dist/ci.cjs"
+      }
+    },
+    "./flags": {
+      "import": {
+        "types": "./dist/flags.d.ts",
+        "default": "./dist/flags.js"
+      },
+      "require": {
+        "types": "./dist/flags.d.cts",
+        "default": "./dist/flags.cjs"
+      }
+    },
     "./testing": {
       "import": {
         "types": "./dist/testing.d.ts",
@@ -111,6 +151,9 @@
     "*": {
       "react": [
         "./dist/react.d.ts"
+      ],
+      "admin": [
+        "./dist/admin.d.ts"
       ],
       "solid": [
         "./dist/solid.d.ts"
@@ -129,6 +172,15 @@
       ],
       "schema": [
         "./dist/schema.d.ts"
+      ],
+      "bridges": [
+        "./dist/bridges.d.ts"
+      ],
+      "ci": [
+        "./dist/ci.d.ts"
+      ],
+      "flags": [
+        "./dist/flags.d.ts"
       ]
     }
   },
@@ -146,6 +198,10 @@
     "build": "tsup",
     "playground": "pnpm --dir examples/sandbox-react dev",
     "playground:build": "pnpm --dir examples/sandbox-react build",
+    "docs:install": "pnpm --dir apps/docs install",
+    "docs:dev": "pnpm --dir apps/docs dev",
+    "docs:build": "pnpm --dir apps/docs build",
+    "docs:start": "pnpm --dir apps/docs start",
     "featuredrop:build": "node ./dist/featuredrop.cjs build",
     "featuredrop:validate": "node ./dist/featuredrop.cjs validate",
     "dev": "tsup --watch",
@@ -154,6 +210,8 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
+    "security-check": "node ./scripts/security-audit.mjs",
+    "size-check": "node ./scripts/check-bundle-budgets.mjs",
     "clean": "rm -rf dist coverage",
     "prepublishOnly": "pnpm run build"
   },

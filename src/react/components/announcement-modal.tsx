@@ -10,6 +10,12 @@ import {
 } from "react";
 import type { FeatureCTA, FeatureEntry } from "../../types";
 import { parseDescription } from "../../markdown";
+import {
+  ensureFeatureDropAnimationStyles,
+  getAnimationDurationMs,
+  getEnterAnimation,
+  getExitAnimation,
+} from "../../animation";
 import { FeatureDropContext } from "../context";
 
 export interface AnnouncementSlide {
@@ -186,6 +192,7 @@ export function AnnouncementModal({
 }: AnnouncementModalProps) {
   const context = useContext(FeatureDropContext);
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [isClosing, setIsClosing] = useState(false);
   const [slideIndex, setSlideIndex] = useState(0);
   const [blockedByFrequency, setBlockedByFrequency] = useState(false);
   const [isMobile, setIsMobile] = useState(
@@ -193,6 +200,7 @@ export function AnnouncementModal({
   );
   const modalRef = useRef<HTMLElement>(null);
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const instanceIdRef = useRef(`featuredrop-announcement-${Math.random().toString(36).slice(2, 10)}`);
 
   const resolvedFeature = useMemo(() => {
@@ -214,9 +222,16 @@ export function AnnouncementModal({
 
   const currentSlide = resolvedSlides[slideIndex] ?? null;
   const t = context?.translations;
+  const enterAnimation = getEnterAnimation(context?.animation ?? "normal", "modal");
+  const exitAnimation = getExitAnimation(context?.animation ?? "normal", "modal");
 
   const open = useCallback(() => {
     if (blockedByFrequency || resolvedSlides.length === 0) return;
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setIsClosing(false);
     if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
       lastFocusedElementRef.current = document.activeElement;
     }
@@ -241,7 +256,22 @@ export function AnnouncementModal({
   }, [defaultOpen, open]);
 
   const close = useCallback(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
     setIsOpen(false);
+    const animationPreset = context?.animation ?? "normal";
+    const exitDuration = getAnimationDurationMs(animationPreset, "modal", "exit");
+    if (exitDuration > 0) {
+      setIsClosing(true);
+      closeTimerRef.current = setTimeout(() => {
+        setIsClosing(false);
+        closeTimerRef.current = null;
+      }, exitDuration);
+    } else {
+      setIsClosing(false);
+    }
     const returnTarget = lastFocusedElementRef.current;
     if (returnTarget) {
       if (typeof requestAnimationFrame === "function") {
@@ -250,11 +280,11 @@ export function AnnouncementModal({
         returnTarget.focus();
       }
     }
-  }, []);
+  }, [context?.animation]);
 
   const dismiss = useCallback(() => {
-    close();
     setBlockedByFrequency(true);
+    close();
     if (frequency === "once") {
       setDismissedOnce(modalId);
     } else if (frequency === "every-session") {
@@ -291,12 +321,17 @@ export function AnnouncementModal({
 
   useEffect(() => {
     if (trigger !== "auto") return;
-    if (blockedByFrequency || isOpen || resolvedSlides.length === 0) return;
+    if (blockedByFrequency || isOpen || isClosing || resolvedSlides.length === 0) return;
+    if (frequency === "once" && isDismissedOnce(modalId)) return;
+    if (frequency === "every-session" && sessionDismissed.has(modalId)) return;
     if (resolvedFeature && resolvedFeature.priority !== "critical") return;
     open();
   }, [
+    frequency,
     blockedByFrequency,
+    isClosing,
     isOpen,
+    modalId,
     open,
     resolvedFeature,
     resolvedSlides.length,
@@ -314,6 +349,13 @@ export function AnnouncementModal({
       window.removeEventListener("resize", updateViewportMode);
     };
   }, [mobileBreakpoint]);
+
+  useEffect(() => {
+    ensureFeatureDropAnimationStyles();
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -391,7 +433,7 @@ export function AnnouncementModal({
     return <>{children(renderProps)}</>;
   }
 
-  if (!isOpen || !currentSlide || blockedByFrequency) return null;
+  if (!(isOpen || isClosing) || !currentSlide) return null;
 
   const embeddedVideo = toEmbedUrl(currentSlide.videoUrl);
   const descriptionHtml = currentSlide.description
@@ -417,9 +459,11 @@ export function AnnouncementModal({
         aria-describedby={currentSlide.description ? descriptionId : undefined}
         data-featuredrop-announcement-modal={modalId}
         className={className}
+        dir={context?.direction}
         tabIndex={-1}
         style={{
           ...(isMobile ? mobileModalStyles : desktopModalStyles),
+          animation: isClosing ? exitAnimation : enterAnimation,
           ...style,
         }}
       >

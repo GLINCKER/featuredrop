@@ -12,6 +12,7 @@ import {
   initFeaturedropProject,
   migrateManifest,
   type InitFormat,
+  type MigrationSource,
 } from "./cli-scaffold";
 import { generateRSS } from "./rss";
 import type { FeatureType } from "./types";
@@ -35,7 +36,7 @@ interface ParsedArgs {
   title?: string;
   link?: string;
   description?: string;
-  from?: string;
+  from?: MigrationSource;
   format?: InitFormat;
   force?: boolean;
   id?: string;
@@ -73,7 +74,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     else if (arg === "--link") parsed.link = rest[++i];
     else if (arg === "--description") parsed.description = rest[++i];
     else if (arg === "--input") parsed.inputFile = rest[++i];
-    else if (arg === "--from") parsed.from = rest[++i];
+    else if (arg === "--from") parsed.from = rest[++i] as MigrationSource;
     else if (arg === "--format") parsed.format = rest[++i] as InitFormat;
     else if (arg === "--force") parsed.force = true;
     else if (arg === "--id") parsed.id = rest[++i];
@@ -94,7 +95,7 @@ function printHelp(): void {
   console.log("Usage:");
   console.log("  featuredrop init [--format markdown|json] [--force] [--cwd .]");
   console.log("  featuredrop add [--label ...] [--id ...] [--description ...] [--type feature|improvement|fix|breaking] [--category ...] [--url ...] [--releasedAt ...] [--showNewUntil ...] [--show-days 14] [--format markdown|json] [--cwd .]");
-  console.log("  featuredrop migrate --from beamer [--input beamer-export.json] [--out featuredrop.manifest.json] [--cwd .]");
+  console.log("  featuredrop migrate --from beamer|headway|announcekit|canny|launchnotes [--input export.json] [--out featuredrop.manifest.json] [--cwd .]");
   console.log("  featuredrop build [--pattern features/**/*.md] [--out featuredrop.manifest.json] [--cwd .]");
   console.log("  featuredrop validate [--pattern features/**/*.md] [--cwd .]");
   console.log("  featuredrop stats [--pattern features/**/*.md] [--cwd .]");
@@ -163,17 +164,18 @@ async function run(): Promise<void> {
     }
 
     if (args.command === "migrate") {
-      if (args.from !== "beamer") {
-        throw new Error('Only "--from beamer" is currently supported');
+      const from = args.from;
+      if (!from) {
+        throw new Error('Missing required "--from" (beamer|headway|announcekit|canny|launchnotes)');
       }
-      const inputFile = args.inputFile ?? "beamer-export.json";
+      const inputFile = args.inputFile ?? `${from}-export.json`;
       const result = await migrateManifest({
         cwd: args.cwd,
-        from: "beamer",
+        from,
         inputFile,
         outFile: args.outFile,
       });
-      console.log(`Migrated ${result.entries.length} entries from beamer -> ${result.outFile}`);
+      console.log(`Migrated ${result.entries.length} entries from ${from} -> ${result.outFile}`);
       return;
     }
 

@@ -15,6 +15,8 @@ describe("validateManifest", () => {
     });
     expect(parsed.id).toBe("feature-1");
     expect(featureEntryJsonSchema.properties.id.type).toBe("string");
+    expect(featureEntryJsonSchema.properties.flagKey.type).toBe("string");
+    expect(featureEntryJsonSchema.properties.product.type).toBe("string");
   });
 
   it("returns valid for a well-formed manifest", () => {
@@ -75,5 +77,36 @@ describe("validateManifest", () => {
     expect(result.valid).toBe(false);
     expect(result.errors.some((issue) => issue.code === "invalid_value")).toBe(true);
     expect(result.errors.some((issue) => issue.code === "circular_dependency")).toBe(true);
+  });
+
+  it("rejects unsafe urls and meta keys", () => {
+    const result = validateManifest(
+      JSON.parse(`[
+        {
+          "id": "unsafe",
+          "label": "Unsafe",
+          "releasedAt": "2026-03-20T00:00:00Z",
+          "showNewUntil": "2026-04-20T00:00:00Z",
+          "url": "javascript:alert(1)",
+          "image": "ftp://cdn.example.com/image.png",
+          "cta": { "label": "Open", "url": "javascript:alert(2)" },
+          "meta": {
+            "nested": {
+              "__proto__": { "polluted": true }
+            }
+          }
+        }
+      ]`),
+    );
+
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((issue) => issue.path === "[0].url")).toBe(true);
+    expect(result.errors.some((issue) => issue.path === "[0].image")).toBe(true);
+    expect(result.errors.some((issue) => issue.path === "[0].cta.url")).toBe(true);
+    expect(
+      result.errors.some((issue) =>
+        issue.path.includes("[0].meta.nested.__proto__"),
+      ),
+    ).toBe(true);
   });
 });

@@ -11,6 +11,7 @@ export interface FeatureDropTranslations {
   loadMore: string;
   share: string;
   skipToEntries: string;
+  newFeatureCount: (count: number) => string;
   stepOf: (current: number, total: number) => string;
   back: string;
   next: string;
@@ -39,6 +40,8 @@ const EN_TRANSLATIONS: FeatureDropTranslations = {
   loadMore: "Load more",
   share: "Share",
   skipToEntries: "Skip to changelog entries",
+  newFeatureCount: (count: number) =>
+    count === 0 ? "No new features" : `${count} new feature${count === 1 ? "" : "s"}`,
   stepOf: (current: number, total: number) => `Step ${current} of ${total}`,
   back: "Back",
   next: "Next",
@@ -291,21 +294,171 @@ const SIMPLE_TRANSLATIONS: Record<string, Partial<FeatureDropTranslations>> = {
   },
 };
 
+const RTL_LANGUAGES = new Set(["ar", "fa", "he", "ur"]);
+
+const STEP_OF_TRANSLATIONS: Record<string, (current: number, total: number) => string> = {
+  en: EN_TRANSLATIONS.stepOf,
+  es: (current: number, total: number) => `Paso ${current} de ${total}`,
+  fr: (current: number, total: number) => `Etape ${current} sur ${total}`,
+  de: (current: number, total: number) => `Schritt ${current} von ${total}`,
+  pt: (current: number, total: number) => `Etapa ${current} de ${total}`,
+  "zh-cn": (current: number, total: number) => `第 ${current} / ${total} 步`,
+  ja: (current: number, total: number) => `${total}中${current}番目`,
+  ko: (current: number, total: number) => `${total}단계 중 ${current}단계`,
+  ar: (current: number, total: number) => `الخطوة ${current} من ${total}`,
+  hi: (current: number, total: number) => `${total} में से चरण ${current}`,
+};
+
+const NEW_FEATURE_COUNT_TRANSLATIONS: Record<string, (count: number) => string> = {
+  en: EN_TRANSLATIONS.newFeatureCount,
+  es: (count: number) => (count === 0 ? "Sin novedades" : `${count} novedad${count === 1 ? "" : "es"}`),
+  fr: (count: number) =>
+    count === 0 ? "Aucune nouveaute" : `${count} nouveaute${count === 1 ? "" : "s"}`,
+  de: (count: number) =>
+    count === 0
+      ? "Keine neuen Features"
+      : `${count} ${count === 1 ? "neues Feature" : "neue Features"}`,
+  pt: (count: number) =>
+    count === 0 ? "Sem novidades" : `${count} novidade${count === 1 ? "" : "s"}`,
+  "zh-cn": (count: number) => (count === 0 ? "暂无更新" : `${count} 条新更新`),
+  ja: (count: number) => (count === 0 ? "新着はありません" : `新着 ${count} 件`),
+  ko: (count: number) => (count === 0 ? "새 소식 없음" : `새 소식 ${count}개`),
+  ar: (count: number) => {
+    if (count === 0) return "لا توجد ميزات جديدة";
+    const category = new Intl.PluralRules("ar").select(count);
+    if (category === "one") return "ميزة جديدة واحدة";
+    if (category === "two") return "ميزتان جديدتان";
+    return `${count} ميزات جديدة`;
+  },
+  hi: (count: number) =>
+    count === 0 ? "कोई नया अपडेट नहीं" : `${count} ${count === 1 ? "नया अपडेट" : "नए अपडेट"}`,
+};
+
+export function resolveLocale(locale?: string): string {
+  const normalized = (locale ?? "en").toLowerCase();
+  if (normalized === "en" || normalized.startsWith("en-")) return "en";
+  if (Object.prototype.hasOwnProperty.call(SIMPLE_TRANSLATIONS, normalized)) {
+    return normalized;
+  }
+  const base = normalized.split("-")[0];
+  if (base === "en") return "en";
+  if (Object.prototype.hasOwnProperty.call(SIMPLE_TRANSLATIONS, base)) {
+    return base;
+  }
+  return "en";
+}
+
+export function getLocaleDirection(locale?: string): "ltr" | "rtl" {
+  const resolved = resolveLocale(locale);
+  const base = resolved.split("-")[0];
+  return RTL_LANGUAGES.has(base) ? "rtl" : "ltr";
+}
+
+export function formatDateForLocale(
+  value: string | number | Date,
+  locale?: string,
+  options: Intl.DateTimeFormatOptions = {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  },
+): string {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const resolved = resolveLocale(locale);
+  try {
+    return new Intl.DateTimeFormat(resolved, options).format(date);
+  } catch {
+    return date.toLocaleDateString(undefined, options);
+  }
+}
+
+export function formatRelativeTimeForLocale(
+  value: string | number | Date,
+  locale?: string,
+  options?: {
+    now?: string | number | Date;
+    numeric?: Intl.RelativeTimeFormatNumeric;
+    style?: Intl.RelativeTimeFormatStyle;
+  },
+): string {
+  const target = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(target.getTime())) return "";
+  const nowInput = options?.now;
+  const nowDate =
+    nowInput instanceof Date
+      ? nowInput
+      : typeof nowInput !== "undefined"
+        ? new Date(nowInput)
+        : new Date();
+  if (Number.isNaN(nowDate.getTime())) return "";
+
+  const diffMs = target.getTime() - nowDate.getTime();
+  const absDiff = Math.abs(diffMs);
+  const minute = 60_000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  const week = 7 * day;
+  const month = 30 * day;
+  const year = 365 * day;
+
+  let unit: Intl.RelativeTimeFormatUnit = "second";
+  let divisor = 1_000;
+  if (absDiff >= year) {
+    unit = "year";
+    divisor = year;
+  } else if (absDiff >= month) {
+    unit = "month";
+    divisor = month;
+  } else if (absDiff >= week) {
+    unit = "week";
+    divisor = week;
+  } else if (absDiff >= day) {
+    unit = "day";
+    divisor = day;
+  } else if (absDiff >= hour) {
+    unit = "hour";
+    divisor = hour;
+  } else if (absDiff >= minute) {
+    unit = "minute";
+    divisor = minute;
+  }
+
+  const relativeValue = Math.round(diffMs / divisor);
+  const resolvedLocale = resolveLocale(locale);
+  try {
+    const formatter = new Intl.RelativeTimeFormat(resolvedLocale, {
+      numeric: options?.numeric ?? "auto",
+      style: options?.style ?? "long",
+    });
+    return formatter.format(relativeValue, unit);
+  } catch {
+    const fallback = formatDateForLocale(target, resolvedLocale);
+    return fallback || target.toISOString();
+  }
+}
+
 export function resolveTranslations(
   locale?: string,
   overrides?: Partial<FeatureDropTranslations>,
 ): FeatureDropTranslations {
-  const normalizedLocale = (locale ?? "en").toLowerCase();
-  const base =
-    SIMPLE_TRANSLATIONS[normalizedLocale] ??
-    SIMPLE_TRANSLATIONS[normalizedLocale.split("-")[0]] ??
-    {};
+  const resolvedLocale = resolveLocale(locale);
+  const base = resolvedLocale === "en" ? {} : SIMPLE_TRANSLATIONS[resolvedLocale] ?? {};
+  const stepOf =
+    overrides?.stepOf ??
+    STEP_OF_TRANSLATIONS[resolvedLocale] ??
+    STEP_OF_TRANSLATIONS.en;
+  const newFeatureCount =
+    overrides?.newFeatureCount ??
+    NEW_FEATURE_COUNT_TRANSLATIONS[resolvedLocale] ??
+    NEW_FEATURE_COUNT_TRANSLATIONS.en;
 
   return {
     ...EN_TRANSLATIONS,
     ...base,
     ...(overrides ?? {}),
-    stepOf: overrides?.stepOf ?? EN_TRANSLATIONS.stepOf,
+    stepOf,
+    newFeatureCount,
   };
 }
 

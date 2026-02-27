@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -7,6 +8,14 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import {
+  ensureFeatureDropAnimationStyles,
+  getEnterAnimation,
+  getPulseAnimation,
+  prefersReducedMotion,
+  resolveAnimationPreset,
+} from "../../animation";
+import { FeatureDropContext } from "../context";
 
 export interface SpotlightChainStep {
   id?: string;
@@ -46,7 +55,6 @@ const beaconStyles: CSSProperties = {
   background: "#f59e0b",
   boxShadow: "0 0 0 2px rgba(17,24,39,0.12)",
   zIndex: "var(--featuredrop-spotlight-chain-beacon-z-index, 10010)" as unknown as number,
-  animation: "featuredrop-chain-pulse 1.8s ease-in-out infinite",
 };
 
 const tooltipStyles: CSSProperties = {
@@ -59,27 +67,6 @@ const tooltipStyles: CSSProperties = {
   boxShadow: "0 10px 30px rgba(0,0,0,0.16)",
   width: "min(90vw, 320px)",
 };
-
-let injectedKeyframes = false;
-function injectKeyframes() {
-  if (injectedKeyframes || typeof document === "undefined") return;
-  injectedKeyframes = true;
-  const style = document.createElement("style");
-  style.textContent = `
-    @keyframes featuredrop-chain-pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.35); opacity: 0.65; }
-    }
-  `;
-  document.head.appendChild(style);
-}
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-    return false;
-  }
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
 
 function getFocusableElements(container: HTMLElement): HTMLElement[] {
   const nodes = container.querySelectorAll<HTMLElement>(
@@ -111,12 +98,27 @@ export function SpotlightChain({
   onSkip,
   children,
 }: SpotlightChainProps) {
+  const featureDrop = useContext(FeatureDropContext);
   const [isActive, setIsActive] = useState(false);
   const [stepIndex, setStepIndex] = useState(-1);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
-  const reduceMotion = useMemo(() => prefersReducedMotion(), []);
+  const animation = useMemo(
+    () =>
+      resolveAnimationPreset(featureDrop?.animation ?? "normal", {
+        reducedMotion: prefersReducedMotion(),
+      }),
+    [featureDrop?.animation],
+  );
+  const beaconPulseAnimation = useMemo(
+    () => getPulseAnimation(animation, "beacon"),
+    [animation],
+  );
+  const tooltipEnterAnimation = useMemo(
+    () => getEnterAnimation(animation, "popover"),
+    [animation],
+  );
   const instanceIdRef = useRef(`featuredrop-spotlight-chain-${Math.random().toString(36).slice(2, 10)}`);
 
   const step = stepIndex >= 0 ? steps[stepIndex] ?? null : null;
@@ -177,7 +179,7 @@ export function SpotlightChain({
   }, [onSkip, step, stepIndex]);
 
   useEffect(() => {
-    injectKeyframes();
+    ensureFeatureDropAnimationStyles();
   }, []);
 
   useEffect(() => {
@@ -296,7 +298,7 @@ export function SpotlightChain({
         data-featuredrop-spotlight-chain-beacon={step.id ?? stepIndex}
         style={{
           ...beaconStyles,
-          animation: reduceMotion ? "none" : beaconStyles.animation,
+          animation: beaconPulseAnimation ?? "none",
           top: rect.top - 7,
           left: rect.right - 7,
         }}
@@ -309,7 +311,12 @@ export function SpotlightChain({
         aria-describedby={contentId}
         data-featuredrop-spotlight-chain={step.id ?? stepIndex}
         tabIndex={-1}
-        style={{ ...tooltipStyles, top: tooltipTop, left: tooltipLeft }}
+        style={{
+          ...tooltipStyles,
+          top: tooltipTop,
+          left: tooltipLeft,
+          animation: tooltipEnterAnimation,
+        }}
       >
         {step.title && (
           <p id={titleId} style={{ margin: "0 0 6px", fontWeight: 700, fontSize: "15px" }}>
@@ -331,7 +338,7 @@ export function SpotlightChain({
               cursor: "pointer",
             }}
           >
-            Skip
+            {featureDrop?.translations.skip ?? "Skip"}
           </button>
           <button
             type="button"
@@ -345,7 +352,9 @@ export function SpotlightChain({
               cursor: "pointer",
             }}
           >
-            {stepIndex >= steps.length - 1 ? "Got it" : "Next"}
+            {stepIndex >= steps.length - 1
+              ? (featureDrop?.translations.gotIt ?? "Got it")
+              : (featureDrop?.translations.next ?? "Next")}
           </button>
         </div>
       </div>

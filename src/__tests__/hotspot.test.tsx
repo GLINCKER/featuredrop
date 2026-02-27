@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryAdapter } from "../adapters/memory";
+import { FeatureDropProvider } from "../react/provider";
 import { Hotspot, TooltipGroup } from "../react/components/hotspot";
 
 beforeEach(() => {
@@ -111,5 +113,22 @@ describe("Hotspot", () => {
 
     await userEvent.click(screen.getByLabelText("Hotspot hs-d"));
     expect(screen.queryByText("Tooltip D")).toBeNull();
+  });
+
+  it("uses provider animation preset for beacon and tooltip transitions", async () => {
+    render(
+      <FeatureDropProvider manifest={[]} storage={new MemoryAdapter()} animation="none">
+        <button id="target-motion">Motion</button>
+        <Hotspot id="hs-motion" target="#target-motion" frequency="always">
+          Motion tooltip
+        </Hotspot>
+      </FeatureDropProvider>,
+    );
+
+    const beacon = screen.getByLabelText("Hotspot hs-motion") as HTMLElement;
+    expect(beacon.style.animation).toBe("none");
+
+    await userEvent.click(beacon);
+    expect(screen.getByRole("dialog").style.animation).toBe("");
   });
 });

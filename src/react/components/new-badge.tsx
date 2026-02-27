@@ -1,4 +1,11 @@
-import type { ReactNode, CSSProperties } from "react";
+import { useContext, useEffect, useMemo, type ReactNode, type CSSProperties } from "react";
+import {
+  ensureFeatureDropAnimationStyles,
+  getPulseAnimation,
+  prefersReducedMotion,
+  resolveAnimationPreset,
+} from "../../animation";
+import { FeatureDropContext } from "../context";
 
 export interface NewBadgeRenderProps {
   /** Whether the feature is currently new */
@@ -95,6 +102,20 @@ export function NewBadge({
   style,
   children,
 }: NewBadgeProps) {
+  const context = useContext(FeatureDropContext);
+  const pulsePreset = useMemo(
+    () =>
+      resolveAnimationPreset(context?.animation ?? "normal", {
+        reducedMotion: prefersReducedMotion(),
+      }),
+    [context?.animation],
+  );
+  const dotPulseAnimation = useMemo(() => getPulseAnimation(pulsePreset, "dot"), [pulsePreset]);
+
+  useEffect(() => {
+    ensureFeatureDropAnimationStyles();
+  }, []);
+
   // Render prop mode
   if (children) {
     return <>{children({ isNew: show })}</>;
@@ -103,16 +124,12 @@ export function NewBadge({
   if (!show) return null;
 
   const handleClick = dismissOnClick && onDismiss ? onDismiss : undefined;
-  const reduceMotion =
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const variantStyles =
     variant === "dot"
       ? {
           ...dotStyles,
-          animation: reduceMotion ? "none" : dotStyles.animation,
+          animation: dotPulseAnimation ?? "none",
         }
       : variant === "count"
         ? countStyles

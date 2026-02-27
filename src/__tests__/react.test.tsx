@@ -10,6 +10,7 @@ import { NewBadge } from "../react/components/new-badge";
 import { MemoryAdapter } from "../adapters/memory";
 import { AnalyticsCollector, CustomAdapter } from "../analytics";
 import { getFeatureVariantName } from "../variants";
+import { createFlagBridge } from "../flags";
 import type { FeatureManifest } from "../types";
 
 const NOW = new Date("2026-02-25T12:00:00Z");
@@ -189,6 +190,18 @@ function TriggerConsumer() {
   );
 }
 
+function LocaleConsumer() {
+  const { locale, direction, animation, translations } = useFeatureDrop();
+  return (
+    <div>
+      <span data-testid="locale">{locale}</span>
+      <span data-testid="direction">{direction}</span>
+      <span data-testid="animation">{animation}</span>
+      <span data-testid="count-label">{translations.newFeatureCount(2)}</span>
+    </div>
+  );
+}
+
 function VariantConsumer() {
   const { newFeatures, markFeatureClicked } = useFeatureDrop();
   const first = newFeatures[0];
@@ -218,6 +231,98 @@ describe("FeatureDropProvider", () => {
     expect(screen.getByTestId("count").textContent).toBe("2");
     expect(screen.getByTestId("features").textContent).toContain("journal");
     expect(screen.getByTestId("features").textContent).toContain("analytics");
+  });
+
+  it("filters features by flag bridge when flagKey is configured", () => {
+    const storage = createTestStorage();
+    const manifest: FeatureManifest = [
+      ...TEST_MANIFEST,
+      {
+        id: "flagged",
+        label: "Flagged Release",
+        releasedAt: "2026-02-24T00:00:00Z",
+        showNewUntil: "2026-03-24T00:00:00Z",
+        flagKey: "flag-enabled",
+      },
+    ];
+
+    const enabledBridge = createFlagBridge({
+      isEnabled: (key) => key === "flag-enabled",
+    });
+    const disabledBridge = createFlagBridge({
+      isEnabled: () => false,
+    });
+
+    const { rerender } = render(
+      <FeatureDropProvider manifest={manifest} storage={storage} flagBridge={enabledBridge}>
+        <HookConsumer />
+      </FeatureDropProvider>,
+    );
+    expect(screen.getByTestId("features").textContent).toContain("flagged");
+
+    rerender(
+      <FeatureDropProvider manifest={manifest} storage={storage} flagBridge={disabledBridge}>
+        <HookConsumer />
+      </FeatureDropProvider>,
+    );
+    expect(screen.getByTestId("features").textContent).not.toContain("flagged");
+  });
+
+  it("filters features by provider product scope", () => {
+    const storage = createTestStorage();
+    const manifest: FeatureManifest = [
+      ...TEST_MANIFEST,
+      {
+        id: "askverdict-feature",
+        label: "AskVerdict specific",
+        releasedAt: "2026-02-24T00:00:00Z",
+        showNewUntil: "2026-03-24T00:00:00Z",
+        product: "askverdict",
+      },
+      {
+        id: "other-feature",
+        label: "Other product feature",
+        releasedAt: "2026-02-24T00:00:00Z",
+        showNewUntil: "2026-03-24T00:00:00Z",
+        product: "other",
+      },
+      {
+        id: "shared-feature",
+        label: "Shared feature",
+        releasedAt: "2026-02-24T00:00:00Z",
+        showNewUntil: "2026-03-24T00:00:00Z",
+        product: "*",
+      },
+    ];
+
+    render(
+      <FeatureDropProvider manifest={manifest} storage={storage} product="askverdict">
+        <HookConsumer />
+      </FeatureDropProvider>,
+    );
+
+    const features = screen.getByTestId("features").textContent ?? "";
+    expect(features).toContain("askverdict-feature");
+    expect(features).toContain("shared-feature");
+    expect(features).not.toContain("other-feature");
+  });
+
+  it("normalizes locale and exposes rtl direction + pluralized copy", () => {
+    const storage = createTestStorage();
+    render(
+      <FeatureDropProvider
+        manifest={TEST_MANIFEST}
+        storage={storage}
+        locale="ar-EG"
+        animation="subtle"
+      >
+        <LocaleConsumer />
+      </FeatureDropProvider>,
+    );
+    expect(screen.getByTestId("locale").textContent).toBe("ar");
+    expect(screen.getByTestId("direction").textContent).toBe("rtl");
+    expect(screen.getByTestId("animation").textContent).toBe("subtle");
+    expect(screen.getByTestId("count-label").textContent).toContain("ميز");
   });
 
   it("updates when a feature is dismissed", async () => {

@@ -7,6 +7,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { ensureFeatureDropAnimationStyles, getEnterAnimation } from "../../animation";
 import { useFeatureDrop } from "../hooks/use-feature-drop";
 
 export type FeedbackEmoji =
@@ -140,7 +141,7 @@ export function FeedbackWidget({
   style,
   children,
 }: FeedbackWidgetProps) {
-  const { trackAdoptionEvent, translations } = useFeatureDrop();
+  const { trackAdoptionEvent, direction, animation, translations } = useFeatureDrop();
   const [isOpen, setIsOpen] = useState(false);
   const [text, setText] = useState("");
   const [category, setCategory] = useState(categories[0] ?? "other");
@@ -155,6 +156,7 @@ export function FeedbackWidget({
   const instanceIdRef = useRef(`featuredrop-feedback-${Math.random().toString(36).slice(2, 10)}`);
 
   const rateLimitKey = useMemo(() => getRateLimitKey(featureId), [featureId]);
+  const panelAnimation = useMemo(() => getEnterAnimation(animation, "popover"), [animation]);
   const resolvedTriggerLabel = triggerLabel ?? translations.feedbackTrigger;
   const resolvedTitle = title ?? translations.feedbackTitle;
   const isRateLimited = useMemo(() => {
@@ -193,6 +195,10 @@ export function FeedbackWidget({
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [close, isOpen]);
+
+  useEffect(() => {
+    ensureFeatureDropAnimationStyles();
+  }, []);
 
   const captureScreenshot = useCallback(async () => {
     if (!showScreenshot) return;
@@ -321,10 +327,11 @@ export function FeedbackWidget({
       id={`${instanceIdRef.current}-panel`}
       data-featuredrop-feedback-widget
       className={className}
-      style={{ ...panelStyles, ...style }}
+      style={{ ...panelStyles, animation: panelAnimation, ...style }}
       role="dialog"
       aria-modal="false"
       aria-labelledby={titleId}
+      dir={direction}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
         <strong id={titleId}>{resolvedTitle}</strong>
@@ -332,7 +339,7 @@ export function FeedbackWidget({
           type="button"
           onClick={close}
           style={{ border: "none", background: "transparent", cursor: "pointer" }}
-          aria-label="Close feedback"
+          aria-label={translations.close}
         >
           x
         </button>

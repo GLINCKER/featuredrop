@@ -2,7 +2,7 @@ import { defineConfig } from "tsup";
 import { readFileSync, writeFileSync } from "fs";
 
 function prependUseClient() {
-  const files = ["dist/react.js", "dist/react.cjs"];
+  const files = ["dist/react.js", "dist/react.cjs", "dist/admin.js", "dist/admin.cjs"];
   for (const file of files) {
     try {
       const content = readFileSync(file, "utf8");
@@ -35,6 +35,50 @@ export default defineConfig([
     treeshake: true,
     splitting: false,
     sourcemap: true,
+  },
+  // Notification bridges entry
+  {
+    entry: { bridges: "src/bridges.ts" },
+    format: ["cjs", "esm"],
+    dts: true,
+    clean: false,
+    treeshake: true,
+    splitting: false,
+    sourcemap: true,
+  },
+  // CI utilities entry
+  {
+    entry: { ci: "src/ci.ts" },
+    format: ["cjs", "esm"],
+    dts: true,
+    clean: false,
+    treeshake: true,
+    splitting: false,
+    sourcemap: true,
+  },
+  // Feature flag bridges entry
+  {
+    entry: { flags: "src/flags.ts" },
+    format: ["cjs", "esm"],
+    dts: true,
+    clean: false,
+    treeshake: true,
+    splitting: false,
+    sourcemap: true,
+  },
+  // Admin components entry
+  {
+    entry: { admin: "src/admin.ts" },
+    format: ["cjs", "esm"],
+    dts: true,
+    clean: false,
+    treeshake: true,
+    splitting: false,
+    sourcemap: true,
+    external: ["react"],
+    onSuccess: async () => {
+      prependUseClient();
+    },
   },
   // React entry — "use client" for Next.js App Router
   {

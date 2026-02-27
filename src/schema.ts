@@ -28,8 +28,20 @@ export const featureEntryJsonSchema = {
     description: { type: "string" },
     releasedAt: { type: "string", format: "date-time" },
     showNewUntil: { type: "string", format: "date-time" },
+    flagKey: { type: "string" },
+    product: { type: "string" },
+    url: { type: "string" },
+    image: { type: "string" },
     type: { enum: ["feature", "improvement", "fix", "breaking"] },
     priority: { enum: ["critical", "normal", "low"] },
+    cta: {
+      type: "object",
+      properties: {
+        label: { type: "string" },
+        url: { type: "string" },
+      },
+    },
+    meta: { type: "object" },
   },
 } as const;
 
@@ -61,6 +73,13 @@ const dependsOnSchema = z
   })
   .optional();
 
+const ctaSchema = z
+  .object({
+    label: nonEmptyString,
+    url: nonEmptyString,
+  })
+  .optional();
+
 export const featureEntrySchema = z
   .object({
     id: nonEmptyString,
@@ -68,8 +87,14 @@ export const featureEntrySchema = z
     releasedAt: isoDateString,
     showNewUntil: isoDateString,
     description: z.string().optional(),
+    flagKey: z.string().optional(),
+    product: z.string().optional(),
+    url: z.string().optional(),
+    image: z.string().optional(),
     type: z.enum(["feature", "improvement", "fix", "breaking"]).optional(),
     priority: z.enum(["critical", "normal", "low"]).optional(),
+    cta: ctaSchema,
+    meta: z.record(z.unknown()).optional(),
     dependsOn: dependsOnSchema,
   })
   .passthrough();
@@ -107,6 +132,36 @@ function mapZodIssue(issue: z.ZodIssue): ValidationIssue {
     message: issue.message,
     code: "invalid_value",
   };
+}
+
+const UNSAFE_META_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
+function isSafeUrl(value: string): boolean {
+  const normalized = value.trim();
+  if (!normalized) return false;
+  if (/^(\/|\.\/|\.\.\/|\?|#)/.test(normalized)) return true;
+  if (/^https?:\/\//i.test(normalized)) return true;
+  return false;
+}
+
+function findUnsafeMetaPath(value: unknown, path = "meta"): string | null {
+  if (Array.isArray(value)) {
+    for (let index = 0; index < value.length; index++) {
+      const nested = findUnsafeMetaPath(value[index], `${path}[${index}]`);
+      if (nested) return nested;
+    }
+    return null;
+  }
+
+  if (!isRecord(value)) return null;
+  for (const [key, nestedValue] of Object.entries(value)) {
+    if (UNSAFE_META_KEYS.has(key)) {
+      return `${path}.${key}`;
+    }
+    const nested = findUnsafeMetaPath(nestedValue, `${path}.${key}`);
+    if (nested) return nested;
+  }
+  return null;
 }
 
 function validateFeatureEntry(raw: unknown, index: number): { entry?: FeatureEntry; issues: ValidationIssue[] } {
@@ -185,6 +240,39 @@ export function validateManifest(data: unknown): ValidationResult {
       errors.push({
         path: `[${index}].showNewUntil`,
         message: "showNewUntil must be after releasedAt",
+        code: "invalid_value",
+      });
+    }
+
+    if (entry.url && !isSafeUrl(entry.url)) {
+      errors.push({
+        path: `[${index}].url`,
+        message: "url must be http, https, or relative",
+        code: "invalid_value",
+      });
+    }
+
+    if (entry.image && !isSafeUrl(entry.image)) {
+      errors.push({
+        path: `[${index}].image`,
+        message: "image must be http, https, or relative",
+        code: "invalid_value",
+      });
+    }
+
+    if (entry.cta?.url && !isSafeUrl(entry.cta.url)) {
+      errors.push({
+        path: `[${index}].cta.url`,
+        message: "cta.url must be http, https, or relative",
+        code: "invalid_value",
+      });
+    }
+
+    const unsafeMetaPath = findUnsafeMetaPath(entry.meta);
+    if (unsafeMetaPath) {
+      errors.push({
+        path: `[${index}].${unsafeMetaPath}`,
+        message: `meta contains unsafe key "${unsafeMetaPath.split(".").pop()}"`,
         code: "invalid_value",
       });
     }

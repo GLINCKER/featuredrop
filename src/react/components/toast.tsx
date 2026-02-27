@@ -10,6 +10,12 @@ import {
 import type { FeatureEntry, AnalyticsCallbacks } from "../../types";
 import { useFeatureDrop } from "../hooks/use-feature-drop";
 import { parseDescription } from "../../markdown";
+import {
+  ensureFeatureDropAnimationStyles,
+  getAnimationDurationMs,
+  getEnterAnimation,
+  getExitAnimation,
+} from "../../animation";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -80,7 +86,6 @@ const toastStyles: CSSProperties = {
   width: "var(--featuredrop-toast-width, 340px)",
   maxWidth: "calc(100vw - 32px)",
   fontFamily: "var(--featuredrop-font-family, inherit)",
-  animation: "featuredrop-toast-enter 0.3s ease-out",
 };
 
 const toastBodyStyles: CSSProperties = {
@@ -135,31 +140,6 @@ const TYPE_INDICATORS: Record<string, { color: string; icon: string }> = {
 };
 
 /* ------------------------------------------------------------------ */
-/*  Keyframes                                                          */
-/* ------------------------------------------------------------------ */
-
-let injectedToastKeyframes = false;
-function injectToastKeyframes() {
-  if (injectedToastKeyframes || typeof document === "undefined") return;
-  injectedToastKeyframes = true;
-  const style = document.createElement("style");
-  style.textContent = `
-    @keyframes featuredrop-toast-enter {
-      from { opacity: 0; transform: translateY(8px) scale(0.96); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-  `;
-  document.head.appendChild(style);
-}
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-    return false;
-  }
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-/* ------------------------------------------------------------------ */
 /*  Toast Component                                                    */
 /* ------------------------------------------------------------------ */
 
@@ -207,14 +187,21 @@ export function Toast({
     trackAdoptionEvent,
     getRemainingToastSlots,
     markToastsShown,
+    animation,
   } = useFeatureDrop();
   const [localDismissed, setLocalDismissed] = useState<Set<string>>(new Set());
+  const [closingIds, setClosingIds] = useState<Set<string>>(new Set());
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const shownIdsRef = useRef(new Set<string>());
-  const reduceMotion = useMemo(() => prefersReducedMotion(), []);
+  const toastEnterAnimation = useMemo(() => getEnterAnimation(animation, "toast"), [animation]);
+  const toastExitAnimation = useMemo(() => getExitAnimation(animation, "toast"), [animation]);
+  const toastExitDuration = useMemo(
+    () => getAnimationDurationMs(animation, "toast", "exit"),
+    [animation],
+  );
 
   useEffect(() => {
-    injectToastKeyframes();
+    ensureFeatureDropAnimationStyles();
   }, []);
 
   // Filter features for toasting
@@ -238,8 +225,14 @@ export function Toast({
     });
   }, [baseVisible, remainingSlots]);
 
-  const handleDismiss = useCallback(
+  const finalizeDismiss = useCallback(
     (id: string) => {
+      setClosingIds((previous) => {
+        if (!previous.has(id)) return previous;
+        const next = new Set(previous);
+        next.delete(id);
+        return next;
+      });
       setLocalDismissed((prev) => new Set(prev).add(id));
       dismiss(id);
       const feature = newFeaturesSorted.find((f) => f.id === id);
@@ -249,9 +242,41 @@ export function Toast({
         clearTimeout(timer);
         timersRef.current.delete(id);
       }
+      const exitTimer = timersRef.current.get(`exit:${id}`);
+      if (exitTimer) {
+        clearTimeout(exitTimer);
+        timersRef.current.delete(`exit:${id}`);
+      }
     },
     [dismiss, newFeaturesSorted, analytics],
   );
+
+  const handleDismiss = useCallback((id: string) => {
+    if (closingIds.has(id)) return;
+    if (toastExitDuration > 0 && toastExitAnimation) {
+      const existingAutoTimer = timersRef.current.get(id);
+      if (existingAutoTimer) {
+        clearTimeout(existingAutoTimer);
+        timersRef.current.delete(id);
+      }
+      setClosingIds((previous) => {
+        if (previous.has(id)) return previous;
+        const next = new Set(previous);
+        next.add(id);
+        return next;
+      });
+      const existing = timersRef.current.get(`exit:${id}`);
+      if (existing) clearTimeout(existing);
+      timersRef.current.set(
+        `exit:${id}`,
+        setTimeout(() => {
+          finalizeDismiss(id);
+        }, toastExitDuration),
+      );
+      return;
+    }
+    finalizeDismiss(id);
+  }, [closingIds, finalizeDismiss, toastExitAnimation, toastExitDuration]);
 
   const handleDismissAllLocal = useCallback(() => {
     for (const f of visibleToasts) {
@@ -263,14 +288,14 @@ export function Toast({
   useEffect(() => {
     if (autoDismissMs <= 0) return;
     for (const f of visibleToasts) {
-      if (!timersRef.current.has(f.id)) {
+      if (!timersRef.current.has(f.id) && !closingIds.has(f.id)) {
         timersRef.current.set(
           f.id,
           setTimeout(() => handleDismiss(f.id), autoDismissMs),
         );
       }
     }
-  }, [visibleToasts, autoDismissMs, handleDismiss]);
+  }, [visibleToasts, autoDismissMs, closingIds, handleDismiss]);
 
   // Fire onFeatureSeen for visible toasts
   useEffect(() => {
@@ -350,7 +375,9 @@ export function Toast({
             data-featuredrop-toast={feature.id}
             style={{
               ...toastStyles,
-              animation: reduceMotion ? "none" : toastStyles.animation,
+              animation: closingIds.has(feature.id)
+                ? toastExitAnimation
+                : toastEnterAnimation,
             }}
             role="status"
           >

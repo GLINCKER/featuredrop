@@ -147,7 +147,9 @@ export function parseFeatureFile(markdown: string, source = "feature.md"): Featu
 
   if (frontmatter.sidebarKey !== undefined) entry.sidebarKey = asString(frontmatter.sidebarKey, "sidebarKey", source);
   if (frontmatter.category !== undefined) entry.category = asString(frontmatter.category, "category", source);
+  if (frontmatter.product !== undefined) entry.product = asString(frontmatter.product, "product", source);
   if (frontmatter.url !== undefined) entry.url = asString(frontmatter.url, "url", source);
+  if (frontmatter.flagKey !== undefined) entry.flagKey = asString(frontmatter.flagKey, "flagKey", source);
   if (frontmatter.image !== undefined) entry.image = asString(frontmatter.image, "image", source);
   if (frontmatter.publishAt !== undefined) entry.publishAt = asString(frontmatter.publishAt, "publishAt", source);
   if (frontmatter.version !== undefined) {

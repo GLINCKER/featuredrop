@@ -9,6 +9,14 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import {
+  ensureFeatureDropAnimationStyles,
+  getEnterAnimation,
+  getPulseAnimation,
+  prefersReducedMotion,
+  resolveAnimationPreset,
+} from "../../animation";
+import { FeatureDropContext } from "../context";
 
 export interface HotspotProps {
   id: string;
@@ -123,6 +131,7 @@ export function Hotspot({
   frequency = "once",
   children,
 }: HotspotProps) {
+  const featureDrop = useContext(FeatureDropContext);
   const group = useContext(TooltipGroupContext);
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -130,6 +139,25 @@ export function Hotspot({
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const beaconRef = useRef<HTMLButtonElement>(null);
   const instanceIdRef = useRef(`featuredrop-hotspot-${Math.random().toString(36).slice(2, 10)}`);
+  const animation = useMemo(
+    () =>
+      resolveAnimationPreset(featureDrop?.animation ?? "normal", {
+        reducedMotion: prefersReducedMotion(),
+      }),
+    [featureDrop?.animation],
+  );
+  const beaconPulseAnimation = useMemo(
+    () => getPulseAnimation(animation, "dot"),
+    [animation],
+  );
+  const tooltipEnterAnimation = useMemo(
+    () => getEnterAnimation(animation, "popover"),
+    [animation],
+  );
+
+  useEffect(() => {
+    ensureFeatureDropAnimationStyles();
+  }, []);
 
   useEffect(() => {
     if (frequency === "once" && isDismissedOnce(id)) {
@@ -248,6 +276,7 @@ export function Hotspot({
           boxShadow: "0 0 0 2px rgba(17,24,39,0.1)",
           cursor: "pointer",
           zIndex: "var(--featuredrop-hotspot-beacon-z-index, 10000)" as unknown as number,
+          animation: beaconPulseAnimation ?? "none",
           ...beaconTypeStyles[type],
         }}
       />
@@ -257,7 +286,12 @@ export function Hotspot({
           role="dialog"
           aria-modal="false"
           data-featuredrop-hotspot-tooltip={id}
-          style={{ ...tooltipStyles, top: tooltipTop, left: tooltipLeft }}
+          style={{
+            ...tooltipStyles,
+            top: tooltipTop,
+            left: tooltipLeft,
+            animation: tooltipEnterAnimation,
+          }}
           onMouseLeave={closeTooltip}
         >
           <div style={{ fontSize: "13px", color: "#374151", lineHeight: 1.5 }}>{children}</div>

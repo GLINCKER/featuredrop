@@ -109,6 +109,10 @@ const storage = new LocalStorageAdapter({
 })
 ```
 
+For offline-heavy apps, use `IndexedDBAdapter` to persist the same state with IndexedDB + local fallback.
+It also supports queued dismiss sync (`flushQueue`) + remote state reconciliation (`syncFromRemote`) for offline-first flows.
+For remote/state sync, `RemoteAdapter` now includes retry + circuit-breaker protection and a monitoring-friendly `isHealthy()` check.
+
 **3. Check what's new:**
 
 ```ts
@@ -218,6 +222,40 @@ Use built-in locale packs or supply partial overrides:
 ```
 
 Built-in locales: `en`, `es`, `fr`, `de`, `pt`, `zh-cn`, `ja`, `ko`, `ar`, `hi`.
+Locale helpers include locale-aware date formatting, pluralized count copy, and RTL direction support for Arabic.
+Use `formatRelativeTimeForLocale()` for localized "x days ago" labels, or set `dateFormat="relative"` on `ChangelogWidget` / `ChangelogPage`.
+
+## Animation Presets
+
+Choose built-in motion levels globally:
+
+```tsx
+<FeatureDropProvider manifest={FEATURES} storage={storage} animation="subtle">
+  <App />
+</FeatureDropProvider>
+```
+
+Available presets: `none`, `subtle`, `normal`, `playful`.  
+Reduced-motion users automatically receive `none`.
+Built-in `ChangelogWidget`, `AnnouncementModal`, and `Toast` include enter/exit animations, and `Tour`, `Survey`, `FeedbackWidget`, `Spotlight`, `SpotlightChain`, and `Hotspot` follow the same preset for enter/pulse motion.
+
+## Custom Renderer Protocol
+
+Need full UI control? Use a UI-agnostic renderer with state/actions/computed helpers:
+
+```ts
+import { createChangelogRenderer } from 'featuredrop'
+
+const renderer = createChangelogRenderer({ manifest: FEATURES, storage })
+renderer.subscribe((state) => console.log(state.newCount))
+renderer.actions.dismiss('ai-journal')
+```
+
+## Accessibility
+
+featuredrop components include keyboard navigation, focus trapping/return for dialogs, ARIA live regions, and reduced-motion support.
+
+Automated accessibility regression checks run in CI via `axe-core` + `vitest-axe` (`src/__tests__/accessibility-axe.test.tsx`).
 
 ## Changelog-as-Code
 
@@ -233,6 +271,10 @@ npx featuredrop doctor --pattern "features/**/*.md"
 npx featuredrop generate-rss --pattern "features/**/*.md" --out featuredrop.rss.xml
 npx featuredrop generate-changelog --pattern "features/**/*.md" --out CHANGELOG.generated.md
 npx featuredrop migrate --from beamer --input beamer-export.json --out featuredrop.manifest.json
+npx featuredrop migrate --from headway --input headway-export.json --out featuredrop.manifest.json
+npx featuredrop migrate --from announcekit --input announcekit-export.json --out featuredrop.manifest.json
+npx featuredrop migrate --from canny --input canny-export.json --out featuredrop.manifest.json
+npx featuredrop migrate --from launchnotes --input launchnotes-export.json --out featuredrop.manifest.json
 ```
 
 Example feature file:
@@ -251,6 +293,114 @@ cta:
 ---
 Track decisions and outcomes with AI-powered insights.
 ```
+
+## CMS Adapters
+
+Pull releases from your CMS and map them into `FeatureEntry[]`:
+
+```ts
+import { ContentfulAdapter, SanityAdapter, StrapiAdapter, NotionAdapter, MarkdownAdapter } from 'featuredrop'
+
+const contentful = new ContentfulAdapter({
+  spaceId: process.env.CONTENTFUL_SPACE!,
+  accessToken: process.env.CONTENTFUL_TOKEN!,
+  contentType: 'featureRelease',
+})
+
+const entries = await contentful.load()
+```
+
+Each adapter accepts optional `fieldMapping` overrides so you can map your content model fields without reshaping server responses.
+
+## Notification Bridges
+
+Use framework-agnostic bridge helpers to fan out release notifications:
+
+```ts
+import {
+  SlackBridge,
+  DiscordBridge,
+  EmailDigestGenerator,
+  WebhookBridge,
+  RSSFeedGenerator,
+} from 'featuredrop/bridges'
+
+await SlackBridge.notify(feature, { webhookUrl: process.env.SLACK_WEBHOOK! })
+await DiscordBridge.notify(feature, { webhookUrl: process.env.DISCORD_WEBHOOK! })
+await WebhookBridge.post(feature, { url: 'https://api.example.com/hooks/features' })
+
+const html = EmailDigestGenerator.generate(features, { title: 'Weekly updates' })
+const rss = RSSFeedGenerator.generate(features, { title: 'Product Updates' })
+```
+
+## CI Utilities
+
+Use `featuredrop/ci` for manifest diffing in pull-request checks:
+
+```ts
+import { diffManifest, generateChangelogDiff, validateManifestForCI } from 'featuredrop/ci'
+
+const diff = diffManifest(beforeManifest, afterManifest)
+const summary = generateChangelogDiff(diff, { includeFieldChanges: true })
+const validation = validateManifestForCI(afterManifest)
+```
+
+Run bundle budget checks after `pnpm build`:
+
+```bash
+pnpm size-check
+```
+
+## Feature Flag Bridges
+
+Gate announcement visibility behind flags via `feature.flagKey`:
+
+```ts
+import { createFlagBridge, LaunchDarklyBridge, PostHogBridge } from 'featuredrop/flags'
+
+const bridge = createFlagBridge({
+  isEnabled: (flagKey) => myFlagService.isOn(flagKey),
+})
+
+// Provider + feature entry
+<FeatureDropProvider manifest={FEATURES} storage={storage} flagBridge={bridge} />
+// { id: 'ai-journal', flagKey: 'ai-journal-enabled', ... }
+
+// Or vendor bridges
+const ld = new LaunchDarklyBridge(ldClient)
+const ph = new PostHogBridge(posthog)
+```
+
+## Multi-Product Support
+
+Scope visibility by product using `FeatureDropProvider` + `feature.product`:
+
+```tsx
+<FeatureDropProvider manifest={FEATURES} storage={storage} product="askverdict" />
+// feature.product can be "askverdict", "other-product", or "*" for shared entries
+```
+
+## Admin Components
+
+Use optional admin UI primitives via `featuredrop/admin`:
+
+```tsx
+import {
+  ManifestEditor,
+  ScheduleCalendar,
+  PreviewPanel,
+  AudienceBuilder,
+} from 'featuredrop/admin'
+
+<ManifestEditor features={features} onSave={saveManifest} />
+<ScheduleCalendar features={features} onSchedule={scheduleFeature} />
+<PreviewPanel feature={selectedFeature} components={['badge', 'changelog', 'toast']} />
+<AudienceBuilder segments={['free', 'pro']} roles={['admin', 'viewer']} onSave={saveAudience} />
+```
+
+## Resilience
+
+Built-in React exports are wrapped in internal error boundaries. If a featuredrop component throws, it unmounts itself (no host app crash) and optionally reports through provider `onError`.
 
 ## Schema Validation
 
@@ -314,6 +464,18 @@ One-click editable demos:
 - React sandbox source: `examples/sandbox-react`
 - StackBlitz: https://stackblitz.com/github/GLINCKER/featuredrop/tree/main/examples/sandbox-react
 - CodeSandbox: https://codesandbox.io/p/sandbox/github/GLINCKER/featuredrop/tree/main/examples/sandbox-react
+
+## Docs Site (Nextra + Vercel)
+
+The repo now includes a docs app scaffold at `apps/docs` for a fast validation launch on Vercel.
+
+```bash
+pnpm docs:install
+pnpm docs:dev
+pnpm docs:build
+```
+
+The docs app is static-export ready, so it can also deploy on Cloudflare Pages or GitHub Pages.
 
 ## Components
 
@@ -710,7 +872,10 @@ Read the full [Architecture doc](docs/ARCHITECTURE.md) for cross-device sync flo
 
 ## Documentation
 
+- [Docs App Source](apps/docs/) — Next.js + Nextra site scaffold (`/`, `/docs`, `/playground`)
+- [Docs Site Guide](docs/DOCS_SITE.md) — Local commands and Vercel deployment setup
 - [API Reference](docs/API.md) — All functions, adapters, hooks, components
+- [Recipes](docs/RECIPES.md) — Copy-paste integration patterns (sidebar badge, tours, migration, A/B tests)
 - [Architecture](docs/ARCHITECTURE.md) — Three-check algorithm, cross-device sync, custom adapters
 - [Next.js Example](examples/nextjs/) — Full App Router integration
 - [Vanilla Example](examples/vanilla/) — Plain HTML, zero build step
@@ -719,6 +884,12 @@ Read the full [Architecture doc](docs/ARCHITECTURE.md) for cross-device sync flo
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, commit conventions, and how releases work.
+
+## Security
+
+- Report vulnerabilities privately via [SECURITY.md](SECURITY.md).
+- CI includes CodeQL static analysis on pull requests and `main`.
+- `pnpm security-check` scans runtime source for unsafe execution/rendering patterns.
 
 ## License
 

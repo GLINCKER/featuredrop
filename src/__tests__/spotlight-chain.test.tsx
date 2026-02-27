@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryAdapter } from "../adapters/memory";
+import { FeatureDropProvider } from "../react/provider";
 import { SpotlightChain } from "../react/components/spotlight-chain";
 
 describe("SpotlightChain", () => {
@@ -97,5 +99,26 @@ describe("SpotlightChain", () => {
     await waitFor(() => {
       expect(screen.queryByRole("dialog")).toBeNull();
     });
+  });
+
+  it("uses provider animation preset for spotlight transitions", async () => {
+    render(
+      <FeatureDropProvider manifest={[]} storage={new MemoryAdapter()} animation="none">
+        <button id="target-motion">Motion</button>
+        <SpotlightChain
+          steps={[
+            { id: "motion", target: "#target-motion", title: "Motion", content: "No animation" },
+          ]}
+        />
+      </FeatureDropProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeDefined();
+    });
+
+    const beacon = document.querySelector<HTMLElement>("[data-featuredrop-spotlight-chain-beacon='motion']");
+    expect(beacon?.style.animation).toBe("none");
+    expect(screen.getByRole("dialog").style.animation).toBe("");
   });
 });

@@ -6,7 +6,11 @@ import {
   addFeatureEntry,
   createFeatureEntry,
   initFeaturedropProject,
+  migrateFromAnnounceKitPayload,
   migrateFromBeamerPayload,
+  migrateFromCannyPayload,
+  migrateFromHeadwayPayload,
+  migrateFromLaunchNotesPayload,
   migrateManifest,
   renderFeatureMarkdown,
   slugifyFeatureId,
@@ -109,6 +113,69 @@ describe("cli-scaffold", () => {
     expect(result[0]?.category).toBe("ai");
   });
 
+  it("migrates headway-like payload", () => {
+    const result = migrateFromHeadwayPayload({
+      entries: [
+        {
+          id: "headway-1",
+          title: "New dashboard",
+          content: "Charts and metrics",
+          published_at: "2026-02-03T00:00:00Z",
+          category: "analytics",
+        },
+      ],
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe("headway-1");
+    expect(result[0]?.label).toBe("New dashboard");
+  });
+
+  it("migrates announcekit-like payload", () => {
+    const result = migrateFromAnnounceKitPayload({
+      announcements: [
+        {
+          post_id: "ann_12",
+          subject: "Export v2",
+          html: "<p>Faster exports</p>",
+          published_at: "2026-02-04T00:00:00Z",
+        },
+      ],
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe("ann-12");
+    expect(result[0]?.description).toContain("Faster");
+  });
+
+  it("migrates canny-like payload", () => {
+    const result = migrateFromCannyPayload({
+      posts: [
+        {
+          id: "post_22",
+          title: "Roadmap updates",
+          details: "Now with dependencies",
+          createdAt: "2026-02-05T00:00:00Z",
+        },
+      ],
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe("post-22");
+  });
+
+  it("migrates launchnotes-like payload", () => {
+    const result = migrateFromLaunchNotesPayload({
+      items: [
+        {
+          note_id: "ln_1",
+          headline: "Onboarding refresh",
+          body: "Shortcuts and tours",
+          publishedAt: "2026-02-06T00:00:00Z",
+        },
+      ],
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe("ln-1");
+  });
+
   it("writes migrated entries to output file", async () => {
     const cwd = await mkdtemp(join(tmpdir(), "fd-migrate-"));
     tempDirs.push(cwd);
@@ -129,5 +196,26 @@ describe("cli-scaffold", () => {
     expect(result.entries).toHaveLength(1);
     const manifest = await readFile(join(cwd, "featuredrop.manifest.json"), "utf8");
     expect(manifest).toContain("Launch Week");
+  });
+
+  it("writes migrated entries for non-beamer source", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "fd-migrate-headway-"));
+    tempDirs.push(cwd);
+    await writeFile(
+      join(cwd, "headway-export.json"),
+      JSON.stringify({
+        entries: [{ title: "From headway", published_at: "2026-01-03T00:00:00Z" }],
+      }),
+      "utf8",
+    );
+
+    const result = await migrateManifest({
+      cwd,
+      from: "headway",
+      inputFile: "headway-export.json",
+      outFile: "featuredrop.manifest.json",
+    });
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries[0]?.label).toBe("From headway");
   });
 });

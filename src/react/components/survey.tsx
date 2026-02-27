@@ -8,6 +8,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { ensureFeatureDropAnimationStyles, getEnterAnimation } from "../../animation";
 import { FeatureDropContext } from "../context";
 import {
   registerSurveyController,
@@ -302,6 +303,11 @@ export function Survey({
   const askLaterCooldownDays = triggerRules?.askLaterCooldownDays ?? DEFAULT_ASK_LATER_DAYS;
   const scale = useMemo(() => resolveScale(type), [type]);
   const translations = context?.translations;
+  const direction = context?.direction ?? "ltr";
+  const panelAnimation = useMemo(
+    () => getEnterAnimation(context?.animation ?? "normal", "modal"),
+    [context?.animation],
+  );
 
   const canShow = useMemo(() => {
     const now = Date.now();
@@ -404,6 +410,10 @@ export function Survey({
     if (!defaultOpen) return;
     show({ force: true });
   }, [defaultOpen, show]);
+
+  useEffect(() => {
+    ensureFeatureDropAnimationStyles();
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -595,12 +605,13 @@ export function Survey({
       ref={panelRef}
       data-featuredrop-survey={id}
       className={className}
-      style={{ ...panelStyles, ...style }}
+      style={{ ...panelStyles, animation: panelAnimation, ...style }}
       role="dialog"
       aria-modal="false"
       aria-labelledby={surveyTitleId}
       aria-describedby={prompt ? surveyDescriptionId : undefined}
       tabIndex={-1}
+      dir={direction}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
         <strong id={surveyTitleId}>{surveyTitle}</strong>

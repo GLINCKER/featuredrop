@@ -11,6 +11,37 @@ export {
 // Helpers
 export { createManifest, getFeatureById, getNewFeaturesByCategory } from "./helpers";
 export { parseDescription } from "./markdown";
+export { createChangelogRenderer } from "./renderer";
+export {
+  DiscordBridge,
+  EmailDigestGenerator,
+  RSSFeedGenerator,
+  SlackBridge,
+  WebhookBridge,
+} from "./bridges";
+export {
+  diffManifest,
+  generateChangelogDiff,
+  validateManifestForCI,
+} from "./ci";
+export {
+  createFlagBridge,
+  LaunchDarklyBridge,
+  PostHogBridge,
+} from "./flags";
+export {
+  AudienceBuilder,
+  ManifestEditor,
+  PreviewPanel,
+  ScheduleCalendar,
+} from "./admin";
+export {
+  ContentfulAdapter,
+  SanityAdapter,
+  StrapiAdapter,
+  NotionAdapter,
+  MarkdownAdapter,
+} from "./cms";
 export {
   FEATUREDROP_THEMES,
   createTheme,
@@ -19,8 +50,20 @@ export {
 } from "./theme";
 export {
   FEATUREDROP_TRANSLATIONS,
+  formatDateForLocale,
+  formatRelativeTimeForLocale,
+  getLocaleDirection,
+  resolveLocale,
   resolveTranslations,
 } from "./i18n";
+export {
+  FEATUREDROP_ANIMATION_PRESETS,
+  getAnimationDurationMs,
+  getEnterAnimation,
+  getExitAnimation,
+  getPulseAnimation,
+  resolveAnimationPreset,
+} from "./animation";
 export type {
   FeatureDropTheme,
   FeatureDropThemeInput,
@@ -28,6 +71,35 @@ export type {
   FeatureDropThemePreset,
 } from "./theme";
 export type { FeatureDropTranslations } from "./i18n";
+export type {
+  ChangelogRenderer,
+  ChangelogRendererActions,
+  ChangelogRendererComputed,
+  ChangelogRendererOptions,
+  ChangelogRendererState,
+} from "./renderer";
+export type {
+  DiscordBridgeOptions,
+  EmailDigestGeneratorOptions,
+  RSSFeedGeneratorOptions,
+  SlackBridgeOptions,
+  WebhookBridgeOptions,
+} from "./bridges";
+export type { ChangelogDiffOptions, ChangedFeature, ManifestDiff } from "./ci";
+export type {
+  CreateFlagBridgeOptions,
+  LaunchDarklyBridgeOptions,
+  LaunchDarklyClientLike,
+  PostHogBridgeOptions,
+  PostHogClientLike,
+} from "./flags";
+export type {
+  AudienceBuilderProps,
+  ManifestEditorProps,
+  PreviewPanelProps,
+  ScheduleCalendarProps,
+} from "./admin";
+export type { CMSAdapter, CMSFieldMapping } from "./cms";
 export { generateRSS } from "./rss";
 export { applyAnnouncementThrottle } from "./throttle";
 export type { ThrottleOptions, ThrottleRuntimeState, ThrottleResult } from "./throttle";
@@ -79,7 +151,7 @@ export type {
 } from "./schema";
 
 // Adapters
-export { LocalStorageAdapter, MemoryAdapter } from "./adapters";
+export { LocalStorageAdapter, IndexedDBAdapter, MemoryAdapter } from "./adapters";
 export {
   RemoteAdapter,
   PostgresAdapter,
@@ -92,6 +164,7 @@ export {
 } from "./adapters";
 export type {
   LocalStorageAdapterOptions,
+  IndexedDBAdapterOptions,
   RemoteAdapterOptions,
   PostgresAdapterOptions,
   PostgresQueryFn,
@@ -122,6 +195,7 @@ export type {
   StorageAdapter,
   FeatureType,
   FeaturePriority,
+  FeatureDropAnimationPreset,
   FeatureCTA,
   FeatureVariant,
   AnalyticsCallbacks,
@@ -130,6 +204,7 @@ export type {
   ServerStorageAdapter,
   FeatureDependencies,
   FeatureDependencyState,
+  FeatureFlagBridge,
   FeatureTrigger,
   TriggerContext,
 } from "./types";

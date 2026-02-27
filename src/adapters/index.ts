@@ -1,5 +1,7 @@
 export { LocalStorageAdapter } from "./local-storage";
 export type { LocalStorageAdapterOptions } from "./local-storage";
+export { IndexedDBAdapter } from "./indexeddb";
+export type { IndexedDBAdapterOptions } from "./indexeddb";
 export { MemoryAdapter } from "./memory";
 export { RemoteAdapter } from "./remote";
 export type { RemoteAdapterOptions } from "./remote";

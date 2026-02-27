@@ -9,6 +9,8 @@ import {
 import type {
   AudienceMatchFn,
   AnalyticsCallbacks,
+  FeatureDropAnimationPreset,
+  FeatureFlagBridge,
   FeatureManifest,
   FeaturePriority,
   StorageAdapter,
@@ -17,11 +19,17 @@ import type {
 } from "../types";
 import type { ThrottleOptions } from "../throttle";
 import type { AdoptionEventInput, AnalyticsCollector } from "../analytics";
+import { prefersReducedMotion, resolveAnimationPreset } from "../animation";
 import { getNewFeatures } from "../core";
 import { getFeatureById } from "../helpers";
 import { applyAnnouncementThrottle } from "../throttle";
 import { TriggerEngine } from "../triggers";
-import { resolveTranslations, type FeatureDropTranslations } from "../i18n";
+import {
+  getLocaleDirection,
+  resolveLocale,
+  resolveTranslations,
+  type FeatureDropTranslations,
+} from "../i18n";
 import {
   applyFeatureVariants,
   getFeatureVariantName,
@@ -111,12 +119,14 @@ function computeFeatureState({
   userContext,
   matchAudience,
   appVersion,
+  product,
   throttle,
   sessionStartedAt,
   quietMode,
   seenFeatureIds,
   clickedFeatureIds,
   triggerContext,
+  flagBridge,
 }: {
   manifest: FeatureManifest;
   storage: StorageAdapter;
@@ -124,12 +134,14 @@ function computeFeatureState({
   userContext?: UserContext;
   matchAudience?: AudienceMatchFn;
   appVersion?: string;
+  product?: string;
   throttle?: ThrottleOptions;
   sessionStartedAt: number;
   quietMode: boolean;
   seenFeatureIds: ReadonlySet<string>;
   clickedFeatureIds: ReadonlySet<string>;
   triggerContext?: TriggerContext;
+  flagBridge?: FeatureFlagBridge;
 }): FeatureState {
   const dismissedIds = storage.getDismissedIds();
   const allFeatures = getNewFeatures(
@@ -145,6 +157,8 @@ function computeFeatureState({
       dismissedIds,
     },
     triggerContext,
+    flagBridge,
+    product,
   );
 
   const throttled = applyAnnouncementThrottle(
@@ -171,20 +185,28 @@ export interface FeatureDropProviderProps {
   storage: StorageAdapter;
   /** Optional analytics callbacks — pipe to your analytics provider */
   analytics?: AnalyticsCallbacks;
+  /** Optional error callback for monitoring caught component errors */
+  onError?: (error: unknown, context?: { component?: string; componentStack?: string }) => void;
   /** User context for audience targeting (plan, role, region, traits) */
   userContext?: UserContext;
   /** Custom audience matcher — overrides default AND/OR matching logic */
   matchAudience?: AudienceMatchFn;
   /** Current app version (semver) for version-pinned features */
   appVersion?: string;
+  /** Current product scope for multi-product manifests */
+  product?: string;
   /** Announcement throttling and session cooldown controls */
   throttle?: ThrottleOptions;
   /** Stable identifier for A/B variant assignment (e.g. userId) */
   variantKey?: string;
   /** Optional adoption analytics collector */
   collector?: AnalyticsCollector;
+  /** Feature flag bridge for evaluating `feature.flagKey` visibility */
+  flagBridge?: FeatureFlagBridge;
   /** Locale code for built-in component translations (e.g. "en", "fr", "es") */
   locale?: string;
+  /** Animation preset for built-in component transitions */
+  animation?: FeatureDropAnimationPreset;
   /** Custom translation overrides for built-in component strings */
   translations?: Partial<FeatureDropTranslations>;
   children: ReactNode;
@@ -200,13 +222,17 @@ export function FeatureDropProvider({
   manifest,
   storage,
   analytics,
+  onError,
   userContext,
   matchAudience: matchAudienceFn,
   appVersion,
+  product,
   throttle,
   variantKey,
   collector,
+  flagBridge,
   locale = "en",
+  animation = "normal",
   translations: translationOverrides,
   children,
 }: FeatureDropProviderProps) {
@@ -236,9 +262,15 @@ export function FeatureDropProvider({
     () => readIdSet(CLICKED_FEATURES_STORAGE_KEY),
   );
   const resolvedVariantKey = useMemo(() => getOrCreateVariantKey(variantKey), [variantKey]);
+  const resolvedLocale = useMemo(() => resolveLocale(locale), [locale]);
+  const direction = useMemo(() => getLocaleDirection(resolvedLocale), [resolvedLocale]);
+  const resolvedAnimation = useMemo(
+    () => resolveAnimationPreset(animation, { reducedMotion: prefersReducedMotion() }),
+    [animation],
+  );
   const translations = useMemo(
-    () => resolveTranslations(locale, translationOverrides),
-    [locale, translationOverrides],
+    () => resolveTranslations(resolvedLocale, translationOverrides),
+    [resolvedLocale, translationOverrides],
   );
   const resolvedManifest = useMemo(
     () => applyFeatureVariants(manifest, resolvedVariantKey),
@@ -252,6 +284,7 @@ export function FeatureDropProvider({
       userContext,
       matchAudience: matchAudienceFn,
       appVersion,
+      product,
       throttle,
       sessionStartedAt: sessionStartedAtRef.current,
       quietMode: readQuietMode(),
@@ -263,6 +296,7 @@ export function FeatureDropProvider({
         engine.setElapsedMs(Date.now() - sessionStartedAtRef.current);
         return engine.getContext();
       })(),
+      flagBridge,
     }),
   );
 
@@ -282,12 +316,14 @@ export function FeatureDropProvider({
         userContext,
         matchAudience: matchAudienceFn,
         appVersion,
+        product,
         throttle,
         sessionStartedAt: sessionStartedAtRef.current,
         quietMode,
         seenFeatureIds,
         clickedFeatureIds,
         triggerContext,
+        flagBridge,
       }),
     );
   }, [
@@ -296,11 +332,13 @@ export function FeatureDropProvider({
     userContext,
     matchAudienceFn,
     appVersion,
+    product,
     throttle,
     quietMode,
     seenFeatureIds,
     clickedFeatureIds,
     triggerVersion,
+    flagBridge,
   ]);
 
   useEffect(() => {
@@ -531,6 +569,17 @@ export function FeatureDropProvider({
     });
   }, [collector, resolvedManifest]);
 
+  const reportError = useCallback(
+    (error: unknown, context?: { component?: string; componentStack?: string }) => {
+      onError?.(error, context);
+      if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.warn("[featuredrop] component error", context?.component, error);
+      }
+    },
+    [onError],
+  );
+
   const trackUsageEvent = useCallback((event: string, delta = 1) => {
     if (!event) return;
     triggerEngineRef.current?.trackUsage(event, delta);
@@ -603,7 +652,10 @@ export function FeatureDropProvider({
       releaseSpotlightSlot,
       activeSpotlightCount: activeSpotlightIds.size,
       trackAdoptionEvent,
-      locale,
+      reportError,
+      locale: resolvedLocale,
+      direction,
+      animation: resolvedAnimation,
       translations,
       trackUsageEvent,
       trackTriggerEvent,
@@ -634,7 +686,10 @@ export function FeatureDropProvider({
       releaseSpotlightSlot,
       activeSpotlightIds.size,
       trackAdoptionEvent,
-      locale,
+      reportError,
+      resolvedLocale,
+      direction,
+      resolvedAnimation,
       translations,
       trackUsageEvent,
       trackTriggerEvent,

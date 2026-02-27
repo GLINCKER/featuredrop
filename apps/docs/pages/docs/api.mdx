@@ -1,0 +1,25 @@
+---
+title: API
+---
+
+# API map
+
+The complete API docs stay in-repo and versioned with releases.
+
+- Core API: [`docs/API.md`](https://github.com/GLINCKER/featuredrop/blob/main/docs/API.md)
+- Architecture: [`docs/ARCHITECTURE.md`](https://github.com/GLINCKER/featuredrop/blob/main/docs/ARCHITECTURE.md)
+- Recipes: [`docs/RECIPES.md`](https://github.com/GLINCKER/featuredrop/blob/main/docs/RECIPES.md)
+
+## Common imports
+
+```ts
+import { isNew, getNewFeatures, MemoryAdapter } from 'featuredrop'
+import { FeatureDropProvider, ChangelogPage, Tour } from 'featuredrop/react'
+```
+
+## CLI checks
+
+```bash
+pnpm size-check
+pnpm security-check
+```

@@ -9,7 +9,7 @@ import { Toast } from "../react/components/toast";
 import { Spotlight } from "../react/components/spotlight";
 import { useTabNotification } from "../react/hooks/use-tab-notification";
 import { MemoryAdapter } from "../adapters/memory";
-import type { FeatureManifest, AnalyticsCallbacks } from "../types";
+import type { FeatureManifest, AnalyticsCallbacks, FeatureDropAnimationPreset } from "../types";
 import type { ThrottleOptions } from "../throttle";
 
 // ── Test Data ────────────────────────────────────────────────────────────────
@@ -55,11 +55,13 @@ function Wrapper({
   storage,
   analytics,
   throttle,
+  animation,
 }: {
   children: React.ReactNode;
   storage?: MemoryAdapter;
   analytics?: AnalyticsCallbacks;
   throttle?: ThrottleOptions;
+  animation?: FeatureDropAnimationPreset;
 }) {
   return (
     <FeatureDropProvider
@@ -67,6 +69,7 @@ function Wrapper({
       storage={storage ?? createTestStorage()}
       analytics={analytics}
       throttle={throttle}
+      animation={animation}
     >
       {children}
     </FeatureDropProvider>
@@ -119,6 +122,41 @@ describe("ChangelogWidget", () => {
     expect(screen.getByText("Analytics v2")).toBeDefined();
   });
 
+  it("supports relative date metadata display", async () => {
+    render(
+      <Wrapper>
+        <ChangelogWidget dateFormat="relative" />
+      </Wrapper>,
+    );
+    await userEvent.click(screen.getByText("What's New"));
+    expect(screen.getAllByText(/ago|yesterday|today/i).length).toBeGreaterThan(0);
+  });
+
+  it("disables widget enter animation when preset is none", async () => {
+    render(
+      <Wrapper animation="none">
+        <ChangelogWidget />
+      </Wrapper>,
+    );
+    await userEvent.click(screen.getByText("What's New"));
+    const dialog = screen.getByRole("dialog") as HTMLElement;
+    expect(dialog.style.animation).toBe("");
+  });
+
+  it("keeps widget mounted during exit animation before unmounting", async () => {
+    render(
+      <Wrapper animation="subtle">
+        <ChangelogWidget />
+      </Wrapper>,
+    );
+    await userEvent.click(screen.getByText("What's New"));
+    await userEvent.click(screen.getByLabelText("Close"));
+    expect(screen.getByRole("dialog")).toBeDefined();
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+  });
+
   it("does not show expired features", async () => {
     render(
       <Wrapper>
@@ -138,7 +176,9 @@ describe("ChangelogWidget", () => {
     await userEvent.click(screen.getByText("What's New"));
     expect(screen.getByRole("dialog")).toBeDefined();
     await userEvent.click(screen.getByLabelText("Close"));
-    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
   });
 
   it("shows 'mark all as read' button", async () => {
@@ -433,6 +473,19 @@ describe("Toast", () => {
     await act(async () => {
       await userEvent.click(dismissButtons[0]);
     });
+    await waitFor(() => {
+      expect(screen.queryByText("AI Journal")).toBeNull();
+    });
+  });
+
+  it("removes toast immediately when animation preset is none", async () => {
+    render(
+      <Wrapper animation="none">
+        <Toast autoDismissMs={0} />
+      </Wrapper>,
+    );
+    const dismissButtons = screen.getAllByLabelText(/Dismiss/);
+    await userEvent.click(dismissButtons[0]);
     expect(screen.queryByText("AI Journal")).toBeNull();
   });
 
@@ -521,6 +574,23 @@ describe("Spotlight throttling", () => {
       expect(screen.queryByRole("dialog")).toBeNull();
     });
     expect(document.activeElement).toBe(beacon);
+  });
+
+  it("disables spotlight pulse/enter animation when preset is none", async () => {
+    render(
+      <Wrapper animation="none">
+        <button id="target-a">Target A</button>
+        <Spotlight featureId="ai-journal" targetSelector="#target-a" />
+      </Wrapper>,
+    );
+
+    const beacon = await screen.findByLabelText("New: AI Journal");
+    const pulse = beacon.querySelector("span") as HTMLElement | null;
+    expect(pulse).toBeTruthy();
+    expect(pulse?.style.animation).toBe("none");
+
+    await userEvent.click(beacon);
+    expect(screen.getByRole("dialog").style.animation).toBe("");
   });
 });
 

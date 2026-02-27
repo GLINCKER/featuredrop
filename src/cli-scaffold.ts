@@ -40,11 +40,18 @@ export interface AddFeatureResult {
 
 export interface MigrateOptions {
   cwd?: string;
-  from: "beamer";
+  from: MigrationSource;
   inputFile: string;
   outFile?: string;
   now?: Date;
 }
+
+export type MigrationSource =
+  | "beamer"
+  | "headway"
+  | "announcekit"
+  | "canny"
+  | "launchnotes";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
@@ -292,11 +299,80 @@ function normalizeDate(raw: string | undefined, fallback: Date): string {
   return new Date(parsed).toISOString();
 }
 
-function buildFallbackId(index: number): string {
-  return `beamer-entry-${index + 1}`;
+function buildFallbackId(prefix: string, index: number): string {
+  return `${prefix}-entry-${index + 1}`;
 }
 
-export function migrateFromBeamerPayload(payload: unknown, now: Date = new Date()): FeatureEntry[] {
+interface MigrationProfile {
+  fallbackPrefix: string;
+  labelKeys: readonly string[];
+  idKeys: readonly string[];
+  dateKeys: readonly string[];
+  categoryKeys: readonly string[];
+  urlKeys: readonly string[];
+  descriptionKeys: readonly string[];
+  showUntilKeys: readonly string[];
+}
+
+const MIGRATION_PROFILES: Record<MigrationSource, MigrationProfile> = {
+  beamer: {
+    fallbackPrefix: "beamer",
+    labelKeys: ["title", "name", "headline"],
+    idKeys: ["id", "uid", "slug", "postId", "post_id"],
+    dateKeys: ["publishedAt", "published_at", "published", "createdAt", "created_at", "date"],
+    categoryKeys: ["category", "type", "segment"],
+    urlKeys: ["url", "link", "permalink"],
+    descriptionKeys: ["description", "content", "body", "html"],
+    showUntilKeys: ["showNewUntil", "show_new_until", "newUntil", "new_until"],
+  },
+  headway: {
+    fallbackPrefix: "headway",
+    labelKeys: ["title", "name", "headline"],
+    idKeys: ["id", "slug", "entryId", "entry_id"],
+    dateKeys: ["publishedAt", "published_at", "createdAt", "created_at", "date"],
+    categoryKeys: ["category", "tag", "tags"],
+    urlKeys: ["url", "link", "permalink"],
+    descriptionKeys: ["description", "summary", "content", "body"],
+    showUntilKeys: ["showNewUntil", "new_until"],
+  },
+  announcekit: {
+    fallbackPrefix: "announcekit",
+    labelKeys: ["title", "subject", "name"],
+    idKeys: ["id", "post_id", "postId", "slug"],
+    dateKeys: ["published_at", "publishedAt", "created_at", "createdAt", "date"],
+    categoryKeys: ["category", "segment", "tab", "label"],
+    urlKeys: ["url", "link", "permalink"],
+    descriptionKeys: ["description", "content", "html", "body"],
+    showUntilKeys: ["show_new_until", "showNewUntil", "new_until"],
+  },
+  canny: {
+    fallbackPrefix: "canny",
+    labelKeys: ["title", "name"],
+    idKeys: ["id", "postId", "post_id", "slug"],
+    dateKeys: ["createdAt", "created_at", "publishedAt", "published_at", "date"],
+    categoryKeys: ["category", "type", "boardName"],
+    urlKeys: ["url", "link", "permalink"],
+    descriptionKeys: ["details", "description", "content", "body"],
+    showUntilKeys: ["showNewUntil", "new_until"],
+  },
+  launchnotes: {
+    fallbackPrefix: "launchnotes",
+    labelKeys: ["title", "headline", "name"],
+    idKeys: ["id", "slug", "noteId", "note_id"],
+    dateKeys: ["publishedAt", "published_at", "createdAt", "created_at", "date"],
+    categoryKeys: ["category", "segment", "channel"],
+    urlKeys: ["url", "link", "permalink"],
+    descriptionKeys: ["description", "body", "content", "summary"],
+    showUntilKeys: ["showNewUntil", "new_until"],
+  },
+};
+
+export function migrateFromSourcePayload(
+  source: MigrationSource,
+  payload: unknown,
+  now: Date = new Date(),
+): FeatureEntry[] {
+  const profile = MIGRATION_PROFILES[source];
   const items = getMigrationItems(payload);
   const usedIds = new Set<string>();
 
@@ -304,23 +380,23 @@ export function migrateFromBeamerPayload(payload: unknown, now: Date = new Date(
     .map((raw, index) => {
       if (!isRecord(raw)) return null;
       const release = normalizeDate(
-        pickString(raw, ["publishedAt", "published_at", "published", "createdAt", "created_at", "date"]),
+        pickString(raw, profile.dateKeys),
         now,
       );
-      const label = pickString(raw, ["title", "name", "headline"]) ?? `Update ${index + 1}`;
-      const idSeed = pickString(raw, ["id", "uid", "slug", "postId", "post_id"]) ?? label;
+      const label = pickString(raw, profile.labelKeys) ?? `Update ${index + 1}`;
+      const idSeed = pickString(raw, profile.idKeys) ?? label;
       let id = slugifyFeatureId(idSeed);
-      if (!id) id = buildFallbackId(index);
+      if (!id) id = buildFallbackId(profile.fallbackPrefix, index);
       while (usedIds.has(id)) {
         id = `${id}-${index + 1}`;
       }
       usedIds.add(id);
 
-      const category = pickString(raw, ["category", "type", "segment"]);
-      const url = pickString(raw, ["url", "link", "permalink"]);
-      const description = pickString(raw, ["description", "content", "body", "html"]);
+      const category = pickString(raw, profile.categoryKeys);
+      const url = pickString(raw, profile.urlKeys);
+      const description = pickString(raw, profile.descriptionKeys);
       const explicitShowUntil = normalizeDate(
-        pickString(raw, ["showNewUntil", "show_new_until", "newUntil", "new_until"]),
+        pickString(raw, profile.showUntilKeys),
         new Date(withDays(new Date(release), 30)),
       );
 
@@ -339,6 +415,26 @@ export function migrateFromBeamerPayload(payload: unknown, now: Date = new Date(
     .filter((value): value is FeatureEntry => !!value);
 }
 
+export function migrateFromBeamerPayload(payload: unknown, now: Date = new Date()): FeatureEntry[] {
+  return migrateFromSourcePayload("beamer", payload, now);
+}
+
+export function migrateFromHeadwayPayload(payload: unknown, now: Date = new Date()): FeatureEntry[] {
+  return migrateFromSourcePayload("headway", payload, now);
+}
+
+export function migrateFromAnnounceKitPayload(payload: unknown, now: Date = new Date()): FeatureEntry[] {
+  return migrateFromSourcePayload("announcekit", payload, now);
+}
+
+export function migrateFromCannyPayload(payload: unknown, now: Date = new Date()): FeatureEntry[] {
+  return migrateFromSourcePayload("canny", payload, now);
+}
+
+export function migrateFromLaunchNotesPayload(payload: unknown, now: Date = new Date()): FeatureEntry[] {
+  return migrateFromSourcePayload("launchnotes", payload, now);
+}
+
 export async function migrateManifest(options: MigrateOptions): Promise<{ outFile: string; entries: FeatureEntry[] }> {
   const cwd = options.cwd ?? process.cwd();
   const outFile = options.outFile ?? "featuredrop.manifest.json";
@@ -346,11 +442,7 @@ export async function migrateManifest(options: MigrateOptions): Promise<{ outFil
   const raw = await readFile(inputPath, "utf8");
   const payload = JSON.parse(raw) as unknown;
 
-  if (options.from !== "beamer") {
-    throw new Error(`Unsupported migration source "${options.from}"`);
-  }
-
-  const entries = migrateFromBeamerPayload(payload, options.now ?? new Date());
+  const entries = migrateFromSourcePayload(options.from, payload, options.now ?? new Date());
   await writeFile(join(cwd, outFile), `${JSON.stringify(entries, null, 2)}\n`, "utf8");
   return { outFile: basename(outFile), entries };
 }

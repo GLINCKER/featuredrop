@@ -1,5 +1,7 @@
 # API Reference
 
+Need integration patterns? See [Recipes](./RECIPES.md).
+
 ## Core Functions
 
 ### `isNew(feature, watermark, dismissedIds, now?)`
@@ -67,6 +69,34 @@ import { getNewFeaturesSorted } from 'featuredrop'
 const sorted = getNewFeaturesSorted(FEATURES, storage)
 // → FeatureEntry[] — critical first, then normal, then low
 ```
+
+### `createChangelogRenderer(options)`
+
+Create a UI-agnostic changelog renderer protocol (`state`, `actions`, `computed`) for custom design systems.
+
+```ts
+import { createChangelogRenderer } from 'featuredrop'
+
+const renderer = createChangelogRenderer({
+  manifest: FEATURES,
+  storage,
+  appVersion: '2.4.0',
+})
+
+renderer.subscribe((state) => {
+  console.log(state.newCount)
+})
+
+renderer.actions.dismiss('ai-journal')
+```
+
+Returns:
+- `state` — `{ manifest, newFeatures, newFeaturesSorted, newCount, watermark, dismissedIds }`
+- `actions.refresh()` — recompute from current manifest + storage
+- `actions.dismiss(id)` / `actions.dismissAll()` — mutate storage + refresh
+- `actions.setManifest(manifest)` / `setUserContext(userContext?)` / `setAppVersion(appVersion?)` / `setAudienceMatcher(matchAudience?)`
+- `computed.isNew(sidebarKey)` / `getFeature(sidebarKey)` / `getFeatureById(id)` / `getFeaturesByCategory(category)`
+- `subscribe(listener)` — state subscription; returns unsubscribe function
 
 ## Helpers
 
@@ -142,14 +172,171 @@ const vars = themeToCSSVariables(customTheme)
 ### i18n Utilities
 
 ```ts
-import { FEATUREDROP_TRANSLATIONS, resolveTranslations } from 'featuredrop'
+import {
+  FEATUREDROP_TRANSLATIONS,
+  formatDateForLocale,
+  formatRelativeTimeForLocale,
+  getLocaleDirection,
+  resolveLocale,
+  resolveTranslations,
+} from 'featuredrop'
 
 const fr = resolveTranslations('fr')
 const custom = resolveTranslations('es', { submit: 'Enviar ahora' })
+const date = formatDateForLocale('2026-02-20T00:00:00Z', 'fr')
+const relative = formatRelativeTimeForLocale('2026-02-20T00:00:00Z', 'fr')
+const direction = getLocaleDirection('ar') // "rtl"
 ```
 
 - `FEATUREDROP_TRANSLATIONS` — built-in locale packs (`en`, `es`, `fr`, `de`, `pt`, `zh-cn`, `ja`, `ko`, `ar`, `hi`)
+- `resolveLocale(locale?)` — normalize locale aliases (e.g. `ar-EG` -> `ar`)
+- `getLocaleDirection(locale?)` — locale text direction (`ltr`/`rtl`)
+- `formatDateForLocale(value, locale?, options?)` — locale-aware date formatting helper
+- `formatRelativeTimeForLocale(value, locale?, options?)` — locale-aware relative time helper
 - `resolveTranslations(locale?, overrides?)` — resolve locale defaults + optional overrides
+
+### Animation Utilities
+
+```ts
+import {
+  FEATUREDROP_ANIMATION_PRESETS,
+  getAnimationDurationMs,
+  getEnterAnimation,
+  getExitAnimation,
+  getPulseAnimation,
+  resolveAnimationPreset,
+} from 'featuredrop'
+
+const preset = resolveAnimationPreset('normal')
+const toastAnimation = getEnterAnimation(preset, 'toast')
+const toastExit = getExitAnimation(preset, 'toast')
+const beaconPulse = getPulseAnimation(preset, 'beacon')
+const exitMs = getAnimationDurationMs(preset, 'toast', 'exit')
+```
+
+- `FEATUREDROP_ANIMATION_PRESETS` — built-in motion presets (`none`, `subtle`, `normal`, `playful`)
+- `resolveAnimationPreset(preset, options?)` — normalize preset and honor reduced-motion override
+- `getEnterAnimation(preset, surface)` — enter animation value for built-in surfaces
+- `getExitAnimation(preset, surface)` — exit animation value for built-in surfaces
+- `getPulseAnimation(preset, surface?)` — pulse animation value for dot/beacon UI
+- `getAnimationDurationMs(preset, surface, phase)` — parsed animation duration helper in milliseconds
+
+### CMS Adapters
+
+```ts
+import {
+  ContentfulAdapter,
+  SanityAdapter,
+  StrapiAdapter,
+  NotionAdapter,
+  MarkdownAdapter,
+} from 'featuredrop'
+
+const contentful = new ContentfulAdapter({
+  spaceId: process.env.CONTENTFUL_SPACE!,
+  accessToken: process.env.CONTENTFUL_TOKEN!,
+  contentType: 'featureRelease',
+})
+
+const entries = await contentful.load()
+```
+
+- All adapters map source records into `FeatureEntry[]` with optional `fieldMapping` overrides.
+- Invalid mapped entries are dropped by default (or throw with `strictValidation: true`).
+- `ContentfulAdapter` — Content Delivery API (`spaceId`, `accessToken`, `contentType`)
+- `SanityAdapter` — GROQ query adapter (`projectId`, `dataset`, `query`)
+- `StrapiAdapter` — REST adapter (`baseUrl`, optional `endpoint`/`query`/`token`)
+- `NotionAdapter` — Database query adapter (`databaseId`, `token`, optional `filter`/`sorts`)
+- `MarkdownAdapter` — markdown frontmatter adapter (`entries[]` or filesystem `pattern`)
+
+### Notification Bridges (`featuredrop/bridges`)
+
+```ts
+import {
+  SlackBridge,
+  DiscordBridge,
+  WebhookBridge,
+  EmailDigestGenerator,
+  RSSFeedGenerator,
+} from 'featuredrop/bridges'
+
+await SlackBridge.notify(feature, { webhookUrl: process.env.SLACK_WEBHOOK! })
+await DiscordBridge.notify(feature, { webhookUrl: process.env.DISCORD_WEBHOOK! })
+await WebhookBridge.post(feature, { url: 'https://api.example.com/webhooks/features' })
+const digest = EmailDigestGenerator.generate(features, { title: 'Weekly Updates' })
+const rss = RSSFeedGenerator.generate(features, { title: 'Product Updates' })
+```
+
+- `SlackBridge.notify(feature, options)` — send release notifications to Slack incoming webhooks
+- `DiscordBridge.notify(feature, options)` — send embed notifications to Discord webhooks
+- `WebhookBridge.post(feature, options)` — generic JSON webhook bridge
+- `EmailDigestGenerator.generate(features, options?)` — HTML digest generator (`default`/`minimal` templates)
+- `RSSFeedGenerator.generate(manifest, options?)` — RSS wrapper around `generateRSS`
+
+### CI Utilities (`featuredrop/ci`)
+
+```ts
+import {
+  diffManifest,
+  generateChangelogDiff,
+  validateManifestForCI,
+} from 'featuredrop/ci'
+
+const diff = diffManifest(beforeManifest, afterManifest)
+const summary = generateChangelogDiff(diff, { includeFieldChanges: true })
+const validation = validateManifestForCI(afterManifest)
+```
+
+- `diffManifest(before, after)` — returns `{ added, removed, changed }` keyed by feature ID
+- `generateChangelogDiff(diff, options?)` — human-readable summary text for CI comments
+- `validateManifestForCI(manifest)` — schema + semantic validation helper for pipelines
+- `pnpm size-check` — gzip bundle budget checks for `dist/index.js`, `dist/react.js`, `dist/vue.js`, `dist/svelte.js`
+
+### Feature Flag Bridges (`featuredrop/flags`)
+
+```ts
+import { createFlagBridge, LaunchDarklyBridge, PostHogBridge } from 'featuredrop/flags'
+
+const bridge = createFlagBridge({
+  isEnabled: (flagKey) => flags.isOn(flagKey),
+})
+
+// vendor bridges
+const ldBridge = new LaunchDarklyBridge(ldClient)
+const posthogBridge = new PostHogBridge(posthog)
+```
+
+- `createFlagBridge({ isEnabled })` — generic synchronous flag bridge
+- `LaunchDarklyBridge` — wraps LaunchDarkly `variation(...)`
+- `PostHogBridge` — wraps PostHog `isFeatureEnabled(...)`
+- `FeatureEntry.flagKey?: string` — optional per-feature gate key
+
+### Admin Components (`featuredrop/admin`)
+
+```tsx
+import {
+  ManifestEditor,
+  ScheduleCalendar,
+  PreviewPanel,
+  AudienceBuilder,
+} from 'featuredrop/admin'
+
+<ManifestEditor features={features} onSave={saveManifest} />
+<ScheduleCalendar features={features} onSchedule={scheduleFeature} />
+<PreviewPanel feature={selectedFeature} components={['badge', 'changelog']} />
+<AudienceBuilder segments={['free', 'pro']} roles={['admin', 'viewer']} onSave={saveAudience} />
+```
+
+- `ManifestEditor` — JSON manifest editor with basic parse/validation status
+- `ScheduleCalendar` — per-feature schedule controls (publishes ISO timestamp callbacks)
+- `PreviewPanel` — lightweight preview surface for selected feature + component chips
+- `AudienceBuilder` — plan/role/region selector with `onChange` + `onSave` callbacks
+
+### Multi-Product Targeting
+
+- `FeatureEntry.product?: string` — optional product scope (`"askverdict"`, `"other-app"`, `"*"`)
+- `FeatureDropProvider product?: string` — active product for runtime filtering
+- When `feature.product` is set (and not `"*"`), entries only surface when it matches provider `product`
 
 ### `generateRSS(manifest, options?)`
 
@@ -491,6 +678,31 @@ import { MemoryAdapter } from 'featuredrop'
 const storage = new MemoryAdapter({ watermark: '2026-02-20T00:00:00Z' })
 ```
 
+### `IndexedDBAdapter`
+
+Browser adapter with in-memory state + localStorage fallback and IndexedDB persistence when available.
+
+```ts
+import { IndexedDBAdapter } from 'featuredrop'
+
+const storage = new IndexedDBAdapter({
+  prefix: 'featuredrop',
+  dbName: 'featuredrop',
+  storeName: 'state',
+  onDismissAll: async (now) => syncWatermark(now),
+  onSyncState: async () => ({
+    watermark: await api.getWatermark(),
+    dismissedIds: await api.getDismissedIds(),
+  }),
+  onFlushDismissBatch: async (ids) => api.dismissBatch(ids),
+  onFlushDismissAll: async (watermark) => api.dismissAll(watermark),
+  flushDebounceMs: 500,
+})
+
+await storage.syncFromRemote()
+await storage.flushQueue()
+```
+
 ### `RemoteAdapter`
 
 HTTP-backed adapter for manifest/state sync.
@@ -502,7 +714,14 @@ const storage = new RemoteAdapter({
   url: 'https://api.example.com/api/features',
   userId: currentUser.id,
   headers: { Authorization: `Bearer ${token}` },
+  retryAttempts: 3,
+  retryBaseDelayMs: 250,
+  circuitBreakerThreshold: 5,
+  circuitBreakerCooldownMs: 60_000,
 })
+
+// Optional monitoring hook
+const healthy = await storage.isHealthy()
 ```
 
 ### `PostgresAdapter`
@@ -602,7 +821,13 @@ import { HybridAdapter, MemoryAdapter, RedisAdapter } from 'featuredrop'
 const storage = new HybridAdapter({
   local: new MemoryAdapter(),
   remote: new RedisAdapter({ userId: currentUser.id, client: redisClient }),
+  dismissBatchWindowMs: 500,
+  syncIntervalMs: 60_000,
+  syncOnOnline: true,
+  syncOnVisibilityChange: true,
 })
+
+await storage.flushPendingDismisses()
 ```
 
 ### Custom Adapters
@@ -664,11 +889,15 @@ Convert external changelog exports into a featuredrop manifest.
 
 ```bash
 npx featuredrop migrate --from beamer --input beamer-export.json --out featuredrop.manifest.json
+npx featuredrop migrate --from headway --input headway-export.json --out featuredrop.manifest.json
+npx featuredrop migrate --from announcekit --input announcekit-export.json --out featuredrop.manifest.json
+npx featuredrop migrate --from canny --input canny-export.json --out featuredrop.manifest.json
+npx featuredrop migrate --from launchnotes --input launchnotes-export.json --out featuredrop.manifest.json
 ```
 
 Flags:
-- `--from beamer` currently supported source
-- `--input` source JSON file (default: `beamer-export.json`)
+- `--from` one of: `beamer`, `headway`, `announcekit`, `canny`, `launchnotes`
+- `--input` source JSON file (default: `<source>-export.json`)
 - `--out` output file path
 - `--cwd` working directory
 
@@ -758,6 +987,8 @@ Validation includes:
 - Date validity and `showNewUntil > releasedAt`
 - Duplicate IDs
 - Circular dependency detection (`dependsOn`)
+- URL guardrails for `url`, `image`, and `cta.url` (http/https/relative only)
+- Unsafe `meta` key rejection (`__proto__`, `constructor`, `prototype`)
 
 Notes:
 - `featureEntrySchema` + `featureManifestSchema` are Zod schemas
@@ -800,6 +1031,20 @@ Advances fake timers via `vi` or `jest` controller.
 
 `AnalyticsCollector` variant that stores emitted events in `collector.events`.
 
+## Accessibility Testing
+
+Automated a11y regression checks are included with `axe-core` + `vitest-axe` in `src/__tests__/accessibility-axe.test.tsx` and run as part of `pnpm test` in CI.
+
+## Security Checks
+
+Run local static guards for unsafe runtime patterns:
+
+```bash
+pnpm security-check
+```
+
+This scans runtime source for `eval`, `new Function`, direct `innerHTML` writes, and `dangerouslySetInnerHTML`.
+
 ## Playground
 
 Lightweight component playground for local UI development:
@@ -839,10 +1084,14 @@ Props:
 - `manifest: FeatureManifest` — your feature array
 - `storage: StorageAdapter` — adapter instance
 - `appVersion?: string` — current app version (semver) for version-pinned features
+- `product?: string` — current product scope for multi-product manifests (`feature.product`)
 - `variantKey?: string` — stable user key for deterministic A/B variant assignment
+- `flagBridge?: FeatureFlagBridge` — optional feature flag evaluator for `feature.flagKey`
 - `throttle?: ThrottleOptions` — queue/cooldown/DND controls
 - `collector?: AnalyticsCollector` — adoption analytics collector integration
+- `onError?: (error, context?) => void` — report caught featuredrop component errors
 - `locale?: string` — locale code for built-in UI strings (default: `en`)
+- `animation?: FeatureDropAnimationPreset` — motion preset (`none | subtle | normal | playful`, default: `normal`)
 - `translations?: Partial<FeatureDropTranslations>` — override built-in copy
 - `analytics?: AnalyticsCallbacks` — optional analytics callbacks
 - `children: ReactNode`
@@ -906,6 +1155,10 @@ const {
   releaseSpotlightSlot, // (id: string) => void
   activeSpotlightCount, // number
   trackAdoptionEvent, // (event: AdoptionEventInput) => void
+  locale,             // normalized locale code
+  direction,          // "ltr" | "rtl"
+  animation,          // "none" | "subtle" | "normal" | "playful"
+  translations,       // resolved FeatureDropTranslations
   trackUsageEvent,    // (event: string, delta?: number) => void
   trackTriggerEvent,  // (event: string) => void
   trackMilestone,     // (event: string) => void
@@ -1177,6 +1430,7 @@ Props:
 - `showMarkAll?: boolean` — show mark all button (default: true)
 - `emptyLabel?: string` — text when no features (default: "You're all caught up!")
 - `maxHeight?: string` — max feed height (default: "400px")
+- `dateFormat?: 'absolute' | 'relative'` — entry date mode (default: `absolute`)
 - `analytics?: AnalyticsCallbacks` — component-level analytics
 - `className?: string` — additional CSS class
 - `style?: CSSProperties` — inline styles
@@ -1246,6 +1500,7 @@ Props:
 - `emptyState?: ReactNode` — custom empty UI
 - `renderEntry?: (entry, index) => ReactNode` — headless mode
 - `formatDate?: (iso: string) => string` — custom date formatter
+- `dateFormat?: 'absolute' | 'relative'` — built-in date mode when `formatDate` is omitted
 - `basePath?: string` — base for deep links / sharing (defaults to current path in browser)
 - `manifest?: FeatureManifest` — override manifest (otherwise uses provider manifest)
 - `className?: string` — additional CSS class for page root
@@ -1495,6 +1750,7 @@ Accessibility defaults:
 - Beacon exposes dialog linkage (`aria-haspopup`, `aria-expanded`, `aria-controls`)
 - Tooltip uses dialog semantics for interactive content
 - Escape closes tooltip and returns focus to beacon
+- Beacon pulse + tooltip enter motion follow provider `animation` preset and reduced-motion fallback
 
 `TooltipGroup` props:
 - `maxVisible?: number` — cap concurrent tooltips (default: 3)
@@ -1573,7 +1829,7 @@ Accessibility defaults:
 - Active panel uses dialog semantics with label/description wiring
 - Escape closes current chain and Right Arrow advances
 - Focus is trapped while active
-- Beacon pulse respects `prefers-reduced-motion`
+- Beacon pulse + panel enter motion follow provider `animation` preset and reduced-motion fallback
 
 ---
 
@@ -1623,7 +1879,7 @@ Accessibility defaults:
 - Beacon exposes `aria-haspopup`, `aria-expanded`, and `aria-controls`
 - Tooltip uses dialog semantics with label/description linkage
 - Escape closes tooltip and returns focus to beacon
-- Pulse animation disables automatically when `prefers-reduced-motion: reduce`
+- Beacon pulse + tooltip enter motion follow provider `animation` preset and reduced-motion fallback
 
 **Styling:**
 

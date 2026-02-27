@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { MemoryAdapter } from "../adapters/memory";
 import { LocalStorageAdapter } from "../adapters/local-storage";
+import { IndexedDBAdapter } from "../adapters/indexeddb";
 
 // ── MemoryAdapter ────────────────────────────────────────────────────────────
 
@@ -183,5 +184,126 @@ describe("LocalStorageAdapter SSR fallback", () => {
     } finally {
       globalThis.window = originalWindow;
     }
+  });
+});
+
+// ── IndexedDBAdapter (localStorage fallback behavior) ────────────────────────
+
+describe("IndexedDBAdapter", () => {
+  let mockStorage: ReturnType<typeof createMockLocalStorage>;
+  const adaptersToDestroy: IndexedDBAdapter[] = [];
+
+  beforeEach(() => {
+    mockStorage = createMockLocalStorage();
+    vi.stubGlobal("localStorage", mockStorage);
+    vi.stubGlobal("indexedDB", undefined);
+  });
+
+  afterEach(() => {
+    while (adaptersToDestroy.length > 0) {
+      adaptersToDestroy.pop()?.destroy();
+    }
+    vi.unstubAllGlobals();
+  });
+
+  it("hydrates from localStorage snapshot when available", () => {
+    mockStorage.store.set("featuredrop:dismissed", JSON.stringify(["a", "b"]));
+    mockStorage.store.set("featuredrop:watermark", "2026-02-20T00:00:00Z");
+    const adapter = new IndexedDBAdapter();
+    adaptersToDestroy.push(adapter);
+    expect(adapter.getWatermark()).toBe("2026-02-20T00:00:00Z");
+    expect(adapter.getDismissedIds().has("a")).toBe(true);
+  });
+
+  it("dismiss persists ids to localStorage", () => {
+    const adapter = new IndexedDBAdapter();
+    adaptersToDestroy.push(adapter);
+    adapter.dismiss("indexed-1");
+    expect(adapter.getDismissedIds().has("indexed-1")).toBe(true);
+    expect(mockStorage.getItem("featuredrop:dismissed")).toContain("indexed-1");
+  });
+
+  it("dismissAll clears ids and stores latest watermark", async () => {
+    const onDismissAll = vi.fn().mockResolvedValue(undefined);
+    const adapter = new IndexedDBAdapter({ onDismissAll });
+    adaptersToDestroy.push(adapter);
+    adapter.dismiss("indexed-1");
+    const now = new Date("2026-03-01T00:00:00Z");
+    await adapter.dismissAll(now);
+    expect(adapter.getDismissedIds().size).toBe(0);
+    expect(adapter.getWatermark()).toBe("2026-03-01T00:00:00.000Z");
+    expect(onDismissAll).toHaveBeenCalledWith(now);
+  });
+
+  it("flushes queued dismiss operations in batch", async () => {
+    const onFlushDismissBatch = vi.fn().mockResolvedValue(undefined);
+    const adapter = new IndexedDBAdapter({
+      onFlushDismissBatch,
+      flushDebounceMs: 0,
+    });
+    adaptersToDestroy.push(adapter);
+
+    adapter.dismiss("a");
+    adapter.dismiss("b");
+    await adapter.flushQueue();
+
+    expect(onFlushDismissBatch).toHaveBeenCalledTimes(1);
+    expect(onFlushDismissBatch).toHaveBeenCalledWith(["a", "b"]);
+    expect(mockStorage.getItem("featuredrop:queue")).toBeNull();
+  });
+
+  it("keeps queued operations when remote flush fails", async () => {
+    const onFlushDismissBatch = vi.fn().mockRejectedValue(new Error("offline"));
+    const adapter = new IndexedDBAdapter({
+      onFlushDismissBatch,
+      flushDebounceMs: 0,
+    });
+    adaptersToDestroy.push(adapter);
+
+    adapter.dismiss("a");
+    await adapter.flushQueue();
+    expect(onFlushDismissBatch).toHaveBeenCalledTimes(1);
+    expect(mockStorage.getItem("featuredrop:queue")).toContain("\"a\"");
+  });
+
+  it("syncFromRemote merges dismissed IDs and keeps latest watermark", async () => {
+    const adapter = new IndexedDBAdapter({
+      watermark: "2026-03-01T00:00:00Z",
+      onSyncState: vi.fn().mockResolvedValue({
+        watermark: "2026-03-05T00:00:00Z",
+        dismissedIds: ["remote-1"],
+      }),
+      autoSyncOnOnline: false,
+    });
+    adaptersToDestroy.push(adapter);
+
+    adapter.dismiss("local-1");
+    await adapter.syncFromRemote();
+
+    const ids = adapter.getDismissedIds();
+    expect(ids.has("local-1")).toBe(true);
+    expect(ids.has("remote-1")).toBe(true);
+    expect(adapter.getWatermark()).toBe("2026-03-05T00:00:00Z");
+  });
+
+  it("dismissAll queue supersedes earlier dismiss operations", async () => {
+    const onFlushDismissAll = vi.fn().mockResolvedValue(undefined);
+    const onFlushDismissBatch = vi.fn().mockResolvedValue(undefined);
+    const adapter = new IndexedDBAdapter({
+      onFlushDismissAll,
+      onFlushDismissBatch,
+      flushDebounceMs: 0,
+      autoSyncOnOnline: false,
+    });
+    adaptersToDestroy.push(adapter);
+
+    adapter.dismiss("before");
+    await adapter.dismissAll(new Date("2026-03-10T00:00:00Z"));
+    adapter.dismiss("after");
+    await adapter.flushQueue();
+
+    expect(onFlushDismissAll).toHaveBeenCalledTimes(1);
+    expect(onFlushDismissBatch).toHaveBeenCalledTimes(1);
+    expect(onFlushDismissBatch).toHaveBeenCalledWith(["after"]);
   });
 });

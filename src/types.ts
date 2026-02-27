@@ -4,6 +4,9 @@ export type FeatureType = "feature" | "improvement" | "fix" | "breaking";
 /** Priority level for announcements */
 export type FeaturePriority = "critical" | "normal" | "low";
 
+/** Motion preset for built-in component transitions */
+export type FeatureDropAnimationPreset = "none" | "subtle" | "normal" | "playful";
+
 /** Call-to-action for a feature entry */
 export interface FeatureCTA {
   /** Button/link label */
@@ -55,6 +58,11 @@ export type AudienceMatchFn = (
   audience: AudienceRule,
   userContext: UserContext,
 ) => boolean;
+
+/** Feature flag resolver interface for gating announcement visibility */
+export interface FeatureFlagBridge {
+  isEnabled: (flagKey: string, userContext?: UserContext) => boolean;
+}
 
 /** Dependency gates for progressive feature discovery */
 export interface FeatureDependencies {
@@ -158,8 +166,12 @@ export interface FeatureEntry {
   sidebarKey?: string;
   /** Optional grouping category (e.g. "ai", "billing", "core") */
   category?: string;
+  /** Optional product scope (`"*"`, `"askverdict"`, etc.) for multi-product manifests */
+  product?: string;
   /** Optional URL to link to (e.g. docs page, changelog entry) */
   url?: string;
+  /** Optional feature flag key; requires a flag bridge to evaluate */
+  flagKey?: string;
   /** Entry type — determines default icon/color in UI components */
   type?: FeatureType;
   /** Priority level — critical entries get special treatment in UI */

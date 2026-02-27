@@ -127,4 +127,20 @@ describe("AnnouncementModal", () => {
       expect(screen.queryByRole("dialog")).toBeNull();
     });
   });
+
+  it("keeps modal mounted briefly during exit animation", async () => {
+    render(
+      <AnnouncementModal
+        defaultOpen={true}
+        frequency="always"
+        slides={[{ id: "slide-exit", title: "Exit test", description: "Modal exit" }]}
+      />,
+    );
+    expect(screen.getByRole("dialog")).toBeDefined();
+    await userEvent.click(screen.getByLabelText("Close"));
+    expect(screen.getByRole("dialog")).toBeDefined();
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+  });
 });

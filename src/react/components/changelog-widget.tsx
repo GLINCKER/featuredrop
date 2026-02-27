@@ -8,6 +8,13 @@ import {
   useMemo,
 } from "react";
 import { parseDescription } from "../../markdown";
+import { formatDateForLocale, formatRelativeTimeForLocale } from "../../i18n";
+import {
+  ensureFeatureDropAnimationStyles,
+  getAnimationDurationMs,
+  getEnterAnimation,
+  getExitAnimation,
+} from "../../animation";
 import type { FeatureDropThemeInput } from "../../theme";
 import type { FeatureEntry, AnalyticsCallbacks } from "../../types";
 import { useFeatureDrop } from "../hooks/use-feature-drop";
@@ -70,6 +77,8 @@ export interface ChangelogWidgetProps {
   emptyLabel?: string;
   /** Max height for the feed area. Default: "400px" */
   maxHeight?: string;
+  /** Date display mode for entry metadata. Default: "absolute" */
+  dateFormat?: "absolute" | "relative";
   /** Analytics callbacks */
   analytics?: AnalyticsCallbacks;
   /** Additional CSS class for the container */
@@ -327,15 +336,6 @@ const TYPE_COLORS: Record<string, { color: string; bg: string }> = {
   breaking: { color: "#991b1b", bg: "rgba(239, 68, 68, 0.15)" },
 };
 
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 function getFocusableElements(container: HTMLElement): HTMLElement[] {
   const nodes = container.querySelectorAll<HTMLElement>(
     [
@@ -364,7 +364,9 @@ function DefaultEntry({
   userReaction,
   canReact,
   react,
-}: ChangelogEntryRenderProps) {
+  locale,
+  dateFormat,
+}: ChangelogEntryRenderProps & { locale: string; dateFormat: "absolute" | "relative" }) {
   const typeStyle = feature.type
     ? TYPE_COLORS[feature.type] ?? TYPE_COLORS.feature
     : null;
@@ -422,7 +424,11 @@ function DefaultEntry({
         {feature.category && (
           <span>{feature.category}</span>
         )}
-        <span>{formatDate(feature.releasedAt)}</span>
+        <span>
+          {dateFormat === "relative"
+            ? formatRelativeTimeForLocale(feature.releasedAt, locale)
+            : formatDateForLocale(feature.releasedAt, locale)}
+        </span>
         {versionLabel && <span>v{versionLabel}</span>}
       </div>
       {feature.cta && (
@@ -497,6 +503,7 @@ export function ChangelogWidget({
   showMarkAll = true,
   emptyLabel,
   maxHeight = "400px",
+  dateFormat = "absolute",
   analytics,
   className,
   style,
@@ -516,14 +523,19 @@ export function ChangelogWidget({
     markFeatureSeen,
     markFeatureClicked,
     trackAdoptionEvent,
+    locale,
+    direction,
+    animation,
     translations,
   } = useFeatureDrop();
   const [isOpen, setIsOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [, setReactionVersion] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const widgetIdRef = useRef(`featuredrop-widget-${Math.random().toString(36).slice(2, 10)}`);
   const themeVariables = useThemeVariables(theme);
   const resolvedTitle = title ?? translations.whatsNewTitle;
@@ -532,8 +544,29 @@ export function ChangelogWidget({
   const resolvedEmptyLabel = emptyLabel ?? translations.allCaughtUp;
   const dialogId = `${widgetIdRef.current}-dialog`;
   const titleId = `${widgetIdRef.current}-title`;
+  const countLabel = translations.newFeatureCount(newCount);
+  const dialogEnterAnimation = useMemo(
+    () => getEnterAnimation(animation, variant),
+    [animation, variant],
+  );
+  const dialogExitAnimation = useMemo(
+    () => getExitAnimation(animation, variant),
+    [animation, variant],
+  );
+
+  useEffect(() => {
+    ensureFeatureDropAnimationStyles();
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, []);
 
   const open = useCallback(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setIsClosing(false);
     if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
       lastFocusedElementRef.current = document.activeElement;
     }
@@ -542,7 +575,21 @@ export function ChangelogWidget({
   }, [analytics]);
 
   const close = useCallback(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
     setIsOpen(false);
+    const exitDuration = getAnimationDurationMs(animation, variant, "exit");
+    if (exitDuration > 0) {
+      setIsClosing(true);
+      closeTimerRef.current = setTimeout(() => {
+        setIsClosing(false);
+        closeTimerRef.current = null;
+      }, exitDuration);
+    } else {
+      setIsClosing(false);
+    }
     analytics?.onWidgetClosed?.();
     const returnTarget = triggerRef.current ?? lastFocusedElementRef.current;
     if (returnTarget) {
@@ -554,7 +601,7 @@ export function ChangelogWidget({
         returnTarget.focus();
       }
     }
-  }, [analytics]);
+  }, [animation, analytics, variant]);
 
   const toggle = useCallback(() => {
     if (isOpen) {
@@ -721,6 +768,7 @@ export function ChangelogWidget({
       data-featuredrop-widget
       className={className}
       style={widgetRootStyle}
+      dir={direction}
     >
       {/* Trigger */}
       {renderTrigger ? (
@@ -731,7 +779,7 @@ export function ChangelogWidget({
           onClick={toggle}
           style={triggerButtonStyles}
           data-featuredrop-trigger
-          aria-label={`${resolvedTriggerLabel}${newCount > 0 ? ` — ${newCount} new` : ""}`}
+          aria-label={`${resolvedTriggerLabel}${newCount > 0 ? ` — ${countLabel}` : ""}`}
           aria-haspopup="dialog"
           aria-expanded={isOpen}
           aria-controls={dialogId}
@@ -745,11 +793,11 @@ export function ChangelogWidget({
         </button>
       )}
       <span style={srOnlyStyles} aria-live="polite" aria-atomic="true">
-        {newCount > 0 ? `${newCount} new feature${newCount === 1 ? "" : "s"}` : "No new features"}
+        {countLabel}
       </span>
 
       {/* Widget body */}
-      {isOpen && (
+      {(isOpen || isClosing) && (
         <>
           {/* Overlay for panel/modal */}
           {variant !== "popover" && (
@@ -764,7 +812,10 @@ export function ChangelogWidget({
           <div
             id={dialogId}
             ref={dialogRef}
-            style={dialogContainerStyles}
+            style={{
+              ...dialogContainerStyles,
+              animation: isClosing ? dialogExitAnimation : dialogEnterAnimation,
+            }}
             data-featuredrop-container={variant}
             role="dialog"
             aria-labelledby={titleId}
@@ -820,6 +871,8 @@ export function ChangelogWidget({
                       feature={feature}
                       dismiss={() => handleDismiss(feature.id)}
                       onFeatureClick={() => handleFeatureClick(feature)}
+                      locale={locale}
+                      dateFormat={dateFormat}
                       reactions={showReactions ? getReactionCounts(feature.id, reactions) : undefined}
                       userReaction={showReactions ? getUserReaction(feature.id) : null}
                       canReact={showReactions ? !getUserReaction(feature.id) : undefined}

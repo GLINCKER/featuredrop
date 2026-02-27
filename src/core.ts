@@ -6,6 +6,7 @@ import type {
   StorageAdapter,
   UserContext,
   FeatureDependencyState,
+  FeatureFlagBridge,
   TriggerContext,
 } from "./types";
 import { compareSemver, satisfiesRange } from "./semver";
@@ -92,6 +93,26 @@ function isVersionMatch(feature: FeatureEntry, appVersion?: string): boolean {
   return true;
 }
 
+function isFlagMatch(
+  feature: FeatureEntry,
+  flagBridge?: FeatureFlagBridge,
+  userContext?: UserContext,
+): boolean {
+  if (!feature.flagKey) return true;
+  if (!flagBridge) return false;
+  try {
+    return flagBridge.isEnabled(feature.flagKey, userContext);
+  } catch {
+    return false;
+  }
+}
+
+function isProductMatch(feature: FeatureEntry, product?: string): boolean {
+  if (!feature.product || feature.product === "*") return true;
+  if (!product) return false;
+  return feature.product === product;
+}
+
 function isDependencyMatch(
   feature: FeatureEntry,
   dismissedIds: ReadonlySet<string>,
@@ -135,6 +156,8 @@ function isDependencyMatch(
  * 3. Feature has not been individually dismissed
  * 4. If `publishAt` is set, current time must be after it (scheduled publishing)
  * 5. If `audience` is set, user must match the targeting rules
+ * 6. If `flagKey` is set, the flag bridge must resolve it as enabled
+ * 7. If `product` is set, it must match the current product scope
  */
 export function isNew(
   feature: FeatureEntry,
@@ -146,6 +169,8 @@ export function isNew(
   appVersion?: string,
   dependencyState?: FeatureDependencyState,
   triggerContext?: TriggerContext,
+  flagBridge?: FeatureFlagBridge,
+  product?: string,
 ): boolean {
   // Already dismissed by the user on this device
   if (dismissedIds.has(feature.id)) return false;
@@ -158,6 +183,12 @@ export function isNew(
 
   // Version targeting — requires appVersion when constraints exist
   if (!isVersionMatch(feature, appVersion)) return false;
+
+  // Feature flag targeting — hide flagged entries unless enabled
+  if (!isFlagMatch(feature, flagBridge, userContext)) return false;
+
+  // Multi-product targeting — hide entries for other product scopes
+  if (!isProductMatch(feature, product)) return false;
 
   // Contextual trigger rules — show only when trigger condition is satisfied.
   if (!isTriggerMatch(feature.trigger, triggerContext)) return false;
@@ -197,6 +228,8 @@ export function getNewFeatures(
   appVersion?: string,
   dependencyState?: FeatureDependencyState,
   triggerContext?: TriggerContext,
+  flagBridge?: FeatureFlagBridge,
+  product?: string,
 ): FeatureEntry[] {
   const watermark = storage.getWatermark();
   const dismissedIds = storage.getDismissedIds();
@@ -211,6 +244,8 @@ export function getNewFeatures(
       appVersion,
       dependencyState,
       triggerContext,
+      flagBridge,
+      product,
     ),
   );
 }
@@ -227,6 +262,8 @@ export function getNewFeatureCount(
   appVersion?: string,
   dependencyState?: FeatureDependencyState,
   triggerContext?: TriggerContext,
+  flagBridge?: FeatureFlagBridge,
+  product?: string,
 ): number {
   return getNewFeatures(
     manifest,
@@ -237,6 +274,8 @@ export function getNewFeatureCount(
     appVersion,
     dependencyState,
     triggerContext,
+    flagBridge,
+    product,
   ).length;
 }
 
@@ -253,6 +292,8 @@ export function hasNewFeature(
   appVersion?: string,
   dependencyState?: FeatureDependencyState,
   triggerContext?: TriggerContext,
+  flagBridge?: FeatureFlagBridge,
+  product?: string,
 ): boolean {
   const watermark = storage.getWatermark();
   const dismissedIds = storage.getDismissedIds();
@@ -269,6 +310,8 @@ export function hasNewFeature(
         appVersion,
         dependencyState,
         triggerContext,
+        flagBridge,
+        product,
       ),
   );
 }
@@ -285,6 +328,8 @@ export function getNewFeaturesSorted(
   appVersion?: string,
   dependencyState?: FeatureDependencyState,
   triggerContext?: TriggerContext,
+  flagBridge?: FeatureFlagBridge,
+  product?: string,
 ): FeatureEntry[] {
   const priorityOrder = { critical: 0, normal: 1, low: 2 };
   return getNewFeatures(
@@ -296,6 +341,8 @@ export function getNewFeaturesSorted(
     appVersion,
     dependencyState,
     triggerContext,
+    flagBridge,
+    product,
   ).sort(
     (a, b) => {
       const pa = priorityOrder[a.priority ?? "normal"];

@@ -23,6 +23,8 @@ label: AI Journal
 type: feature
 category: ai
 priority: critical
+flagKey: ai-journal-enabled
+product: askverdict
 releasedAt: 2026-02-15T00:00:00Z
 showNewUntil: 2026-03-15T00:00:00Z
 cta:
@@ -38,6 +40,8 @@ This is **markdown**.
     expect(entry.id).toBe("ai-journal");
     expect(entry.cta?.label).toBe("Try it now");
     expect(entry.audience?.plan).toEqual(["pro", "enterprise"]);
+    expect(entry.flagKey).toBe("ai-journal-enabled");
+    expect(entry.product).toBe("askverdict");
     expect(entry.description).toContain("Hello");
   });
 

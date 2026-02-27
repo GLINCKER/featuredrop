@@ -1,0 +1,53 @@
+---
+title: Quickstart
+---
+
+# Quickstart
+
+Get your first working badge in under 10 minutes.
+
+## 1) Install
+
+```bash
+pnpm add featuredrop
+```
+
+## 2) Define a manifest
+
+```ts
+import type { FeatureManifest } from 'featuredrop'
+
+export const manifest: FeatureManifest = [
+  {
+    id: 'new-dashboard',
+    title: 'New dashboard',
+    version: '1.0.0',
+    releaseDate: '2026-02-01',
+    description: 'A faster dashboard with updated charts.'
+  }
+]
+```
+
+## 3) Wrap your app
+
+```tsx
+import { FeatureDropProvider, ChangelogWidget, NewBadge } from 'featuredrop/react'
+import { MemoryAdapter } from 'featuredrop'
+import { manifest } from './manifest'
+
+export function App() {
+  return (
+    <FeatureDropProvider manifest={manifest} storage={new MemoryAdapter()}>
+      <NewBadge featureId="new-dashboard" />
+      <ChangelogWidget />
+    </FeatureDropProvider>
+  )
+}
+```
+
+## 4) Add your first production guardrails
+
+- Run `pnpm size-check` to keep bundle budgets honest
+- Run `pnpm security-check` to catch unsafe runtime patterns
+
+Continue with [Examples](/docs/examples) for real integration recipes.

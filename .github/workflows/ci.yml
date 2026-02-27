@@ -49,11 +49,23 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Security checks
+        run: pnpm security-check
+
       - name: Run tests
         run: pnpm test
 
       - name: Build
         run: pnpm build
+
+      - name: Bundle budget check
+        run: pnpm size-check
+
+      - name: Install docs app dependencies
+        run: pnpm --dir apps/docs install --frozen-lockfile
+
+      - name: Build docs app
+        run: pnpm docs:build
 
       - name: Check package size
         run: |

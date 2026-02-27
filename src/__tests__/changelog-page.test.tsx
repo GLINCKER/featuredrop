@@ -131,4 +131,19 @@ describe("ChangelogPage", () => {
     expect(screen.getByLabelText("React 👍 to AI Journal").textContent).toContain("1");
     vi.unstubAllGlobals();
   });
+
+  it("renders relative dates when enabled", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-02-27T00:00:00Z"));
+      render(
+        <Wrapper>
+          <ChangelogPage pagination="load-more" dateFormat="relative" />
+        </Wrapper>,
+      );
+      expect(screen.getByText("5 days ago")).toBeDefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
