@@ -284,6 +284,15 @@ FeatureDrop is built for the AI coding era. Your AI assistant already knows how 
 
 Then just ask: *"Add a changelog widget with auto-expiring badges to my app"* — Claude handles the rest.
 
+### Context7 (works with any AI assistant)
+
+```bash
+# Search and install the FeatureDrop skill
+npx ctx7 skills search FeatureDrop
+```
+
+Any AI coding assistant with Context7 support gets up-to-date FeatureDrop docs, API reference, and best practices injected into context automatically.
+
 ### Cursor / Copilot
 
 ```bash
