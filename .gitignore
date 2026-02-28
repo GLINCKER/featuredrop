@@ -32,6 +32,7 @@ CLAUDE.md
 claude.md
 
 # AI agent directories (catch-all for tool configs except .claude which is tracked)
+.claude/skills/
 .agent*/
 .codebuddy/
 .commandcode/

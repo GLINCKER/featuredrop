@@ -199,6 +199,20 @@ const config: DocsThemeConfig = {
           <a className="hover:underline underline-offset-2" href="/terms" style={{ color: 'var(--text-secondary)' }}>Terms</a>
           <a className="hover:underline underline-offset-2" href="https://github.com/GLINCKER/featuredrop" style={{ color: 'var(--text-secondary)' }}>GitHub</a>
         </span>
+        <a
+          href="https://www.producthunt.com/products/featuredrop?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-featuredrop"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2"
+        >
+          <img
+            src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1087348&theme=dark&t=1772313274416"
+            alt="FeatureDrop - Open-source product adoption toolkit — free forever | Product Hunt"
+            width="200"
+            height="43"
+            style={{ display: 'inline-block' }}
+          />
+        </a>
       </div>
     )
   }

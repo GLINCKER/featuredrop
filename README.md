@@ -17,6 +17,8 @@
   <a href="https://bundlephobia.com/package/featuredrop"><img src="https://img.shields.io/bundlephobia/minzip/featuredrop?color=22c55e&label=gzipped" alt="bundle size" /></a>
   <a href="https://github.com/GLINCKER/featuredrop/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/featuredrop?color=6366f1&label=license" alt="MIT license" /></a>
   <a href="https://featuredrop.dev"><img src="https://img.shields.io/badge/docs-live-ea580c" alt="Live docs" /></a>
+  <a href="https://www.producthunt.com/products/featuredrop"><img src="https://img.shields.io/badge/Product%20Hunt-Featured-ff6154?logo=producthunt&logoColor=white" alt="Product Hunt" /></a>
+  <a href="https://context7.com/glincker/featuredrop"><img src="https://img.shields.io/badge/Context7-Indexed-0ea5e9?logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnoiIGZpbGw9IndoaXRlIi8+PC9zdmc+" alt="Context7" /></a>
 </p>
 
 <p align="center">
