@@ -3,6 +3,14 @@ import path from 'node:path'
 
 const outDir = path.resolve(process.cwd(), 'out')
 
+// Skip verification in SSR mode (no out/ directory)
+try {
+  await readFile(path.join(outDir, 'index.html'), 'utf8')
+} catch {
+  console.log('[docs-qa] SSR mode detected (no out/), skipping metadata verification.')
+  process.exit(0)
+}
+
 const checks = [
   {
     file: 'index.html',

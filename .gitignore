@@ -31,10 +31,8 @@ agent.md
 CLAUDE.md
 claude.md
 
-# AI agent directories
-.claude/
-.agent/
-.agents/
+# AI agent directories (catch-all for tool configs except .claude which is tracked)
+.agent*/
 .codebuddy/
 .commandcode/
 .continue/
@@ -45,17 +43,20 @@ claude.md
 .kilocode/
 .kiro/
 .kode/
+.ladle/
 .mcpjam/
 .mux/
 .neovate/
 .openhands/
 .pi/
+.pnpm-store/
 .pochi/
 .qoder/
 .qwen/
 .roo/
 .trae/
 .windsurf/
+.wrangler/
 .zencoder/
 skills/
 skills-lock.json
