@@ -23,6 +23,7 @@
     "react-syntax-highlighter": "^16.1.1"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^5.15.8",
     "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^22.0.0",
     "@types/react": "^18.3.12",
