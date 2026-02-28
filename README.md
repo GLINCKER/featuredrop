@@ -223,18 +223,84 @@ npx featuredrop migrate --from launchnotes --input launchnotes-export.json
 
 ---
 
-## React Hooks
+## Headless Hooks (for shadcn / custom UI)
 
-| Hook | Returns |
-|---|---|
-| `useFeatureDrop()` | Full context: features, count, dismiss, throttle controls |
-| `useNewFeature(key)` | Single nav item: `{ isNew, feature, dismiss }` |
-| `useNewCount()` | Current unread badge count |
-| `useTour(id)` | Imperative tour controls and step snapshot |
-| `useTourSequencer(sequence)` | Ordered multi-tour orchestration |
-| `useChecklist(id)` | Checklist progress + task controls |
-| `useSurvey(id)` | Survey controls: `show`, `hide`, `askLater` |
-| `useTabNotification()` | Browser tab title count: `"(3) My App"` |
+Don't want our components? Use hooks — **data + actions, zero JSX**:
+
+```tsx
+import { useChangelog } from 'featuredrop/react/hooks'
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { Badge } from '@/components/ui/badge'
+
+function MyChangelog() {
+  const { newFeatures, newCount, dismiss, markAllSeen } = useChangelog()
+
+  return (
+    <Sheet onOpenChange={() => markAllSeen()}>
+      <SheetTrigger>
+        What's New {newCount > 0 && <Badge>{newCount}</Badge>}
+      </SheetTrigger>
+      <SheetContent>
+        {newFeatures.map(f => (
+          <div key={f.id} onClick={() => dismiss(f.id)}>
+            <h3>{f.label}</h3>
+            <p>{f.description}</p>
+          </div>
+        ))}
+      </SheetContent>
+    </Sheet>
+  )
+}
+```
+
+| Hook | Import | Returns |
+|---|---|---|
+| `useFeatureDrop()` | `featuredrop/react/hooks` | Full context: features, count, dismiss, throttle controls |
+| `useNewFeature(key)` | `featuredrop/react/hooks` | `{ isNew, feature, dismiss }` |
+| `useNewCount()` | `featuredrop/react/hooks` | Current unread badge count |
+| `useChangelog()` | `featuredrop/react/hooks` | `{ features, newFeatures, newCount, dismiss, dismissAll, markAllSeen, getByCategory }` |
+| `useTour(id)` | `featuredrop/react/hooks` | Imperative tour controls and step snapshot |
+| `useTourSequencer(sequence)` | `featuredrop/react/hooks` | Ordered multi-tour orchestration |
+| `useChecklist(id)` | `featuredrop/react/hooks` | Checklist progress + task controls |
+| `useSurvey(id)` | `featuredrop/react/hooks` | Survey controls: `show`, `hide`, `askLater` |
+| `useTabNotification()` | `featuredrop/react/hooks` | Browser tab title count: `"(3) My App"` |
+
+> **When to use hooks vs components:** If your project uses shadcn/ui, Radix, or any custom design system, use hooks from `featuredrop/react/hooks`. If you want out-of-the-box UI, use components from `featuredrop/react`.
+
+---
+
+## AI-Native
+
+FeatureDrop is built for the AI coding era. Your AI assistant already knows how to use it.
+
+### Claude Code Plugin
+
+```bash
+# Install the plugin — Claude Code learns FeatureDrop's API automatically
+/plugin install featuredrop
+```
+
+Then just ask: *"Add a changelog widget with auto-expiring badges to my app"* — Claude handles the rest.
+
+### Cursor / Copilot
+
+```bash
+# Auto-detect your IDE and copy the right context files
+npx featuredrop ai-setup
+```
+
+### Tailwind Plugin
+
+```ts
+// tailwind.config.ts
+import { featureDropPlugin } from 'featuredrop/tailwind'
+
+export default {
+  plugins: [featureDropPlugin()],
+  // Adds: fd-badge, fd-badge-dot, fd-badge-count, animations, CSS variables
+  // Auto dark mode, reduced-motion support
+}
+```
 
 ---
 

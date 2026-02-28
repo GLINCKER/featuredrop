@@ -262,3 +262,106 @@ export interface AnalyticsCallbacks {
   /** Fired when all features are dismissed at once */
   onAllDismissed?: () => void;
 }
+
+/** Display format hint from the engine */
+export type DisplayFormat = "badge" | "toast" | "modal" | "banner" | "inline" | "spotlight";
+
+/** Interaction type tracked by the engine */
+export type InteractionType =
+  | "seen"
+  | "dismissed"
+  | "clicked"
+  | "completed"
+  | "snoozed"
+  | "hovered"
+  | "expanded";
+
+/** Timing decision returned by the engine */
+export interface TimingDecision {
+  /** Whether to show the announcement now */
+  show: boolean;
+  /** Reason for the decision */
+  reason: string;
+  /** Suggested delay in ms if not showing now */
+  delayMs?: number;
+  /** Confidence level (0-1) */
+  confidence: number;
+}
+
+/** Format recommendation from the engine */
+export interface FormatRecommendation {
+  /** Recommended display format */
+  primary: DisplayFormat;
+  /** Fallback format if primary component isn't used */
+  fallback: DisplayFormat;
+  /** Reason for the recommendation */
+  reason: string;
+}
+
+/** Adoption score breakdown */
+export interface AdoptionScore {
+  /** Overall score (0-100) */
+  score: number;
+  /** Letter grade */
+  grade: "A" | "B" | "C" | "D" | "F";
+  /** Score breakdown */
+  breakdown: {
+    /** % of features the user has explored */
+    featuresExplored: number;
+    /** Rate of dismissals (lower is better) */
+    dismissRate: number;
+    /** Rate of tour/checklist completion */
+    completionRate: number;
+    /** Whether engagement is rising, stable, or declining */
+    engagementTrend: "rising" | "stable" | "declining";
+  };
+  /** Actionable recommendations */
+  recommendations: string[];
+}
+
+/** Per-feature adoption status */
+export interface FeatureAdoptionStatus {
+  featureId: string;
+  status: "unseen" | "seen" | "explored" | "adopted" | "dismissed";
+  firstSeen?: string;
+  lastInteraction?: string;
+  interactionCount: number;
+}
+
+/** Delivery context passed to the engine for timing decisions */
+export interface DeliveryContext {
+  /** Current route/path */
+  currentPath: string;
+  /** Seconds since session start */
+  sessionAge: number;
+  /** Dismissals in last 5 minutes */
+  recentDismissals: number;
+  /** Feature priority */
+  featurePriority: FeaturePriority;
+}
+
+/**
+ * Plugin interface for the FeatureDrop engine.
+ *
+ * The open-source library defines this interface.
+ * The proprietary @featuredrop/engine implements it.
+ * Users can also build their own engine implementation.
+ *
+ * The free library works perfectly without any engine.
+ */
+export interface FeatureDropEngine {
+  /** Decide whether to show a feature announcement now */
+  shouldShow(featureId: string, context: DeliveryContext): TimingDecision;
+  /** Recommend the best display format for a feature */
+  recommendFormat(featureId: string): FormatRecommendation;
+  /** Get the user's overall adoption score */
+  getAdoptionScore(): AdoptionScore;
+  /** Track a user interaction with a feature */
+  trackInteraction(featureId: string, type: InteractionType): void;
+  /** Get adoption status for a specific feature */
+  getFeatureAdoption(featureId: string): FeatureAdoptionStatus;
+  /** Initialize the engine (called by provider on mount) */
+  initialize?(): void;
+  /** Cleanup resources (called by provider on unmount) */
+  destroy?(): void;
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "FeatureDrop",
+  "description": "Open-source product adoption toolkit — changelogs, badges, tours, checklists, hotspots, feedback widgets, surveys. Zero dependencies, < 3 kB core, 8 framework adapters, 12 storage adapters. Free Beamer/Pendo alternative.",
+  "folders": ["apps/docs/content", "skills"],
+  "excludeFolders": ["node_modules", "dist", "coverage", ".git", "examples", "docs-local"],
+  "excludeFiles": ["CHANGELOG.md", "CODE_OF_CONDUCT.md"],
+  "rules": [
+    "Always use subpath imports: featuredrop/react, featuredrop/react/hooks, featuredrop/adapters",
+    "Prefer hooks from featuredrop/react/hooks for custom design systems (shadcn, Radix, etc.)",
+    "Features are defined in a JSON manifest with { id, label, description, releasedAt, showNewUntil? }",
+    "Core bundle is under 3 kB gzipped with zero production dependencies",
+    "All components support headless mode via render props for full customization"
+  ]
+}

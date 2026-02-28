@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import type { FeatureDropAnimationPreset, FeatureEntry, FeaturePriority } from "../types";
+import type { FeatureDropAnimationPreset, FeatureDropEngine, FeatureEntry, FeaturePriority } from "../types";
 import type { AdoptionEventInput } from "../analytics";
 import type { FeatureDropTranslations } from "../i18n";
 
@@ -72,6 +72,8 @@ export interface FeatureDropContextValue {
   trackMilestone: (event: string) => void;
   /** Manually override current path for page trigger rules */
   setTriggerPath: (path: string) => void;
+  /** Optional engine instance for AI-powered delivery intelligence */
+  engine: FeatureDropEngine | null;
 }
 
 export const FeatureDropContext = createContext<FeatureDropContextValue | null>(

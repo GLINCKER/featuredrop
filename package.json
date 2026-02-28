@@ -195,6 +195,26 @@
         "types": "./dist/testing.d.cts",
         "default": "./dist/testing.cjs"
       }
+    },
+    "./react/hooks": {
+      "import": {
+        "types": "./dist/react-hooks.d.ts",
+        "default": "./dist/react-hooks.js"
+      },
+      "require": {
+        "types": "./dist/react-hooks.d.cts",
+        "default": "./dist/react-hooks.cjs"
+      }
+    },
+    "./tailwind": {
+      "import": {
+        "types": "./dist/tailwind.d.ts",
+        "default": "./dist/tailwind.js"
+      },
+      "require": {
+        "types": "./dist/tailwind.d.cts",
+        "default": "./dist/tailwind.cjs"
+      }
     }
   },
   "typesVersions": {
@@ -246,6 +266,12 @@
       ],
       "flags": [
         "./dist/flags.d.ts"
+      ],
+      "react/hooks": [
+        "./dist/react-hooks.d.ts"
+      ],
+      "tailwind": [
+        "./dist/tailwind.d.ts"
       ]
     }
   },
@@ -255,6 +281,11 @@
     "dist/**/*.d.ts",
     "dist/**/*.d.cts",
     "dist/**/*.map",
+    ".claude-plugin/**",
+    "skills/**",
+    "context7.json",
+    "src/ai/cursorrules.txt",
+    "src/ai/claude-skill.md",
     "README.md",
     "LICENSE"
   ],

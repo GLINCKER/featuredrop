@@ -36,6 +36,14 @@ export type {
   FeatureFlagBridge,
   FeatureTrigger,
   TriggerContext,
+  DisplayFormat,
+  InteractionType,
+  TimingDecision,
+  FormatRecommendation,
+  AdoptionScore,
+  FeatureAdoptionStatus,
+  DeliveryContext,
+  FeatureDropEngine,
 } from "./types";
 
 // ────────────────────────────────────────────────────────────────────────────

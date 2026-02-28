@@ -1,0 +1,21 @@
+{
+  "name": "featuredrop",
+  "description": "AI-assisted product adoption setup — changelogs, tours, checklists, badges, feedback widgets. Helps Claude Code configure FeatureDrop in any project.",
+  "version": "2.5.0",
+  "author": {
+    "name": "GLINR STUDIOS",
+    "url": "https://glincker.com"
+  },
+  "homepage": "https://featuredrop.dev",
+  "repository": "https://github.com/GLINCKER/featuredrop",
+  "license": "MIT",
+  "keywords": [
+    "feature-discovery",
+    "changelog",
+    "product-tours",
+    "onboarding",
+    "saas",
+    "react",
+    "developer-tools"
+  ]
+}

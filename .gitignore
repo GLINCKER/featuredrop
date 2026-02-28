@@ -58,7 +58,8 @@ claude.md
 .windsurf/
 .wrangler/
 .zencoder/
-skills/
+skills/*
+!skills/featuredrop-setup/
 skills-lock.json
 
 # Debug

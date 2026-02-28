@@ -2,7 +2,7 @@ import { defineConfig } from "tsup";
 import { readFileSync, writeFileSync } from "fs";
 
 function prependUseClient() {
-  const files = ["dist/react.js", "dist/react.cjs", "dist/admin.js", "dist/admin.cjs"];
+  const files = ["dist/react.js", "dist/react.cjs", "dist/admin.js", "dist/admin.cjs", "dist/react-hooks.js", "dist/react-hooks.cjs"];
   for (const file of files) {
     try {
       const content = readFileSync(file, "utf8");
@@ -154,6 +154,30 @@ export default defineConfig([
     splitting: false,
     sourcemap: true,
     external: ["react"],
+  },
+  // React hooks-only entry — "use client" for Next.js App Router
+  {
+    entry: { "react-hooks": "src/react/hooks/index.ts" },
+    format: ["cjs", "esm"],
+    dts: true,
+    clean: false,
+    treeshake: true,
+    splitting: false,
+    sourcemap: true,
+    external: ["react"],
+    onSuccess: async () => {
+      prependUseClient();
+    },
+  },
+  // Tailwind CSS plugin entry (no React dependency)
+  {
+    entry: { tailwind: "src/tailwind.ts" },
+    format: ["cjs", "esm"],
+    dts: true,
+    clean: false,
+    treeshake: true,
+    splitting: false,
+    sourcemap: true,
   },
   // Vue entry
   {

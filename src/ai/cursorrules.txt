@@ -1,0 +1,13 @@
+When working with FeatureDrop:
+- FeatureDrop is a product adoption library (changelogs, badges, tours, checklists, feedback)
+- ALWAYS import from subpaths: 'featuredrop/react', 'featuredrop/react/hooks', 'featuredrop/adapters'
+- For custom UI: use hooks from 'featuredrop/react/hooks' (useChangelog, useTour, useChecklist)
+- For ready-made UI: use components from 'featuredrop/react' (NewBadge, ChangelogWidget, Tour)
+- Features are defined in JSON: { id, label, description, releasedAt, showNewUntil? }
+- Wrap app in <FeatureDropProvider manifest={features} storage={new LocalStorageAdapter()}>
+- Storage default: LocalStorageAdapter. Server: PostgresAdapter, RedisAdapter from 'featuredrop/adapters'
+- Core < 3 kB, React ~12 kB, zero production deps, fully tree-shakable
+- All components support headless mode via render props
+- For shadcn projects: use hooks from 'featuredrop/react/hooks' + shadcn primitives
+- TypeScript strict mode, no 'any' types
+- Zero production dependencies — do not add external deps

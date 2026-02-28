@@ -10,6 +10,7 @@ import type {
   AudienceMatchFn,
   AnalyticsCallbacks,
   FeatureDropAnimationPreset,
+  FeatureDropEngine,
   FeatureFlagBridge,
   FeatureManifest,
   FeaturePriority,
@@ -209,6 +210,8 @@ export interface FeatureDropProviderProps {
   animation?: FeatureDropAnimationPreset;
   /** Custom translation overrides for built-in component strings */
   translations?: Partial<FeatureDropTranslations>;
+  /** Optional engine for AI-powered delivery intelligence (@featuredrop/engine) */
+  engine?: FeatureDropEngine;
   children: ReactNode;
 }
 
@@ -234,6 +237,7 @@ export function FeatureDropProvider({
   locale = "en",
   animation = "normal",
   translations: translationOverrides,
+  engine,
   children,
 }: FeatureDropProviderProps) {
   const analyticsRef = useRef(analytics);
@@ -344,6 +348,14 @@ export function FeatureDropProvider({
   useEffect(() => {
     recompute();
   }, [recompute]);
+
+  // Engine lifecycle — initialize on mount, destroy on unmount
+  useEffect(() => {
+    engine?.initialize?.();
+    return () => {
+      engine?.destroy?.();
+    };
+  }, [engine]);
 
   const hasTimeTriggers = useMemo(
     () => resolvedManifest.some((feature) => feature.trigger?.type === "time"),
@@ -661,6 +673,7 @@ export function FeatureDropProvider({
       trackTriggerEvent,
       trackMilestone,
       setTriggerPath,
+      engine: engine ?? null,
     }),
     [
       resolvedManifest,
@@ -695,6 +708,7 @@ export function FeatureDropProvider({
       trackTriggerEvent,
       trackMilestone,
       setTriggerPath,
+      engine,
     ],
   );
 
