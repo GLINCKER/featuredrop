@@ -16,6 +16,12 @@ export default withNextra({
   reactStrictMode: true,
   trailingSlash: true,
   basePath,
+  env: {
+    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    NEXT_PUBLIC_GA_ID: process.env.NEXT_PUBLIC_GA_ID,
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+  },
   assetPrefix: basePath ? `${basePath}/` : undefined,
   webpack: (config) => {
     // Force a single React instance for linked local packages (featuredrop -> root react devDep).
