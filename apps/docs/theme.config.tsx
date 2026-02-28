@@ -6,7 +6,6 @@ import { ThemeToggle } from './components/theme-toggle'
 // Auto-resolves: NEXT_PUBLIC_SITE_URL env → featuredrop.dev default
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://featuredrop.dev'
 
-
 const config: DocsThemeConfig = {
   logo: <FeatureDropLogoLockup />,
   project: {
@@ -183,17 +182,24 @@ const config: DocsThemeConfig = {
 
   footer: {
     text: (
-      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-        MIT {new Date().getFullYear()}{' '}
-        <a className="font-semibold hover:underline underline-offset-2" href="https://github.com/GLINCKER/featuredrop" style={{ color: 'var(--text-secondary)' }}>
-          FeatureDrop
-        </a>
-        {' '}—{' '}a{' '}
-        <a className="font-semibold hover:underline underline-offset-2" href="https://glincker.com" style={{ color: 'var(--text-secondary)' }}>
-          GLINR STUDIOS
-        </a>{' '}
-        product. Open source under the MIT license.
-      </span>
+      <div className="flex flex-col gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+        <span>
+          MIT {new Date().getFullYear()}{' '}
+          <a className="font-semibold hover:underline underline-offset-2" href="https://github.com/GLINCKER/featuredrop" style={{ color: 'var(--text-secondary)' }}>
+            FeatureDrop
+          </a>
+          {' '}—{' '}a{' '}
+          <a className="font-semibold hover:underline underline-offset-2" href="https://glincker.com" style={{ color: 'var(--text-secondary)' }}>
+            GLINR STUDIOS
+          </a>{' '}
+          product. Open source under the MIT license.
+        </span>
+        <span className="flex gap-3">
+          <a className="hover:underline underline-offset-2" href="/privacy" style={{ color: 'var(--text-secondary)' }}>Privacy</a>
+          <a className="hover:underline underline-offset-2" href="/terms" style={{ color: 'var(--text-secondary)' }}>Terms</a>
+          <a className="hover:underline underline-offset-2" href="https://github.com/GLINCKER/featuredrop" style={{ color: 'var(--text-secondary)' }}>GitHub</a>
+        </span>
+      </div>
     )
   }
 }

@@ -1,0 +1,109 @@
+---
+title: Privacy Policy — FeatureDrop
+description: Privacy policy for FeatureDrop, the open-source product adoption toolkit by GLINR STUDIOS.
+---
+
+# Privacy Policy
+
+**Last updated:** February 28, 2026
+
+FeatureDrop is an open-source library published by **GLINR STUDIOS** ("we", "us", "our"). This policy covers the FeatureDrop npm package, documentation site (featuredrop.dev), and Claude Code plugin.
+
+---
+
+## The Short Version
+
+FeatureDrop is a client-side library. **We do not collect, store, or transmit any user data.** Your data stays in your application. Period.
+
+---
+
+## 1. The FeatureDrop Library (npm package)
+
+The `featuredrop` npm package runs entirely in your users' browsers or your server environment.
+
+- **No telemetry.** The library does not phone home, ping our servers, or send analytics.
+- **No tracking pixels.** No external scripts, images, or iframes are loaded.
+- **No cookies.** The library does not set cookies.
+- **Local storage only.** Feature dismiss states are stored in your users' `localStorage` or your chosen storage adapter (PostgreSQL, Redis, etc.) — all under your control.
+- **Zero external network requests.** Unless you explicitly configure a `RemoteAdapter` pointing to your own server.
+
+### Data the library stores locally
+
+| Key | Purpose | Location |
+|-----|---------|----------|
+| `featuredrop:watermark` | Timestamp of last seen features | Your chosen StorageAdapter |
+| `featuredrop:dismissed` | IDs of dismissed features | Your chosen StorageAdapter |
+| `featuredrop:quiet-mode` | User's Do Not Disturb preference | localStorage |
+
+This data is never sent to GLINR STUDIOS or any third party.
+
+---
+
+## 2. The Documentation Site (featuredrop.dev)
+
+When you visit featuredrop.dev, we collect minimal analytics to understand how developers use our docs:
+
+- **Plausible Analytics** — privacy-focused, cookieless, GDPR-compliant page view tracking. No personal data is collected. [Plausible privacy policy](https://plausible.io/privacy-focused-web-analytics)
+- **No cookies** are set by our documentation site.
+- **No personal information** (name, email, IP address) is collected or stored.
+
+### What we track on the docs site
+
+- Page views (which pages are visited)
+- Referrer (where you came from)
+- Country (derived from IP, not stored)
+- Device type (desktop/mobile/tablet)
+- Outbound link clicks (to GitHub, npm, etc.)
+
+### What we do NOT track
+
+- Your identity
+- Your IP address (not stored)
+- Your browsing history
+- Cookies or local storage
+
+---
+
+## 3. The Claude Code Plugin
+
+The FeatureDrop Claude Code plugin is a skill file that teaches AI assistants about the FeatureDrop API. It:
+
+- Runs locally in your Claude Code or Cursor IDE
+- Does not make network requests
+- Does not collect or transmit any data
+- Contains only documentation text (API reference, examples, best practices)
+
+---
+
+## 4. npm Package Downloads
+
+When you install `featuredrop` via npm, the npm registry logs the download. This is standard npm behavior and is governed by [npm's privacy policy](https://docs.npmjs.com/policies/privacy), not ours.
+
+---
+
+## 5. GitHub
+
+Our source code is hosted on GitHub. Interactions with our GitHub repository (starring, forking, issues, pull requests) are governed by [GitHub's privacy policy](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement).
+
+---
+
+## 6. Children's Privacy
+
+FeatureDrop is a developer tool. We do not knowingly collect information from children under 13.
+
+---
+
+## 7. Changes to This Policy
+
+We may update this policy as the project evolves. Changes will be committed to the repository and reflected on this page with an updated date.
+
+---
+
+## 8. Contact
+
+Questions about this privacy policy? Open an issue on [GitHub](https://github.com/GLINCKER/featuredrop/issues) or email [hello@glincker.com](mailto:hello@glincker.com).
+
+---
+
+GLINR STUDIOS
+[glincker.com](https://glincker.com)
