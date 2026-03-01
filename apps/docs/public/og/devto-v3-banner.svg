@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 420" width="1000" height="420">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D0B14"/>
+      <stop offset="50%" stop-color="#1A1425"/>
+      <stop offset="100%" stop-color="#0D0B14"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF7A30"/>
+      <stop offset="100%" stop-color="#C73F00"/>
+    </linearGradient>
+    <linearGradient id="glowLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF7A30" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#FF7A30" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#FF7A30" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="orb" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF7A30" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#FF7A30" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softGlow">
+      <feGaussianBlur stdDeviation="20"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1000" height="420" fill="url(#bg)"/>
+
+  <!-- Ambient glow orbs -->
+  <circle cx="180" cy="210" r="200" fill="url(#orb)" filter="url(#softGlow)"/>
+  <circle cx="820" cy="210" r="180" fill="url(#orb)" filter="url(#softGlow)" opacity="0.5"/>
+
+  <!-- Horizontal accent line -->
+  <rect x="0" y="395" width="1000" height="2" fill="url(#glowLine)"/>
+
+  <!-- Top subtle line -->
+  <rect x="0" y="23" width="1000" height="1" fill="url(#glowLine)" opacity="0.3"/>
+
+  <!-- FeatureDrop icon (simplified beacon) -->
+  <g transform="translate(60, 135)">
+    <!-- Icon background -->
+    <rect x="0" y="0" width="72" height="72" rx="16" fill="url(#accent)"/>
+    <rect x="1" y="1" width="70" height="70" rx="15" fill="none" stroke="white" stroke-width="0.8" opacity="0.2"/>
+    <!-- Beacon rings -->
+    <circle cx="36" cy="36" r="24" fill="none" stroke="white" stroke-width="1.5" opacity="0.2"/>
+    <circle cx="36" cy="36" r="17" fill="none" stroke="white" stroke-width="1.8" opacity="0.35"/>
+    <!-- Center dot -->
+    <circle cx="36" cy="36" r="7" fill="white" filter="url(#glow)"/>
+    <ellipse cx="34" cy="34" rx="3" ry="2.2" fill="white" opacity="0.5"/>
+  </g>
+
+  <!-- Title -->
+  <text x="148" y="170" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="38" font-weight="800" fill="white" letter-spacing="-0.5">FeatureDrop</text>
+  <text x="365" y="170" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="38" font-weight="800" fill="#FF7A30" letter-spacing="-0.5">v3</text>
+
+  <!-- Subtitle -->
+  <text x="62" y="230" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="600" fill="#FF7A30">Your app now decides when and how</text>
+  <text x="62" y="260" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="600" fill="#FF7A30">to show features.</text>
+
+  <!-- Description -->
+  <text x="62" y="300" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="14" fill="#9B8FB0">Client-side behavioral engine. No servers, no data collection.</text>
+  <text x="62" y="320" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="14" fill="#9B8FB0">Works from session one. Free forever.</text>
+
+  <!-- Stats pills -->
+  <g transform="translate(62, 350)">
+    <!-- Pill 1 -->
+    <rect x="0" y="0" width="100" height="30" rx="15" fill="none" stroke="#FF7A30" stroke-width="1.2" opacity="0.7"/>
+    <text x="50" y="20" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="600" fill="#FF7A30" text-anchor="middle">&lt; 3 kB core</text>
+    <!-- Pill 2 -->
+    <rect x="115" y="0" width="90" height="30" rx="15" fill="none" stroke="#6B6080" stroke-width="1" opacity="0.6"/>
+    <text x="160" y="20" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="500" fill="#9B8FB0" text-anchor="middle">479 tests</text>
+    <!-- Pill 3 -->
+    <rect x="220" y="0" width="120" height="30" rx="15" fill="none" stroke="#6B6080" stroke-width="1" opacity="0.6"/>
+    <text x="280" y="20" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="500" fill="#9B8FB0" text-anchor="middle">11 frameworks</text>
+    <!-- Pill 4 -->
+    <rect x="355" y="0" width="110" height="30" rx="15" fill="none" stroke="#6B6080" stroke-width="1" opacity="0.6"/>
+    <text x="410" y="20" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="500" fill="#9B8FB0" text-anchor="middle">MIT licensed</text>
+  </g>
+
+  <!-- Right side: Engine diagram card -->
+  <g transform="translate(580, 55)">
+    <!-- Card background -->
+    <rect x="0" y="0" width="370" height="310" rx="16" fill="#161222" stroke="#2A2440" stroke-width="1"/>
+    <rect x="0" y="0" width="370" height="42" rx="16" fill="#1E1830"/>
+    <rect x="0" y="26" width="370" height="16" fill="#1E1830"/>
+
+    <!-- Card title -->
+    <text x="20" y="28" font-family="ui-monospace, 'SF Mono', monospace" font-size="13" font-weight="600" fill="#9B8FB0">AdoptionEngine</text>
+
+    <!-- Traffic light dots -->
+    <circle cx="320" cy="21" r="5" fill="#FF5F57" opacity="0.8"/>
+    <circle cx="336" cy="21" r="5" fill="#FEBC2E" opacity="0.8"/>
+    <circle cx="352" cy="21" r="5" fill="#28C840" opacity="0.8"/>
+
+    <!-- Row 1: BehaviorTracker -->
+    <rect x="16" y="56" width="338" height="52" rx="8" fill="#1E1830" stroke="#2A2440" stroke-width="0.8"/>
+    <text x="32" y="78" font-family="ui-monospace, 'SF Mono', monospace" font-size="12" font-weight="600" fill="#FF7A30">BehaviorTracker</text>
+    <text x="32" y="96" font-family="system-ui, sans-serif" font-size="11" fill="#6B6080">Sessions, dismiss patterns, engagement</text>
+
+    <!-- Row 2: TimingOptimizer -->
+    <rect x="16" y="118" width="338" height="52" rx="8" fill="#1E1830" stroke="#2A2440" stroke-width="0.8"/>
+    <text x="32" y="140" font-family="ui-monospace, 'SF Mono', monospace" font-size="12" font-weight="600" fill="#FF7A30">TimingOptimizer</text>
+    <text x="32" y="158" font-family="system-ui, sans-serif" font-size="11" fill="#6B6080">Cooldowns, fatigue detection, pacing</text>
+
+    <!-- Row 3: FormatSelector -->
+    <rect x="16" y="180" width="338" height="52" rx="8" fill="#1E1830" stroke="#2A2440" stroke-width="0.8"/>
+    <text x="32" y="202" font-family="ui-monospace, 'SF Mono', monospace" font-size="12" font-weight="600" fill="#FF7A30">FormatSelector</text>
+    <text x="32" y="220" font-family="system-ui, sans-serif" font-size="11" fill="#6B6080">Badge vs toast vs modal — auto-picked</text>
+
+    <!-- Row 4: AdoptionScorer -->
+    <rect x="16" y="242" width="338" height="52" rx="8" fill="#1E1830" stroke="#2A2440" stroke-width="0.8"/>
+    <text x="32" y="264" font-family="ui-monospace, 'SF Mono', monospace" font-size="12" font-weight="600" fill="#FF7A30">AdoptionScorer</text>
+    <text x="32" y="282" font-family="system-ui, sans-serif" font-size="11" fill="#6B6080">A-F grading, breakdown, recommendations</text>
+  </g>
+
+  <!-- GLINR Studios watermark -->
+  <text x="938" y="16" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" font-weight="500" fill="#4A4060" text-anchor="end" letter-spacing="1.5">GLINR STUDIOS</text>
+</svg>
