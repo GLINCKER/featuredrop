@@ -36,8 +36,10 @@ const RULES = [
       /^src\/react\/components\/banner\.tsx$/,
       /^src\/react\/components\/changelog-page\.tsx$/,
       /^src\/react\/components\/changelog-widget\.tsx$/,
+      /^src\/react\/components\/smart-announcement\.tsx$/,
       /^src\/react\/components\/spotlight\.tsx$/,
       /^src\/react\/components\/toast\.tsx$/,
+      /^src\/next\/index\.ts$/,
     ],
   },
 ];

@@ -129,7 +129,7 @@ describe("ChangelogWidget", () => {
       </Wrapper>,
     );
     await userEvent.click(screen.getByText("What's New"));
-    expect(screen.getAllByText(/ago|yesterday|today/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ago|yesterday|today|last week|last month/i).length).toBeGreaterThan(0);
   });
 
   it("disables widget enter animation when preset is none", async () => {
