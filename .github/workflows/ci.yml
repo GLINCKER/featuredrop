@@ -71,9 +71,18 @@ jobs:
         run: |
           OUTPUT=$(npm pack --dry-run 2>&1)
           echo "$OUTPUT"
-          SIZE=$(echo "$OUTPUT" | grep "package size" | awk '{print $NF}' | sed 's/kB//')
-          if [ -n "$SIZE" ] && (( $(echo "$SIZE > 50" | bc -l 2>/dev/null || echo 0) )); then
-            echo "Package size ($SIZE kB) exceeds 50 kB limit"
+          # Extract size in kB (handles both "kB" and "MB" units)
+          SIZE_LINE=$(echo "$OUTPUT" | grep "package size")
+          SIZE_VAL=$(echo "$SIZE_LINE" | awk '{print $(NF-1)}')
+          SIZE_UNIT=$(echo "$SIZE_LINE" | awk '{print $NF}')
+          if [ "$SIZE_UNIT" = "MB" ]; then
+            SIZE_KB=$(echo "$SIZE_VAL * 1024" | bc -l)
+          else
+            SIZE_KB=$SIZE_VAL
+          fi
+          # Tarball budget: 2 MB (2048 kB) — includes 27 subpaths + source maps
+          if [ -n "$SIZE_KB" ] && (( $(echo "$SIZE_KB > 2048" | bc -l 2>/dev/null || echo 0) )); then
+            echo "Package size (${SIZE_VAL} ${SIZE_UNIT}) exceeds 2 MB limit"
             exit 1
           fi
-          echo "Package size is within limits"
+          echo "Package size (${SIZE_VAL} ${SIZE_UNIT}) is within limits"
