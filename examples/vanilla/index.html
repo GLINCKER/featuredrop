@@ -8,20 +8,54 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; }
     .layout { display: flex; min-height: 100vh; }
-    .sidebar { width: 260px; background: #1e293b; padding: 20px 0; border-right: 1px solid #334155; }
+
+    /* Sidebar */
+    .sidebar { width: 260px; background: #1e293b; padding: 20px 0; border-right: 1px solid #334155; display: flex; flex-direction: column; }
     .sidebar h2 { padding: 0 20px 16px; font-size: 14px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
     .nav-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; color: #cbd5e1; cursor: pointer; transition: background 0.15s; }
     .nav-item:hover { background: #334155; }
-    .badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 9999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #b45309; background: rgba(245, 158, 11, 0.15); }
-    .main { flex: 1; padding: 40px; }
-    .main h1 { font-size: 24px; margin-bottom: 8px; }
-    .main p { color: #94a3b8; margin-bottom: 24px; }
-    .feature-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+    .nav-item.active { background: #334155; color: #f8fafc; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .badge-new { color: #b45309; background: rgba(245, 158, 11, 0.15); }
+    .badge-type { font-size: 9px; padding: 1px 6px; }
+    .badge-feature { color: #16a34a; background: rgba(34, 197, 94, 0.12); }
+    .badge-improvement { color: #2563eb; background: rgba(59, 130, 246, 0.12); }
+    .badge-bug-fix { color: #dc2626; background: rgba(239, 68, 68, 0.12); }
+
+    /* Main content */
+    .main { flex: 1; padding: 40px; max-width: 800px; }
+    .main h1 { font-size: 24px; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; }
+    .main > p { color: #94a3b8; margin-bottom: 24px; }
+
+    /* Filters */
+    .filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-btn { background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 6px 14px; border-radius: 9999px; cursor: pointer; font-size: 13px; transition: all 0.15s; }
+    .filter-btn:hover { border-color: #475569; color: #e2e8f0; }
+    .filter-btn.active { background: #f59e0b; color: #0f172a; border-color: #f59e0b; font-weight: 600; }
+
+    /* Feature cards */
+    .feature-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 16px; margin-bottom: 12px; transition: border-color 0.15s; }
+    .feature-card:hover { border-color: #475569; }
+    .feature-card-header { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
     .feature-card h3 { font-size: 16px; margin-bottom: 4px; }
-    .feature-card p { font-size: 14px; color: #94a3b8; }
-    button { background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 16px; }
-    button:hover { background: #2563eb; }
-    #count-badge { background: #f59e0b; color: white; font-size: 11px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; padding: 0 4px; margin-left: 8px; }
+    .feature-card p { font-size: 14px; color: #94a3b8; line-height: 1.5; }
+    .feature-card-meta { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .feature-card-date { font-size: 12px; color: #64748b; }
+    .dismiss-btn { background: none; color: #64748b; border: 1px solid #334155; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.15s; }
+    .dismiss-btn:hover { color: #e2e8f0; border-color: #475569; }
+
+    /* Count badge */
+    .count-badge { background: #f59e0b; color: #0f172a; font-size: 12px; font-weight: 700; min-width: 22px; height: 22px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; padding: 0 6px; }
+
+    /* Actions */
+    .actions { display: flex; gap: 8px; margin-top: 20px; }
+    button.primary { background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: background 0.15s; }
+    button.primary:hover { background: #2563eb; }
+    button.secondary { background: transparent; color: #94a3b8; border: 1px solid #334155; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.15s; }
+    button.secondary:hover { color: #e2e8f0; border-color: #475569; }
+
+    .empty-state { text-align: center; padding: 48px 20px; color: #64748b; }
+    .empty-state p { font-size: 15px; }
   </style>
 </head>
 <body>
@@ -33,45 +67,104 @@
     <main class="main">
       <h1>What's New <span id="count-badge" style="display:none"></span></h1>
       <p>Features that are currently showing as "New" for you.</p>
+      <div id="filters" class="filters"></div>
       <div id="features"></div>
-      <button id="dismiss-all" style="display:none">Mark all as seen</button>
+      <div id="actions" class="actions" style="display:none">
+        <button class="primary" id="dismiss-all">Mark all as seen</button>
+        <button class="secondary" id="reset-all">Reset state</button>
+      </div>
     </main>
   </div>
 
   <script type="module">
-    // In a real app: import from 'featuredrop'
-    // For this example, we inline the core logic to avoid a build step
+    // ── Import from featuredrop via CDN ──
+    import {
+      createManifest,
+      getNewFeatures,
+      isNew,
+      MemoryAdapter,
+    } from 'https://esm.sh/featuredrop@2'
 
-    // ── Manifest ──
-    const FEATURES = [
+    // ── Simple localStorage persistence (lightweight, no adapter needed) ──
+    const STORAGE_KEY = 'featuredrop-vanilla-demo'
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY)
+        return raw ? JSON.parse(raw) : { watermark: null, dismissedIds: [] }
+      } catch {
+        return { watermark: null, dismissedIds: [] }
+      }
+    }
+
+    function saveState(state) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+      } catch { /* ignore */ }
+    }
+
+    // Build a MemoryAdapter from persisted state
+    function buildAdapter() {
+      const state = loadState()
+      return new MemoryAdapter({
+        watermark: state.watermark,
+        dismissed: new Set(state.dismissedIds),
+      })
+    }
+
+    // ── Feature manifest ──
+    const features = createManifest([
       {
         id: 'ai-journal',
         label: 'AI Decision Journal',
-        description: 'Track decisions with AI-powered insights and retrospectives.',
+        description: 'Track decisions with AI-powered insights and retrospectives. Get recommendations based on past outcomes.',
         releasedAt: '2026-02-20T00:00:00Z',
         showNewUntil: '2026-04-20T00:00:00Z',
         sidebarKey: '/journal',
         category: 'ai',
+        type: 'feature',
       },
       {
         id: 'analytics-v2',
         label: 'Analytics Dashboard v2',
-        description: 'Redesigned analytics with real-time charts and export.',
+        description: 'Redesigned analytics with real-time charts, custom date ranges, and one-click CSV export.',
         releasedAt: '2026-02-25T00:00:00Z',
         showNewUntil: '2026-04-25T00:00:00Z',
         sidebarKey: '/analytics',
         category: 'core',
+        type: 'improvement',
       },
       {
         id: 'team-billing',
         label: 'Team Billing',
-        description: 'Manage billing for your entire team from one place.',
+        description: 'Manage billing for your entire team from one place. Includes usage breakdown per seat.',
         releasedAt: '2026-02-28T00:00:00Z',
         showNewUntil: '2026-04-28T00:00:00Z',
         sidebarKey: '/billing',
         category: 'billing',
+        type: 'feature',
       },
-    ];
+      {
+        id: 'dark-mode-fix',
+        label: 'Dark Mode Contrast Fix',
+        description: 'Fixed low-contrast text in sidebar navigation and dropdown menus in dark mode.',
+        releasedAt: '2026-02-26T00:00:00Z',
+        showNewUntil: '2026-04-26T00:00:00Z',
+        sidebarKey: '/settings',
+        category: 'core',
+        type: 'bug-fix',
+      },
+      {
+        id: 'api-webhooks',
+        label: 'Webhook Events API',
+        description: 'Subscribe to real-time events via webhooks. Supports feature releases, user actions, and billing events.',
+        releasedAt: '2026-02-22T00:00:00Z',
+        showNewUntil: '2026-04-22T00:00:00Z',
+        sidebarKey: '/settings',
+        category: 'api',
+        type: 'feature',
+      },
+    ])
 
     const NAV_ITEMS = [
       { key: '/dashboard', label: 'Dashboard' },
@@ -79,86 +172,172 @@
       { key: '/analytics', label: 'Analytics' },
       { key: '/billing', label: 'Billing' },
       { key: '/settings', label: 'Settings' },
-    ];
+    ]
 
-    // ── Inline core logic (in real app, import from 'featuredrop') ──
-    function isNew(feature, watermark, dismissedIds, now = new Date()) {
-      if (dismissedIds.has(feature.id)) return false;
-      if (now.getTime() >= new Date(feature.showNewUntil).getTime()) return false;
-      if (watermark) {
-        if (new Date(feature.releasedAt).getTime() <= new Date(watermark).getTime()) return false;
-      }
-      return true;
+    const CATEGORIES = [
+      { key: 'all', label: 'All' },
+      { key: 'core', label: 'Core' },
+      { key: 'ai', label: 'AI' },
+      { key: 'billing', label: 'Billing' },
+      { key: 'api', label: 'API' },
+    ]
+
+    let activeCategory = 'all'
+
+    // ── Helpers ──
+    function getVisibleFeatures() {
+      const adapter = buildAdapter()
+      const newFeatures = getNewFeatures(features, adapter)
+      if (activeCategory === 'all') return newFeatures
+      return newFeatures.filter(f => f.category === activeCategory)
     }
 
-    // ── Simple memory storage ──
-    let watermark = null;
-    let dismissed = new Set();
-
-    function getNewFeatures() {
-      return FEATURES.filter(f => isNew(f, watermark, dismissed));
+    function isFeatureNew(sidebarKey) {
+      const adapter = buildAdapter()
+      const feature = features.find(f => f.sidebarKey === sidebarKey)
+      if (!feature) return false
+      const watermark = adapter.getWatermark()
+      const dismissed = adapter.getDismissedIds()
+      return isNew(feature, watermark, dismissed)
     }
 
-    function hasNewFeature(sidebarKey) {
-      return FEATURES.some(f => f.sidebarKey === sidebarKey && isNew(f, watermark, dismissed));
+    function getAllNewCount() {
+      const adapter = buildAdapter()
+      return getNewFeatures(features, adapter).length
+    }
+
+    function typeBadgeClass(type) {
+      if (type === 'feature') return 'badge-feature'
+      if (type === 'improvement') return 'badge-improvement'
+      if (type === 'bug-fix') return 'badge-bug-fix'
+      return ''
+    }
+
+    function formatDate(dateStr) {
+      return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     }
 
     // ── Render ──
     function render() {
-      const newFeatures = getNewFeatures();
+      const visibleFeatures = getVisibleFeatures()
+      const totalNew = getAllNewCount()
 
-      // Sidebar
-      const navEl = document.getElementById('nav-items');
+      // Sidebar nav
+      const navEl = document.getElementById('nav-items')
       navEl.innerHTML = NAV_ITEMS.map(item => `
         <div class="nav-item" data-key="${item.key}">
           <span>${item.label}</span>
-          ${hasNewFeature(item.key) ? '<span class="badge">New</span>' : ''}
+          ${isFeatureNew(item.key) ? '<span class="badge badge-new">New</span>' : ''}
         </div>
-      `).join('');
-
-      // Features list
-      const featuresEl = document.getElementById('features');
-      featuresEl.innerHTML = newFeatures.map(f => `
-        <div class="feature-card">
-          <h3>${f.label}</h3>
-          <p>${f.description}</p>
-        </div>
-      `).join('') || '<p>No new features right now.</p>';
+      `).join('')
 
       // Count badge
-      const countEl = document.getElementById('count-badge');
-      if (newFeatures.length > 0) {
-        countEl.style.display = 'inline-flex';
-        countEl.textContent = newFeatures.length;
+      const countEl = document.getElementById('count-badge')
+      if (totalNew > 0) {
+        countEl.style.display = 'inline-flex'
+        countEl.className = 'count-badge'
+        countEl.textContent = totalNew
       } else {
-        countEl.style.display = 'none';
+        countEl.style.display = 'none'
       }
 
-      // Dismiss all button
-      const dismissBtn = document.getElementById('dismiss-all');
-      dismissBtn.style.display = newFeatures.length > 0 ? 'block' : 'none';
+      // Category filters
+      const filtersEl = document.getElementById('filters')
+      const adapter = buildAdapter()
+      filtersEl.innerHTML = CATEGORIES.map(cat => {
+        const allNew = getNewFeatures(features, adapter)
+        const count = cat.key === 'all'
+          ? allNew.length
+          : allNew.filter(f => f.category === cat.key).length
+        return `
+          <button class="filter-btn ${activeCategory === cat.key ? 'active' : ''}" data-category="${cat.key}">
+            ${cat.label}${count > 0 ? ` (${count})` : ''}
+          </button>
+        `
+      }).join('')
+
+      // Feature cards
+      const featuresEl = document.getElementById('features')
+      if (visibleFeatures.length === 0) {
+        featuresEl.innerHTML = '<div class="empty-state"><p>No new features in this category.</p></div>'
+      } else {
+        featuresEl.innerHTML = visibleFeatures.map(f => `
+          <div class="feature-card">
+            <div class="feature-card-header">
+              <div>
+                <h3>${f.label}</h3>
+                <p>${f.description}</p>
+              </div>
+              <button class="dismiss-btn" data-id="${f.id}">Dismiss</button>
+            </div>
+            <div class="feature-card-meta">
+              ${f.type ? `<span class="badge badge-type ${typeBadgeClass(f.type)}">${f.type.replace('-', ' ')}</span>` : ''}
+              <span class="feature-card-date">${formatDate(f.releasedAt)}</span>
+            </div>
+          </div>
+        `).join('')
+      }
+
+      // Action buttons
+      const actionsEl = document.getElementById('actions')
+      actionsEl.style.display = totalNew > 0 ? 'flex' : 'none'
     }
 
     // ── Events ──
+    // Dismiss all — set watermark to now
     document.getElementById('dismiss-all').addEventListener('click', () => {
-      watermark = new Date().toISOString();
-      dismissed.clear();
-      render();
-    });
+      saveState({ watermark: new Date().toISOString(), dismissedIds: [] })
+      render()
+    })
 
-    document.getElementById('nav-items').addEventListener('click', (e) => {
-      const navItem = e.target.closest('.nav-item');
-      if (!navItem) return;
-      const key = navItem.dataset.key;
-      const feature = FEATURES.find(f => f.sidebarKey === key);
-      if (feature && isNew(feature, watermark, dismissed)) {
-        dismissed.add(feature.id);
-        render();
+    // Reset state
+    document.getElementById('reset-all').addEventListener('click', () => {
+      saveState({ watermark: null, dismissedIds: [] })
+      render()
+    })
+
+    // Dismiss individual feature
+    document.getElementById('features').addEventListener('click', (e) => {
+      const btn = e.target.closest('.dismiss-btn')
+      if (!btn) return
+      const id = btn.dataset.id
+      const state = loadState()
+      if (!state.dismissedIds.includes(id)) {
+        state.dismissedIds.push(id)
       }
-    });
+      saveState(state)
+      render()
+    })
 
-    // Initial render
-    render();
+    // Sidebar nav click — dismiss that feature
+    document.getElementById('nav-items').addEventListener('click', (e) => {
+      const navItem = e.target.closest('.nav-item')
+      if (!navItem) return
+      const key = navItem.dataset.key
+      const adapter = buildAdapter()
+      const watermark = adapter.getWatermark()
+      const dismissed = adapter.getDismissedIds()
+      const feature = features.find(f => f.sidebarKey === key)
+      if (feature && isNew(feature, watermark, dismissed)) {
+        const state = loadState()
+        if (!state.dismissedIds.includes(feature.id)) {
+          state.dismissedIds.push(feature.id)
+        }
+        saveState(state)
+        render()
+      }
+    })
+
+    // Category filters
+    document.getElementById('filters').addEventListener('click', (e) => {
+      const btn = e.target.closest('.filter-btn')
+      if (!btn) return
+      activeCategory = btn.dataset.category
+      render()
+    })
+
+    // ── Initial render ──
+    render()
   </script>
 </body>
 </html>

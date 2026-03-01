@@ -269,6 +269,28 @@ function MyChangelog() {
 
 > **When to use hooks vs components:** If your project uses shadcn/ui, Radix, or any custom design system, use hooks from `featuredrop/react/hooks`. If you want out-of-the-box UI, use components from `featuredrop/react`.
 
+### shadcn/ui Components
+
+Pre-built components that use shadcn primitives for UI + FeatureDrop hooks for logic. Install via the shadcn CLI:
+
+```bash
+npx shadcn@latest add https://featuredrop.dev/r/changelog-widget.json
+```
+
+| Component | Install |
+|-----------|---------|
+| New Badge | `npx shadcn@latest add https://featuredrop.dev/r/new-badge.json` |
+| Changelog Widget | `npx shadcn@latest add https://featuredrop.dev/r/changelog-widget.json` |
+| Tour | `npx shadcn@latest add https://featuredrop.dev/r/tour.json` |
+| Checklist | `npx shadcn@latest add https://featuredrop.dev/r/checklist.json` |
+| Feedback Widget | `npx shadcn@latest add https://featuredrop.dev/r/feedback-widget.json` |
+
+Components land in `components/featuredrop/` — you own the code. [Full docs &rarr;](https://featuredrop.dev/docs/shadcn)
+
+**Try it now:**
+- [Next.js + shadcn example](https://stackblitz.com/github/GLINCKER/featuredrop/tree/main/examples/nextjs-shadcn) — Open in StackBlitz
+- [Vanilla JS example](examples/vanilla/index.html) — Zero build step, CDN import
+
 ---
 
 ## AI-Native
@@ -417,7 +439,7 @@ npx featuredrop migrate --from beamer --input beamer-export.json --out features.
 
 | | Beamer | Pendo | **FeatureDrop** |
 |---|---|---|---|
-| Price | $59–399/mo | $7k+/yr | **Free forever** |
+| Price | $59–399/mo | $7k+/yr | **Free (MIT)** |
 | Bundle impact | External script | ~300 kB agent | **< 3 kB core** |
 | Vendor lock-in | Yes | Yes | **No** |
 | Data ownership | Vendor-hosted | Vendor-hosted | **Your repo** |

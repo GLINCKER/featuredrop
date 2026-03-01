@@ -1,0 +1,60 @@
+---
+title: Tour
+---
+
+import { Callout } from 'nextra/components'
+import { TourShadcnDemo } from '../../../components/shadcn-demos/tour-demo'
+
+# Tour
+
+Step-by-step product tour that renders a `Popover` positioned at each target element. Uses `useTour()` for step controls and progress.
+
+## Install
+
+```bash
+npx shadcn@latest add https://featuredrop.dev/r/tour.json
+```
+
+## Preview
+
+<TourShadcnDemo />
+
+## Usage
+
+```tsx
+import { Tour as TourComponent } from "featuredrop/react"
+import { Tour } from "@/components/featuredrop/tour"
+
+const steps = [
+  { id: "dashboard", target: "#dashboard", title: "Dashboard", content: "Your overview lives here." },
+  { id: "settings", target: "#settings", title: "Settings", content: "Configure your workspace." },
+]
+
+export function App() {
+  return (
+    <>
+      {/* Register the tour with FeatureDrop */}
+      <TourComponent id="onboarding" steps={steps} />
+      {/* Render the shadcn UI */}
+      <Tour tourId="onboarding" />
+    </>
+  )
+}
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `tourId` | `string` | — | Tour ID (must match the `<Tour>` component's `id`) |
+| `className` | `string` | — | Additional classes for the popover content |
+
+<Callout type="warning">
+  Requires a FeatureDrop `Tour` component to be mounted (registers the tour controller) and a `FeatureDropProvider` ancestor.
+</Callout>
+
+## shadcn Dependencies
+
+- `popover`
+- `button`
+- `progress`

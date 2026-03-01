@@ -30,6 +30,14 @@ export type { UseChecklistResult } from "./use-checklist";
 export { useSurvey } from "./use-survey";
 export type { UseSurveyResult } from "./use-survey";
 
-// NEW: Headless changelog hook
+// Headless changelog hook
 export { useChangelog } from "./use-changelog";
 export type { UseChangelogResult } from "./use-changelog";
+
+// Engine-powered hooks (require AdoptionEngine)
+export { useSmartFeature } from "./use-smart-feature";
+export type { UseSmartFeatureResult } from "./use-smart-feature";
+export { useAdoptionScore } from "./use-adoption-score";
+export type { UseAdoptionScoreResult } from "./use-adoption-score";
+export { useBehaviorProfile } from "./use-behavior-profile";
+export type { UseBehaviorProfileResult } from "./use-behavior-profile";

@@ -215,6 +215,56 @@
         "types": "./dist/tailwind.d.cts",
         "default": "./dist/tailwind.cjs"
       }
+    },
+    "./engine": {
+      "import": {
+        "types": "./dist/engine.d.ts",
+        "default": "./dist/engine.js"
+      },
+      "require": {
+        "types": "./dist/engine.d.cts",
+        "default": "./dist/engine.cjs"
+      }
+    },
+    "./next": {
+      "import": {
+        "types": "./dist/next.d.ts",
+        "default": "./dist/next.js"
+      },
+      "require": {
+        "types": "./dist/next.d.cts",
+        "default": "./dist/next.cjs"
+      }
+    },
+    "./remix": {
+      "import": {
+        "types": "./dist/remix.d.ts",
+        "default": "./dist/remix.js"
+      },
+      "require": {
+        "types": "./dist/remix.d.cts",
+        "default": "./dist/remix.cjs"
+      }
+    },
+    "./astro": {
+      "import": {
+        "types": "./dist/astro.d.ts",
+        "default": "./dist/astro.js"
+      },
+      "require": {
+        "types": "./dist/astro.d.cts",
+        "default": "./dist/astro.cjs"
+      }
+    },
+    "./nuxt": {
+      "import": {
+        "types": "./dist/nuxt.d.ts",
+        "default": "./dist/nuxt.js"
+      },
+      "require": {
+        "types": "./dist/nuxt.d.cts",
+        "default": "./dist/nuxt.cjs"
+      }
     }
   },
   "typesVersions": {
@@ -272,6 +322,21 @@
       ],
       "tailwind": [
         "./dist/tailwind.d.ts"
+      ],
+      "engine": [
+        "./dist/engine.d.ts"
+      ],
+      "next": [
+        "./dist/next.d.ts"
+      ],
+      "remix": [
+        "./dist/remix.d.ts"
+      ],
+      "astro": [
+        "./dist/astro.d.ts"
+      ],
+      "nuxt": [
+        "./dist/nuxt.d.ts"
       ]
     }
   },
@@ -294,9 +359,12 @@
     "build": "tsup",
     "playground": "pnpm --dir examples/sandbox-react dev",
     "playground:build": "pnpm --dir examples/sandbox-react build",
+    "example:nextjs": "pnpm --dir examples/nextjs-shadcn dev",
+    "example:nextjs:build": "pnpm --dir examples/nextjs-shadcn build",
     "docs:install": "pnpm --dir apps/docs install",
     "docs:dev": "lsof -ti:3003 | xargs kill -9 2>/dev/null; pnpm --dir apps/docs dev -p 3003",
-    "docs:build": "pnpm --dir apps/docs build",
+    "build:registry": "node ./scripts/build-registry.mjs",
+    "docs:build": "pnpm run build:registry && pnpm --dir apps/docs build",
     "docs:start": "pnpm --dir apps/docs start",
     "featuredrop:build": "node ./dist/featuredrop.cjs build",
     "featuredrop:validate": "node ./dist/featuredrop.cjs validate",

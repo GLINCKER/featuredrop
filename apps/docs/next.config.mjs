@@ -25,12 +25,17 @@ export default withNextra({
   assetPrefix: basePath ? `${basePath}/` : undefined,
   webpack: (config) => {
     // Force a single React instance for linked local packages (featuredrop -> root react devDep).
+    // Also alias featuredrop/react/hooks → featuredrop/react to avoid context duplication
+    // (both are separate tsup entries that each bundle their own FeatureDropContext).
+    const featuredropDist = path.resolve(__dirname, '../../dist')
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
       react: path.resolve(__dirname, 'node_modules/react'),
       'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
       'react/jsx-runtime': path.resolve(__dirname, 'node_modules/react/jsx-runtime.js'),
-      'react/jsx-dev-runtime': path.resolve(__dirname, 'node_modules/react/jsx-dev-runtime.js')
+      'react/jsx-dev-runtime': path.resolve(__dirname, 'node_modules/react/jsx-dev-runtime.js'),
+      'featuredrop/react/hooks': path.join(featuredropDist, 'react.js'),
+      'featuredrop/react': path.join(featuredropDist, 'react.js'),
     }
     config.resolve.fallback = {
       ...(config.resolve.fallback || {}),

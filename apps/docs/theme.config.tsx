@@ -2,6 +2,7 @@ import React from 'react'
 import type { DocsThemeConfig } from 'nextra-theme-docs'
 import { FeatureDropLogoLockup } from './components/featuredrop-logo'
 import { ThemeToggle } from './components/theme-toggle'
+import { TocFooter } from './components/toc-footer'
 
 // Auto-resolves: NEXT_PUBLIC_SITE_URL env → featuredrop.dev default
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://featuredrop.dev'
@@ -53,8 +54,14 @@ const config: DocsThemeConfig = {
     defaultMenuCollapseLevel: 2,
     toggleButton: true
   },
+  toc: {
+    extraContent: <TocFooter />,
+  },
+  feedback: {
+    content: null
+  },
   editLink: {
-    text: 'Suggest edits on GitHub'
+    text: null
   },
   useNextSeoProps() {
     return {

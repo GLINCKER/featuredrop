@@ -1,0 +1,63 @@
+---
+title: Feedback Widget
+---
+
+import { Callout } from 'nextra/components'
+import { FeedbackWidgetShadcnDemo } from '../../../components/shadcn-demos/feedback-widget-demo'
+
+# Feedback Widget
+
+Dialog-based feedback form with category select. Standalone component — manages its own state, no FeatureDrop hook required.
+
+## Install
+
+```bash
+npx shadcn@latest add https://featuredrop.dev/r/feedback-widget.json
+```
+
+## Preview
+
+<FeedbackWidgetShadcnDemo />
+
+## Usage
+
+```tsx
+import { FeedbackWidget } from "@/components/featuredrop/feedback-widget"
+
+export function App() {
+  return (
+    <FeedbackWidget
+      categories={["Bug", "Feature Request", "Question"]}
+      onSubmit={async (payload) => {
+        await fetch("/api/feedback", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        })
+      }}
+    />
+  )
+}
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `categories` | `string[]` | `["Bug", "Feature Request", "Improvement", "Other"]` | Dropdown options |
+| `triggerLabel` | `string` | `"Feedback"` | Trigger button text |
+| `title` | `string` | `"Send Feedback"` | Dialog title |
+| `description` | `string` | `"We'd love to hear from you..."` | Dialog description |
+| `onSubmit` | `(payload: { category, message }) => void \| Promise<void>` | — | Submit handler |
+| `className` | `string` | — | Additional classes for the trigger button |
+
+<Callout type="info">
+  This component is standalone — it does not require `FeatureDropProvider`. It can be used in any React project with shadcn/ui.
+</Callout>
+
+## shadcn Dependencies
+
+- `dialog`
+- `textarea`
+- `button`
+- `select`
+- `label`

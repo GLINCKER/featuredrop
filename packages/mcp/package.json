@@ -1,0 +1,45 @@
+{
+  "name": "@featuredrop/mcp",
+  "version": "1.0.0",
+  "description": "MCP server for FeatureDrop — lets AI assistants configure changelogs, tours, checklists, and badges automatically.",
+  "type": "module",
+  "bin": {
+    "featuredrop-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "mcp",
+    "featuredrop",
+    "product-adoption",
+    "changelog",
+    "ai-tools",
+    "claude",
+    "cursor",
+    "copilot"
+  ],
+  "author": "GLINR STUDIOS",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GLINCKER/featuredrop",
+    "directory": "packages/mcp"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.5.0"
+  }
+}

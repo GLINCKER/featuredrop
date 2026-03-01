@@ -3,6 +3,8 @@ node_modules/
 
 # Build output
 dist/
+.next/
+apps/docs/public/r/
 
 # Coverage
 coverage/

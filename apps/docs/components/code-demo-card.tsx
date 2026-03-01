@@ -110,18 +110,27 @@ export function CodeDemoCard({ title, description, code, children }: CodeDemoCar
               {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
             </button>
           </div>
-          <div className="flex-1 overflow-auto text-[13px] nice-scrollbar">
-            <SyntaxHighlighter 
-              language="tsx" 
+          <div className="flex-1 overflow-auto text-[13px] nice-scrollbar" data-code-demo="">
+            <SyntaxHighlighter
+              language="tsx"
               style={vscDarkPlus}
-               customStyle={{
+              wrapLines={false}
+              wrapLongLines={false}
+              customStyle={{
                 margin: 0,
                 padding: '1.5rem',
                 backgroundColor: 'transparent',
                 fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
               }}
               codeTagProps={{
-                style: { fontFamily: 'inherit', lineHeight: '1.5' }
+                style: {
+                  fontFamily: 'inherit',
+                  lineHeight: '1.6',
+                  whiteSpace: 'pre',
+                  wordBreak: 'normal',
+                  overflowWrap: 'normal',
+                  display: 'block',
+                }
               }}
             >
               {code.trim()}

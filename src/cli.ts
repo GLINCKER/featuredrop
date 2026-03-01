@@ -17,6 +17,7 @@ import {
   type MigrationSource,
 } from "./cli-scaffold";
 import { generateRSS } from "./rss";
+import { runAiSetup } from "./cli-ai-setup";
 import type { FeatureType } from "./types";
 
 interface ParsedArgs {
@@ -30,6 +31,7 @@ interface ParsedArgs {
     | "doctor"
     | "generate-rss"
     | "generate-changelog"
+    | "ai-setup"
     | "help";
   pattern?: string;
   outFile?: string;
@@ -63,6 +65,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     "doctor",
     "generate-rss",
     "generate-changelog",
+    "ai-setup",
   ]);
   const command = allowed.has(commandRaw) ? (commandRaw as ParsedArgs["command"]) : "help";
   const parsed: ParsedArgs = { command };
@@ -104,6 +107,7 @@ function printHelp(): void {
   console.log("  featuredrop doctor [--pattern features/**/*.md] [--cwd .]");
   console.log("  featuredrop generate-rss [--pattern features/**/*.md] [--out featuredrop.rss.xml] [--title ...] [--link ...] [--description ...] [--cwd .]");
   console.log("  featuredrop generate-changelog [--pattern features/**/*.md] [--out CHANGELOG.generated.md] [--cwd .]");
+  console.log("  featuredrop ai-setup [--cwd .]                          Detect AI tools and create context files");
 }
 
 async function promptForLabelIfNeeded(label?: string): Promise<string> {
@@ -151,6 +155,33 @@ async function run(): Promise<void> {
         distinctId,
         event: "cli_init",
         properties: { format: result.format, files_created: result.created.length },
+      });
+      await shutdownPostHog();
+      return;
+    }
+
+    if (args.command === "ai-setup") {
+      const result = await runAiSetup(args.cwd);
+      if (result.detected.length > 0) {
+        console.log(`Detected: ${result.detected.join(", ")}`);
+      }
+      for (const path of result.created) {
+        console.log(`  Created: ${path}`);
+      }
+      for (const path of result.skipped) {
+        console.log(`  Skipped: ${path} (already exists)`);
+      }
+      if (result.created.length === 0 && result.skipped.length > 0) {
+        console.log("All AI context files already up to date.");
+      }
+      posthog?.capture({
+        distinctId,
+        event: "cli_ai_setup",
+        properties: {
+          detected: result.detected,
+          files_created: result.created.length,
+          files_skipped: result.skipped.length,
+        },
       });
       await shutdownPostHog();
       return;

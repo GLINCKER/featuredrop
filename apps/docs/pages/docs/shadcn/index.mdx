@@ -1,0 +1,87 @@
+---
+title: shadcn/ui Components
+---
+
+import { Callout, Cards, Card } from 'nextra/components'
+
+# shadcn/ui Components
+
+Pre-built FeatureDrop components that use **shadcn/ui primitives** for UI and **FeatureDrop hooks** for logic. They inherit your project's theme — no style conflicts, no extra CSS.
+
+<Callout type="info">
+  These components require both `featuredrop` and a [shadcn/ui](https://ui.shadcn.com) setup in your project.
+</Callout>
+
+## Install via CLI
+
+```bash
+npx shadcn@latest add https://featuredrop.dev/r/changelog-widget.json
+```
+
+This drops a fully typed TSX file into your `components/featuredrop/` directory. You own the code — customize freely.
+
+## Prerequisites
+
+1. A React project with [shadcn/ui initialized](https://ui.shadcn.com/docs/installation)
+2. `featuredrop` installed:
+
+```bash
+npm install featuredrop
+```
+
+3. A `FeatureDropProvider` wrapping your app:
+
+```tsx
+import { FeatureDropProvider } from 'featuredrop/react'
+import { LocalStorageAdapter } from 'featuredrop'
+
+const manifest = [/* your features */]
+const storage = new LocalStorageAdapter()
+
+export default function App({ children }) {
+  return (
+    <FeatureDropProvider manifest={manifest} storage={storage}>
+      {children}
+    </FeatureDropProvider>
+  )
+}
+```
+
+## Available Components
+
+<Cards>
+  <Card title="New Badge" href="/docs/shadcn/new-badge">
+    Auto-expiring "New" badge for nav items and feature labels.
+  </Card>
+  <Card title="Changelog Widget" href="/docs/shadcn/changelog-widget">
+    Slide-out panel showing release notes with unread count.
+  </Card>
+  <Card title="Tour" href="/docs/shadcn/tour">
+    Step-by-step product tour with popover positioning.
+  </Card>
+  <Card title="Checklist" href="/docs/shadcn/checklist">
+    Onboarding checklist card with progress tracking.
+  </Card>
+  <Card title="Feedback Widget" href="/docs/shadcn/feedback-widget">
+    Dialog-based feedback form with category select.
+  </Card>
+</Cards>
+
+## How It Works
+
+Each component:
+
+- Imports hooks from `featuredrop/react/hooks` (data + actions, zero JSX)
+- Imports shadcn primitives from `@/components/ui/...`
+- Uses Tailwind utilities + shadcn CSS variables — works with both `default` and `new-york` styles
+- Ships as a `"use client"` component
+
+The shadcn CLI handles dependency resolution. When you install `changelog-widget`, it auto-installs the required shadcn primitives (`sheet`, `badge`, `scroll-area`, `button`, `separator`) if they're not already present.
+
+## Custom Registry URL
+
+If you're self-hosting docs, point the CLI at your own domain:
+
+```bash
+npx shadcn@latest add https://your-domain.com/r/changelog-widget.json
+```

@@ -1,0 +1,56 @@
+---
+title: Changelog Widget
+---
+
+import { Callout } from 'nextra/components'
+import { ChangelogWidgetShadcnDemo } from '../../../components/shadcn-demos/changelog-widget-demo'
+
+# Changelog Widget
+
+Slide-out changelog panel powered by `useChangelog()`. Shows all features with unread count badge, auto-marks as seen on close.
+
+## Install
+
+```bash
+npx shadcn@latest add https://featuredrop.dev/r/changelog-widget.json
+```
+
+## Preview
+
+<ChangelogWidgetShadcnDemo />
+
+## Usage
+
+```tsx
+import { ChangelogWidget } from "@/components/featuredrop/changelog-widget"
+
+export function Header() {
+  return (
+    <header className="flex items-center justify-between p-4">
+      <h1>My App</h1>
+      <ChangelogWidget title="Release Notes" side="right" />
+    </header>
+  )
+}
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `title` | `string` | `"What's New"` | Sheet header title |
+| `triggerLabel` | `string` | `"What's New"` | Trigger button text |
+| `className` | `string` | — | Additional classes for the trigger button |
+| `side` | `"top" \| "right" \| "bottom" \| "left"` | `"right"` | Side the sheet opens from |
+
+<Callout type="warning">
+  Requires a `FeatureDropProvider` ancestor. Features in your manifest are displayed in the panel.
+</Callout>
+
+## shadcn Dependencies
+
+- `sheet`
+- `badge`
+- `scroll-area`
+- `button`
+- `separator`

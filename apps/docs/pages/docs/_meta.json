@@ -3,6 +3,7 @@
   "quickstart": "Quickstart",
   "concepts": "Core Concepts",
   "components": "Components",
+  "shadcn": "shadcn/ui",
   "frameworks": "Frameworks",
   "adapters": "Adapters",
   "automation": "CLI + CI",

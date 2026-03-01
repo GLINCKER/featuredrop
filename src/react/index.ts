@@ -24,6 +24,14 @@ export { useChecklist } from "./hooks/use-checklist";
 export type { UseChecklistResult } from "./hooks/use-checklist";
 export { useSurvey } from "./hooks/use-survey";
 export type { UseSurveyResult } from "./hooks/use-survey";
+export { useChangelog } from "./hooks/use-changelog";
+export type { UseChangelogResult } from "./hooks/use-changelog";
+export { useSmartFeature } from "./hooks/use-smart-feature";
+export type { UseSmartFeatureResult } from "./hooks/use-smart-feature";
+export { useAdoptionScore } from "./hooks/use-adoption-score";
+export type { UseAdoptionScoreResult } from "./hooks/use-adoption-score";
+export { useBehaviorProfile } from "./hooks/use-behavior-profile";
+export type { UseBehaviorProfileResult } from "./hooks/use-behavior-profile";
 
 // Components
 import { withFeatureDropBoundary } from "./error-boundary";
@@ -112,3 +120,9 @@ export type {
   FeatureRequestPayload,
 } from "./components/feature-request-form";
 export const FeatureRequestForm = withFeatureDropBoundary(FeatureRequestFormBase, "FeatureRequestForm");
+import { SmartAnnouncement as SmartAnnouncementBase } from "./components/smart-announcement";
+export type {
+  SmartAnnouncementProps,
+  SmartAnnouncementRenderProps,
+} from "./components/smart-announcement";
+export const SmartAnnouncement = withFeatureDropBoundary(SmartAnnouncementBase, "SmartAnnouncement");

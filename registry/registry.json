@@ -1,0 +1,82 @@
+{
+  "name": "featuredrop",
+  "homepage": "https://featuredrop.dev",
+  "outputDir": "apps/docs/public/r",
+  "items": [
+    {
+      "name": "new-badge",
+      "type": "registry:ui",
+      "title": "New Badge",
+      "description": "Auto-expiring 'New' badge powered by FeatureDrop's useNewFeature() hook.",
+      "dependencies": ["featuredrop"],
+      "registryDependencies": ["badge"],
+      "files": [
+        {
+          "path": "registry/components/new-badge.tsx",
+          "target": "components/featuredrop/new-badge.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "changelog-widget",
+      "type": "registry:ui",
+      "title": "Changelog Widget",
+      "description": "Slide-out changelog panel with unread count, powered by useChangelog().",
+      "dependencies": ["featuredrop"],
+      "registryDependencies": ["sheet", "badge", "scroll-area", "button", "separator"],
+      "files": [
+        {
+          "path": "registry/components/changelog-widget.tsx",
+          "target": "components/featuredrop/changelog-widget.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "feedback-widget",
+      "type": "registry:ui",
+      "title": "Feedback Widget",
+      "description": "Dialog-based feedback form with category select and submit handling.",
+      "dependencies": ["featuredrop"],
+      "registryDependencies": ["dialog", "textarea", "button", "select", "label"],
+      "files": [
+        {
+          "path": "registry/components/feedback-widget.tsx",
+          "target": "components/featuredrop/feedback-widget.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "checklist",
+      "type": "registry:ui",
+      "title": "Checklist",
+      "description": "Onboarding checklist card with progress tracking, powered by useChecklist().",
+      "dependencies": ["featuredrop"],
+      "registryDependencies": ["card", "checkbox", "progress", "button"],
+      "files": [
+        {
+          "path": "registry/components/checklist.tsx",
+          "target": "components/featuredrop/checklist.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "tour",
+      "type": "registry:ui",
+      "title": "Tour",
+      "description": "Step-by-step product tour popover, powered by useTour().",
+      "dependencies": ["featuredrop"],
+      "registryDependencies": ["popover", "button", "progress"],
+      "files": [
+        {
+          "path": "registry/components/tour.tsx",
+          "target": "components/featuredrop/tour.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    }
+  ]
+}

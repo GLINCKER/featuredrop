@@ -1,0 +1,56 @@
+---
+title: New Badge
+---
+
+import { Callout } from 'nextra/components'
+import { NewBadgeShadcnDemo } from '../../../components/shadcn-demos/new-badge-demo'
+
+# New Badge
+
+Auto-expiring "New" badge that checks feature newness via `useNewFeature()`. Renders a shadcn `Badge` — click to dismiss.
+
+## Install
+
+```bash
+npx shadcn@latest add https://featuredrop.dev/r/new-badge.json
+```
+
+## Preview
+
+<NewBadgeShadcnDemo />
+
+## Usage
+
+```tsx
+import { NewBadge } from "@/components/featuredrop/new-badge"
+
+export function Sidebar() {
+  return (
+    <nav>
+      <a href="/analytics">
+        Analytics <NewBadge featureKey="analytics" />
+      </a>
+      <a href="/settings">
+        Settings <NewBadge featureKey="settings" label="Updated" />
+      </a>
+    </nav>
+  )
+}
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `featureKey` | `string` | — | Sidebar/feature key to check for newness |
+| `label` | `string` | `"New"` | Badge text |
+| `className` | `string` | — | Additional Tailwind classes |
+| `dismissOnClick` | `boolean` | `true` | Whether clicking dismisses the badge |
+
+<Callout type="warning">
+  Requires a `FeatureDropProvider` ancestor with a manifest containing a feature whose `sidebarKey` matches your `featureKey`.
+</Callout>
+
+## shadcn Dependencies
+
+- `badge`

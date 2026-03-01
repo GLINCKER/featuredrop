@@ -169,6 +169,16 @@ export default defineConfig([
       prependUseClient();
     },
   },
+  // AdoptionEngine entry (client-side behavioral intelligence)
+  {
+    entry: { engine: "src/engine/index.ts" },
+    format: ["cjs", "esm"],
+    dts: true,
+    clean: false,
+    treeshake: true,
+    splitting: false,
+    sourcemap: true,
+  },
   // Tailwind CSS plugin entry (no React dependency)
   {
     entry: { tailwind: "src/tailwind.ts" },
@@ -237,6 +247,47 @@ export default defineConfig([
     entry: { svelte: "src/svelte/index.ts" },
     format: ["cjs", "esm"],
     dts: false,
+    clean: false,
+    treeshake: true,
+    splitting: false,
+    sourcemap: true,
+  },
+  // Next.js RSC entry — server helpers + FeatureDropScript
+  {
+    entry: { next: "src/next/index.ts" },
+    format: ["cjs", "esm"],
+    dts: true,
+    clean: false,
+    treeshake: true,
+    splitting: false,
+    sourcemap: true,
+    external: ["react"],
+  },
+  // Remix entry — loader helpers
+  {
+    entry: { remix: "src/remix/index.ts" },
+    format: ["cjs", "esm"],
+    dts: true,
+    clean: false,
+    treeshake: true,
+    splitting: false,
+    sourcemap: true,
+  },
+  // Astro entry — SSG helpers + manifest script
+  {
+    entry: { astro: "src/astro/index.ts" },
+    format: ["cjs", "esm"],
+    dts: true,
+    clean: false,
+    treeshake: true,
+    splitting: false,
+    sourcemap: true,
+  },
+  // Nuxt entry — server helpers + head script + event handler factory
+  {
+    entry: { nuxt: "src/nuxt/index.ts" },
+    format: ["cjs", "esm"],
+    dts: true,
     clean: false,
     treeshake: true,
     splitting: false,
