@@ -1,5 +1,5 @@
 [build]
-  command = "cd ../.. && pnpm install && pnpm --dir apps/docs build"
+  command = "cd ../.. && pnpm install && pnpm build && pnpm build:registry && pnpm --dir apps/docs build"
   publish = ".next"
 
 [[plugins]]
